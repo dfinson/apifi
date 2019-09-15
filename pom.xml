@@ -16,8 +16,7 @@
     </parent>
 
     <properties>
-        <dev.datafi.version>de10384</dev.datafi.version>
-        <release.datafi.version>0.0.1</release.datafi.version>
+        <datafi.version>de10384</datafi.version>
         <auto-service.version>1.0-rc6</auto-service.version>
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <javapoet.version>1.11.1</javapoet.version>
@@ -29,6 +28,13 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.github.sindaryn</groupId>
+            <artifactId>datafi</artifactId>
+            <version>${datafi.version}</version>
+        </dependency>
+
         <!-- web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -98,6 +104,13 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -135,32 +148,8 @@
 
     <profiles>
         <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.github.Dave1324</groupId>
-                    <artifactId>datafi</artifactId>
-                    <version>${dev.datafi.version}</version>
-                </dependency>
-            </dependencies>
-            <repositories>
-                <repository>
-                    <id>jitpack.io</id>
-                    <url>https://jitpack.io</url>
-                </repository>
-            </repositories>
-        </profile>
-        <profile>
             <id>release</id>
             <dependencies>
-                <dependency>
-                    <groupId>org.sindaryn</groupId>
-                    <artifactId>datafi</artifactId>
-                    <version>${release.datafi.version}</version>
-                </dependency>
                 <dependency>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>

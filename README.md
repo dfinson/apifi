@@ -2,8 +2,6 @@
 
 - [Introduction](#introduction)
 * [Installation](#installation)
-    + [Maven](#maven)
-    + [Gradle](#gradle)
 * [Requirements](#requirements)
 * [Hello World](#hello-world)
     + [Domain model](#domain-model)
@@ -22,41 +20,14 @@
 The [Datafi](https://github.com/sindaryn/datafi) library fully automates the generation and use of data access layer code, abstracting away the need for directly dealing with any `JpaRepository`. Apifi takes it to the next level by abstracting away the need to code the service or controller layers. The only thing required for the automatic generation of a full-fledged API, is a correctly annotated data model. This guide assumes the reader has a basic understanding of GraphQL schemas and APIs.
 
 ### Installation
-You can install Apifi using [jitpack](https://jitpack.io/), as follows:
-#### Maven
-First add the [jitpack](https://jitpack.io/) repository:
-```
-<repositories>
-	<repository>
-		<id>jitpack.io</id>
-		<url>https://jitpack.io</url>
-	</repository>
-</repositories>
-```
-Then add the Apifi dependecy:
+
+Apifi is available on maven central:
 ```
 <dependency>
-	<groupId>com.github.sindaryn</groupId>
-		<artifactId>apifi</artifactId>
-	<version>${apifi.version}</version>
+  <groupId>org.sindaryn</groupId>
+    <artifactId>apify</artifactId>
+  <version>0.0.1</version>
 </dependency>
-```
-The "version" here is equivalent to first 7 difits of the commit hash. Simply copy and paste the latest one. The sama applies to gradle, etc.
-#### Gradle
-First add the [jitpack](https://jitpack.io/) repository:
-```
-allprojects {
-	repositories {
-		...
-		maven { url 'https://jitpack.io' }
-	}
-}
-```
-Then add the Apifi dependecy:
-```
-dependencies {
-	implementation 'com.github.sindaryn:apifi:<version>'
-}
 ```
 ### Requirements
 1. The main class must be annotated either with `@SpringBootApplication`, or `@MainClass`.
