@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
       <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__com_github_Dave1324_datafi_de10384.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_sindaryn_datafi_0_0_1.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/libraries/Maven__com_github_sindaryn_datafi_982838e.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
@@ -85,7 +84,7 @@
       <updated>1566119326613</updated>
       <workItem from="1568110615410" duration="643000" />
       <workItem from="1568113358869" duration="919000" />
-      <workItem from="1568542665510" duration="5380000" />
+      <workItem from="1568542665510" duration="5680000" />
     </task>
     <servers />
   </component>

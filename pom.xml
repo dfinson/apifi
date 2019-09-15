@@ -98,6 +98,41 @@
         </plugins>
     </build>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+
+    <name>Apifi</name>
+    <description>
+        Java 8+ annotation processor for auto generation and rapid development of GraphQL APIs
+    </description>
+    <url>https://github.com/sindaryn/apifi</url>
+    <developers>
+        <developer>
+            <name>David Finson</name>
+            <email>david@sindaryn.org</email>
+            <organization>org.sindaryn</organization>
+            <organizationUrl>https://github.com/sindaryn/</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git://github.com/sindaryn/apifi.git</connection>
+        <developerConnection>scm:git:ssh://github.com:sindaryn/apifi.git</developerConnection>
+        <url>http://github.com/sindaryn/apifi</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <profiles>
         <profile>
             <id>dev</id>
