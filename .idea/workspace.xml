@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -82,7 +82,7 @@
       <workItem from="1568113358869" duration="919000" />
       <workItem from="1568542665510" duration="11749000" />
       <workItem from="1568638488384" duration="270000" />
-      <workItem from="1568808297932" duration="10207000" />
+      <workItem from="1568808297932" duration="10717000" />
     </task>
     <servers />
   </component>
