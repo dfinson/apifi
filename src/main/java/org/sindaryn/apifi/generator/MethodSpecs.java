@@ -82,7 +82,7 @@ public class MethodSpecs {
                         .addParameter(String.class, "searchTerm")
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
-                        .addStatement("return $T.fuzzySearch($T.class, $L, $L, searchTerm)",
+                        .addStatement("return $T.fuzzySearch($T.class, $L, $L, searchTerm, offset, limit)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
                                 dataManagerName(entity),//$L
