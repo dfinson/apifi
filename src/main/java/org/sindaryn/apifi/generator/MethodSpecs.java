@@ -26,6 +26,7 @@ import java.util.*;
 
 import static org.reflections.util.ConfigurationBuilder.build;
 import static org.sindaryn.apifi.StaticUtils.*;
+import static org.sindaryn.datafi.StaticUtils.logCompilationError;
 import static org.sindaryn.datafi.StaticUtils.toPlural;
 import static org.sindaryn.datafi.generator.DataLayerAnnotationsProcessor.getIdType;
 
@@ -214,6 +215,11 @@ public class MethodSpecs {
                         .build());
 
         for(String arg : resolver.args()){
+            if(fieldTypes.get(arg) == null)
+                logCompilationError(processingEnvironment, entity,
+                        arg + " was specified as argument for custom resolver of " +
+                                pascalCaseNameOf(entity) + " but " + pascalCaseNameOf(entity) +
+                                " has no field named " + arg);
             builder.addParameter(fieldTypes.get(arg), arg);
         }
         argsToResolver(resolverParams, builder);
