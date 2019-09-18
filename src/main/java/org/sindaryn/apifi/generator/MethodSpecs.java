@@ -62,7 +62,7 @@ public class MethodSpecs {
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
                         .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", null))
-                        .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "ASC"))
+                        .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
                         .addStatement("return $T.getAll($T.class, $L, $L, $L, offset, limit, sortBy, sortDirection)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
@@ -87,7 +87,7 @@ public class MethodSpecs {
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
                         .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", null))
-                        .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "ASC"))
+                        .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
                         .addStatement("return $T.fuzzySearch($T.class, $L, $L, offset, limit, searchTerm, sortBy, sortDirection)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
