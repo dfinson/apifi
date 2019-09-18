@@ -20,33 +20,30 @@ import static org.sindaryn.datafi.StaticUtils.*;
 public interface ApiLogic {
 
     static <T, E extends ApiMetaOperations<T>> 
-    List<T> getAll(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, int offset, int limit) {
+    List<T> getAll(
+            Class<?> clazz, BaseDataManager<T> dataManager, ReflectionCache reflectionCache,
+            E metaOps, int offset, int limit, String sortBy, Sort.Direction sortDirection) {
+        validateSortByIfNonNull(clazz, sortBy, reflectionCache);
         metaOps.preFetchEntitiesInGetAll((Class<T>) clazz);
         var result = 
                 dataManager.findAll((Class<T>) clazz, 
-                generatePageRequest(offset, limit, null, null))
+                generatePageRequest(offset, limit, sortBy, sortDirection))
                 .getContent();
         metaOps.postFetchEntities(result);
         return result;
     }
 
     static <T, E extends ApiMetaOperations<T>>
-    List<T> fuzzySearch(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String searchTerm, int offset, int limit) {
-        if(searchTerm.equals(""))
-            throw new IllegalArgumentException("Illegal attempt to execute a fuzzy search with a blank string");
+    List<T> fuzzySearch(
+            Class<?> clazz, BaseDataManager<T> dataManager,
+            E metaOps, int offset, int limit, String searchTerm,
+            String sortBy, Sort.Direction sortDirection) {
         metaOps.preFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm);
-        var result = dataManager.fuzzySearchBy((Class<T>) clazz, searchTerm, offset, limit);
-        metaOps.postFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm, result);
+        List<T> result = dataManager
+                .fuzzySearchBy((Class<T>) clazz, searchTerm, offset, limit, sortBy, sortDirection);
+        metaOps.postFetchEntitiesInFuzzySearch((Class<T>)clazz, searchTerm, result);
         return result;
     }
-
-    /*static <T> List<T> getAll(
-            Class<?> clazz,
-            BaseDataManager<T> dataManager,
-            int limit, int offset,
-            String sortBy, Sort.Direction sortingDirection) {
-        return dataManager.findAll((Class<T>) clazz, generatePageRequest(offset, limit, sortBy, sortingDirection)).getContent();
-    }*/
 
     static <T, E extends ApiMetaOperations<T>> T 
     getById(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, Object id) {

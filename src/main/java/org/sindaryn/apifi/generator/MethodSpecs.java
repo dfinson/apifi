@@ -14,6 +14,7 @@ import lombok.var;
 import org.sindaryn.apifi.security.SecurityAnnotationsHandler;
 import org.sindaryn.apifi.service.ApiLogic;
 import org.sindaryn.datafi.annotations.WithResolver;
+import org.springframework.data.domain.Sort;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -60,10 +61,13 @@ public class MethodSpecs {
                                 .build())
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
-                        .addStatement("return $T.getAll($T.class, $L, $L, offset, limit)",
+                        .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", "null"))
+                        .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "ASC"))
+                        .addStatement("return $T.getAll($T.class, $L, $L, $L, offset, limit)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
                                 dataManagerName(entity),//$L
+                                reflectionCache,//$L
                                 metaOpsName(entity)//$L
                         )
                         .returns(listOf(entity));

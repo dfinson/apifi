@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Maven__com_github_Dave1324_datafi_e1b9a49.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Maven__com_github_Dave1324_datafi_6907d50.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiLogic.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -84,7 +86,7 @@
       <workItem from="1568113358869" duration="919000" />
       <workItem from="1568542665510" duration="11749000" />
       <workItem from="1568638488384" duration="270000" />
-      <workItem from="1568808297932" duration="4320000" />
+      <workItem from="1568808297932" duration="7162000" />
     </task>
     <servers />
   </component>
