@@ -33,7 +33,7 @@ public class EntitiesInfoCache {
     public boolean isStrongEntity(VariableElement embeddedCollection){
         String typeNameString = getCollectionType(embeddedCollection);
         TypeElement typeElement = typeElementMap.get(typeNameString);
-        if(typeElement == null){
+        /*if(typeElement == null){
             processingEnvironment
                     .getMessager()
                     .printMessage(Diagnostic.Kind.ERROR,
@@ -44,7 +44,7 @@ public class EntitiesInfoCache {
                                     "referencing entity, or annotate " + typeNameString +
                                     " as well.",
                             typeElement);
-        }
+        }*/
         GraphQLApiEntity graphQLApiEntity = typeElement.getAnnotation(GraphQLApiEntity.class);
         return graphQLApiEntity.exposeDirectly();
     }
