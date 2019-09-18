@@ -32,6 +32,8 @@ public interface ApiLogic {
 
     static <T, E extends ApiMetaOperations<T>>
     List<T> fuzzySearch(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String searchTerm) {
+        if(searchTerm.equals(""))
+            throw new IllegalArgumentException("Illegal attempt to execute a fuzzy search with a blank string");
         metaOps.preFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm);
         var result = dataManager.fuzzySearchBy((Class<T>) clazz, searchTerm);
         metaOps.postFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm, result);
