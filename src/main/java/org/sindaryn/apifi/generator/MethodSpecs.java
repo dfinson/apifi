@@ -69,6 +69,26 @@ public class MethodSpecs {
         return builder.build();
     }
 
+    public MethodSpec generateFuzzySearchEndpoint(TypeElement entity) {
+        String queryName = toPlural(camelcaseNameOf(entity)) + "FuzzySearch";
+        MethodSpec.Builder builder =
+                MethodSpec.methodBuilder(queryName)
+                        .addModifiers(Modifier.PUBLIC)
+                        .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
+                                .addMember("name", "$S", queryName)
+                                .build())
+                        .addParameter(String.class, "searchTerm")
+                        .addStatement("return $T.fuzzySearch($T.class, $L, $L, searchTerm)",
+                                ClassName.get(ApiLogic.class),//$T
+                                ClassName.get(entity),//$T
+                                dataManagerName(entity),//$L
+                                metaOpsName(entity)//$L
+                        )
+                        .returns(listOf(entity));
+        handleSecurityAnnotations(builder, entity, READ);
+        return builder.build();
+    }
+
     /*public MethodSpec generateGetAllSortedByEndpoint(TypeElement entity) {
         String queryName = "all" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)

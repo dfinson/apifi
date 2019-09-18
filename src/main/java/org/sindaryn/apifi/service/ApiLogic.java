@@ -30,6 +30,14 @@ public interface ApiLogic {
         return result;
     }
 
+    static <T, E extends ApiMetaOperations<T>>
+    List<T> fuzzySearch(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String searchTerm) {
+        metaOps.preFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm);
+        var result = dataManager.fuzzySearchBy((Class<T>) clazz, searchTerm);
+        metaOps.postFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm, result);
+        return result;
+    }
+
     /*static <T> List<T> getAll(
             Class<?> clazz,
             BaseDataManager<T> dataManager,

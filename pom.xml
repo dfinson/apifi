@@ -15,14 +15,14 @@
     </parent>
 
     <properties>
-        <datafi.version>de10384</datafi.version>
+        <datafi.version>e1b9a49</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <graphql-spqr-spring-boot-starter.version>0.0.4</graphql-spqr-spring-boot-starter.version>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.github.sindaryn</groupId>
+            <groupId>com.github.Dave1324</groupId>
             <artifactId>datafi</artifactId>
             <version>${datafi.version}</version>
         </dependency>

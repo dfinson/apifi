@@ -29,6 +29,8 @@ public class ApiMetaOperations<T> {
     public void preFetchEntityInGetAllBy(List<?> arguments){}
     public void preFetchEntityInCustomResolver(List<?> arguments){}
     public void preFetchEntitiesInGetAll(Class<T> clazz) {}
+    public void preFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm){}
+    public void postFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm, List<T> fetched){}
     public void postFetchEntity(T fetched){}
     public void postFetchEntities(Collection<T> fetched){fetched.forEach(this::postFetchEntity);}
 

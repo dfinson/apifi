@@ -2,7 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/Maven__com_github_sindaryn_datafi_de10384.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/GraphQLApiFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/GraphQLApiFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/generator/MethodSpecs.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiMetaOperations.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/sindaryn/apifi/service/ApiMetaOperations.java" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -80,7 +87,9 @@
       <updated>1566119326613</updated>
       <workItem from="1568110615410" duration="643000" />
       <workItem from="1568113358869" duration="919000" />
-      <workItem from="1568542665510" duration="10193000" />
+      <workItem from="1568542665510" duration="11749000" />
+      <workItem from="1568638488384" duration="270000" />
+      <workItem from="1568808297932" duration="1002000" />
     </task>
     <servers />
   </component>

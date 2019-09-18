@@ -8,10 +8,7 @@ import lombok.val;
 import lombok.var;
 import org.sindaryn.apifi.annotations.GraphQLApiEntity;
 import org.sindaryn.apifi.security.SecurityAnnotationsHandler;
-import org.sindaryn.datafi.annotations.GetAllBy;
-import org.sindaryn.datafi.annotations.GetBy;
-import org.sindaryn.datafi.annotations.GetByUnique;
-import org.sindaryn.datafi.annotations.WithResolver;
+import org.sindaryn.datafi.annotations.*;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -26,6 +23,7 @@ import java.util.*;
 
 import static org.sindaryn.apifi.StaticUtils.getFields;
 import static org.sindaryn.apifi.StaticUtils.isArchivable;
+import static org.sindaryn.datafi.StaticUtils.logCompilationError;
 import static org.sindaryn.datafi.StaticUtils.writeToJavaFile;
 
 /**
@@ -103,8 +101,21 @@ public class GraphQLApiFactory {
         }
         addGetByAndGetAllByResolvers(entity, builder);
         addCustomResolvers(entity, builder);
+        if(isFuzzySearchable(entity)) addFuzzySearchResolver(builder, entity);
         handleSecurityAnnotations(builder, entity);
         writeToJavaFile(simpleClassName, packageName, builder, processingEnvironment, "GraphQL Api Service Bean");
+    }
+
+    private void addFuzzySearchResolver(TypeSpec.Builder builder, TypeElement entity) {
+        builder.addMethod(methodSpecs.generateFuzzySearchEndpoint(entity));
+    }
+
+    private boolean isFuzzySearchable(TypeElement entity) {
+        if(entity.getAnnotation(FuzzySearchByFields.class) != null) return true;
+        for (Element enclosedElement : entity.getEnclosedElements())
+            if (enclosedElement.getKind().isField() && enclosedElement.getAnnotation(FuzzySearchBy.class) != null)
+                return true;
+        return false;
     }
 
     private void addCustomResolvers(TypeElement entity, TypeSpec.Builder builder) {
