@@ -20,7 +20,7 @@ import static org.sindaryn.datafi.StaticUtils.*;
 public interface ApiLogic {
 
     static <T, E extends ApiMetaOperations<T>> 
-    List<T> getAll(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, int limit, int offset) {
+    List<T> getAll(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, int offset, int limit) {
         metaOps.preFetchEntitiesInGetAll((Class<T>) clazz);
         var result = 
                 dataManager.findAll((Class<T>) clazz, 
@@ -31,11 +31,11 @@ public interface ApiLogic {
     }
 
     static <T, E extends ApiMetaOperations<T>>
-    List<T> fuzzySearch(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String searchTerm) {
+    List<T> fuzzySearch(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String searchTerm, int offset, int limit) {
         if(searchTerm.equals(""))
             throw new IllegalArgumentException("Illegal attempt to execute a fuzzy search with a blank string");
         metaOps.preFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm);
-        var result = dataManager.fuzzySearchBy((Class<T>) clazz, searchTerm);
+        var result = dataManager.fuzzySearchBy((Class<T>) clazz, searchTerm, offset, limit);
         metaOps.postFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm, result);
         return result;
     }
@@ -47,16 +47,6 @@ public interface ApiLogic {
             String sortBy, Sort.Direction sortingDirection) {
         return dataManager.findAll((Class<T>) clazz, generatePageRequest(offset, limit, sortBy, sortingDirection)).getContent();
     }*/
-
-    static PageRequest generatePageRequest(int offset, int limit, String sortBy, Sort.Direction sortingDirection) {
-        if (((limit - offset) <= 0) || limit < 0 || offset < 0) {
-            throw new IllegalArgumentException("Invalid paging range");
-        }
-        if (sortBy != null) {
-            return PageRequest.of(offset, limit, Sort.by(sortingDirection, sortBy));
-        } else
-            return PageRequest.of(offset, limit);
-    }
 
     static <T, E extends ApiMetaOperations<T>> T 
     getById(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, Object id) {

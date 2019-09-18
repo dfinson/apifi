@@ -3,6 +3,7 @@ package org.sindaryn.apifi.generator;
 
 import com.squareup.javapoet.*;
 import graphql.execution.batched.Batched;
+import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -22,6 +23,7 @@ import javax.lang.model.element.VariableElement;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
+import static org.reflections.util.ConfigurationBuilder.build;
 import static org.sindaryn.apifi.StaticUtils.*;
 import static org.sindaryn.datafi.StaticUtils.toPlural;
 import static org.sindaryn.datafi.generator.DataLayerAnnotationsProcessor.getIdType;
@@ -56,9 +58,9 @@ public class MethodSpecs {
                         .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
                                 .addMember("name", "$S", queryName)
                                 .build())
-                        .addParameter(TypeName.INT, "limit")
-                        .addParameter(TypeName.INT, "offset")
-                        .addStatement("return $T.getAll($T.class, $L, $L, limit, offset)",
+                        .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
+                        .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
+                        .addStatement("return $T.getAll($T.class, $L, $L, offset, limit)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
                                 dataManagerName(entity),//$L
@@ -78,6 +80,8 @@ public class MethodSpecs {
                                 .addMember("name", "$S", queryName)
                                 .build())
                         .addParameter(String.class, "searchTerm")
+                        .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
+                        .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
                         .addStatement("return $T.fuzzySearch($T.class, $L, $L, searchTerm)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
@@ -636,6 +640,15 @@ public class MethodSpecs {
             mapFieldTypes.put(field.getSimpleName().toString(), ClassName.get(field.asType()));
         }
         return mapFieldTypes;
+    }
+
+    private ParameterSpec graphQLParameter(TypeName typeName, String name, String defaultValue) {
+        return ParameterSpec.builder(typeName, name)
+                .addAnnotation(AnnotationSpec.builder(GraphQLArgument.class)
+                        .addMember("name", "$S", name)
+                        .addMember("defaultValue", "$S", defaultValue)
+                        .build())
+                .build();
     }
 }
 
