@@ -72,6 +72,8 @@ public class GraphQLApiFactory {
                     .addMethod(methodSpecs.generateGetByIdEndpoint(entity))
                     .addMethod(methodSpecs.generateGetCollectionByIdEndpoint(entity));
 
+            if(isFuzzySearchable(entity)) addFuzzySearchResolver(builder, entity);
+
             if(!apiEntityAnnotation.readOnly()){
                 builder
                         .addMethod(methodSpecs.generateAddEndpoint(entity))
@@ -101,7 +103,6 @@ public class GraphQLApiFactory {
         }
         addGetByAndGetAllByResolvers(entity, builder);
         addCustomResolvers(entity, builder);
-        if(isFuzzySearchable(entity)) addFuzzySearchResolver(builder, entity);
         handleSecurityAnnotations(builder, entity);
         writeToJavaFile(simpleClassName, packageName, builder, processingEnvironment, "GraphQL Api Service Bean");
     }
