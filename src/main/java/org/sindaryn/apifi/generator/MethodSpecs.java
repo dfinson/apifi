@@ -26,9 +26,9 @@ import java.util.*;
 
 import static org.reflections.util.ConfigurationBuilder.build;
 import static org.sindaryn.apifi.StaticUtils.*;
+import static org.sindaryn.datafi.StaticUtils.getIdType;
 import static org.sindaryn.datafi.StaticUtils.logCompilationError;
 import static org.sindaryn.datafi.StaticUtils.toPlural;
-import static org.sindaryn.datafi.generator.DataLayerAnnotationsProcessor.getIdType;
 
 /**
  * all api method templates are defined here as Javapoet MethodSpecs

@@ -25,7 +25,6 @@ import java.util.*;
 import static org.sindaryn.apifi.StaticUtils.getGraphQLApiEntities;
 import static org.sindaryn.datafi.StaticUtils.toCamelCase;
 import static org.sindaryn.datafi.StaticUtils.toPascalCase;
-import static org.sindaryn.datafi.generator.DataLayerAnnotationsProcessor.resolveCustomResolvers;
 
 /**
  * Iterates over all elements annotated with @GraphQLApiEntity and generates the complete api
