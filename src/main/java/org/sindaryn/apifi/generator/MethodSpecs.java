@@ -130,8 +130,9 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(getIdType(entity, processingEnvironment), "input")
-                .addStatement("return $T.getById($L, $L, input)",
+                .addStatement("return $T.getById($T, $L, $L, input)",
                         ClassName.get(ApiLogic.class),//$T
+                        ClassName.get(entity),//$T
                         dataManagerName(entity),//$L
                         metaOpsName(entity)//$L
                 )
@@ -341,9 +342,8 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(ParameterSpec.builder(listOf(getIdType(entity, processingEnvironment)), "input").build())
-                .addStatement("return $T.getCollectionById($T.class, $L, input)",
+                .addStatement("return $T.getCollectionById($L, input)",
                         ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(entity),//$T
                         dataManagerName(entity)//$L
                 )
                 .returns(listOf(entity));
