@@ -26,8 +26,7 @@ public interface ApiLogic {
         validateSortByIfNonNull(clazz, sortBy, reflectionCache);
         metaOps.preFetchEntitiesInGetAll((Class<T>) clazz);
         var result = 
-                dataManager.findAll((Class<T>) clazz, 
-                generatePageRequest(offset, limit, sortBy, sortDirection))
+                dataManager.findAll(generatePageRequest(offset, limit, sortBy, sortDirection))
                 .getContent();
         metaOps.postFetchEntities(result);
         return result;
@@ -40,7 +39,7 @@ public interface ApiLogic {
             String sortBy, Sort.Direction sortDirection) {
         metaOps.preFetchEntitiesInFuzzySearch((Class<T>) clazz, searchTerm);
         List<T> result = dataManager
-                .fuzzySearchBy((Class<T>) clazz, searchTerm, offset, limit, sortBy, sortDirection);
+                .fuzzySearchBy(searchTerm, offset, limit, sortBy, sortDirection);
         metaOps.postFetchEntitiesInFuzzySearch((Class<T>)clazz, searchTerm, result);
         return result;
     }
@@ -48,7 +47,7 @@ public interface ApiLogic {
     static <T, E extends ApiMetaOperations<T>> T 
     getById(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, Object id) {
         metaOps.preFetchEntityInGetById(id);
-        var result = dataManager.findById((Class<T>) clazz, id).orElse(null);
+        var result = dataManager.findById(id).orElse(null);
         if(result == null) throwEntityNotFoundException(clazz.getSimpleName(), id);
         metaOps.postFetchEntity(result);
         return result;
@@ -57,32 +56,32 @@ public interface ApiLogic {
     static <T, E extends ApiMetaOperations<T>> T
     getByUnique(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String resolverName, Object argument) {
         metaOps.preFetchEntityInGetByUnique(argument);
-        T result = dataManager.getByUnique((Class<T>) clazz, resolverName, argument).orElse(null);
+        T result = dataManager.getByUnique(resolverName, argument).orElse(null);
         if(result == null) throwEntityNotFoundException(clazz.getSimpleName(), argument);
         metaOps.postFetchEntity(result);
         return result;
     }
 
-    static <T, E extends ApiMetaOperations<T>> List<T>
-    getBy(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String fieldName, Object argument) {
+    static <T, E extends ApiMetaOperations<T>> List<T>//TODO
+    getBy(BaseDataManager<T> dataManager, E metaOps, String fieldName, Object argument) {
         metaOps.preFetchEntityInGetBy(argument);
-        List<T> result = dataManager.getBy((Class<T>) clazz, fieldName, argument);
+        List<T> result = dataManager.getBy(fieldName, argument);
         metaOps.postFetchEntities(result);
         return result;
     }
 
-    static <T, E extends ApiMetaOperations<T>> List<T>
-    getAllBy(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String resolverName, List<?> arguments) {
+    static <T, E extends ApiMetaOperations<T>> List<T>//TODO
+    getAllBy(BaseDataManager<T> dataManager, E metaOps, String resolverName, List<?> arguments) {
         metaOps.preFetchEntityInGetAllBy(arguments);
-        List<T> result = dataManager.getAllBy((Class<T>) clazz, resolverName, arguments.toArray());
+        List<T> result = dataManager.getAllBy(resolverName, arguments.toArray());
         metaOps.postFetchEntities(result);
         return result;
     }
 
-    static <T, E extends ApiMetaOperations<T>> List<T>
-    selectBy(Class<?> clazz, BaseDataManager<T> dataManager, E metaOps, String resolverName, List<?> arguments) {
+    static <T, E extends ApiMetaOperations<T>> List<T>//TODO
+    selectBy(BaseDataManager<T> dataManager, E metaOps, String resolverName, List<?> arguments) {
         metaOps.preFetchEntityInCustomResolver(arguments);
-        List<T> result = dataManager.selectByResolver(clazz, resolverName, arguments.toArray());
+        List<T> result = dataManager.selectByResolver(resolverName, arguments.toArray());
         metaOps.postFetchEntities(result);
         return result;
     }
@@ -112,7 +111,7 @@ public interface ApiLogic {
         final Object id = getId(input, reflectionCache);
         T toDelete = getById(input.getClass(), dataManager, metaOps, id);
         metaOps.preDeleteEntity(toDelete);
-        dataManager.deleteById((Class<T>) input.getClass(), id);
+        dataManager.deleteById(id);
         metaOps.postDeleteEntity(toDelete);
         return toDelete;
     }
@@ -143,8 +142,7 @@ public interface ApiLogic {
 
     static <T extends Archivable, E extends ApiMetaOperations<T>> List<T>
     archiveCollection(ArchivableDataManager<T> dataManager, List<T> input, E metaOps) {
-        Class<?> clazz = input.iterator().next().getClass();
-        List<T> entitiesToArchive = getCollectionById(clazz, dataManager, dataManager.idList(input));
+        List<T> entitiesToArchive = getCollectionById(dataManager, dataManager.idList(input));
         metaOps.preArchiveEntities(entitiesToArchive);
         entitiesToArchive.forEach(entity -> entity.setIsArchived(true));
         List<T> result = dataManager.saveAll(entitiesToArchive);
@@ -154,8 +152,7 @@ public interface ApiLogic {
 
     static <T extends Archivable, E extends ApiMetaOperations<T>> List<T>
     deArchiveCollection(ArchivableDataManager<T> dataManager, List<T> input, E metaOps) {
-        Class<?> clazz = input.iterator().next().getClass();
-        List<T> entitiesToArchive = getCollectionById(clazz, dataManager, dataManager.idList(input));
+        List<T> entitiesToArchive = getCollectionById(dataManager, dataManager.idList(input));
         metaOps.preDeArchiveEntities(entitiesToArchive);
         entitiesToArchive.forEach(entity -> entity.setIsArchived(false));
         List<T> result = dataManager.saveAll(entitiesToArchive);
@@ -163,9 +160,9 @@ public interface ApiLogic {
         return result;
     }
     
-    static <T> List<T>
-    getCollectionById(Class<?> clazz, BaseDataManager<T> dataManager, List<?> ids) {
-        return dataManager.findAllById((Class<T>) clazz, ids);
+    static <T> List<T>//TODO
+    getCollectionById(BaseDataManager<T> dataManager, List<?> ids) {
+        return dataManager.findAllById(ids);
     }
 
     static <T, E extends ApiMetaOperations<T>> List<T>
@@ -178,8 +175,7 @@ public interface ApiLogic {
 
     static <T, E extends ApiMetaOperations<T>> List<T>
     updateCollection(BaseDataManager<T> dataManager, List<T> input, E metaOps) {
-        Class<?> clazz = (Class<T>) input.iterator().next().getClass();
-        List<T> entitiesToUpdate = getCollectionById(clazz, dataManager, dataManager.idList(input));
+        List<T> entitiesToUpdate = getCollectionById(dataManager, dataManager.idList(input));
         metaOps.preUpdateEntities(entitiesToUpdate);
         List<T> result = dataManager.cascadeUpdateCollection(entitiesToUpdate, input);
         metaOps.postUpdateEntities(result);
@@ -188,8 +184,7 @@ public interface ApiLogic {
 
     static <T, E extends ApiMetaOperations<T>>
     List<T> deleteCollection(BaseDataManager<T> dataManager, List<T> input, E metaOps) {
-        Class<?> clazz = (Class<T>) input.iterator().next().getClass();
-        List<T> toDeletes = getCollectionById(clazz, dataManager, dataManager.idList(input));
+        List<T> toDeletes = getCollectionById(dataManager, dataManager.idList(input));
         metaOps.preDeleteEntities(toDeletes);
         dataManager.deleteInBatch(input);
         metaOps.postDeleteEntities(toDeletes);
@@ -198,7 +193,6 @@ public interface ApiLogic {
 
     static <T, HasTs> List<List<T>>
     getAsEmbeddedCollection(
-            Class<?> clazz,
             BaseDataManager<T> dataManager,
             List<HasTs> input,
             String embeddedFieldName,
@@ -206,13 +200,12 @@ public interface ApiLogic {
         List<List<T>> lists = new ArrayList<>();
         input.forEach(IHasTs -> lists.add(
                 dataManager.findAllById(
-                        (Class<T>) clazz,
-                        dataManager.idList(getEmbeddedCollectionFrom(IHasTs, embeddedFieldName, reflectioncache)))));
+                        dataManager.idList(
+                                getEmbeddedCollectionFrom(IHasTs, embeddedFieldName, reflectioncache)))));
         return lists;
     }
 
     static <T, HasT> List<T> getAsEmbeddedEntity(
-            Class<?> clazz,
             BaseDataManager<T> dataManager,
             List<HasT> input,
             String fieldName,
@@ -224,7 +217,7 @@ public interface ApiLogic {
                     .invokeGetter(hasT, fieldName);
             ids.add(getId(embeddedReference, reflectioncache));
         });
-        return dataManager.findAllById((Class<T>) clazz, ids);
+        return dataManager.findAllById(ids);
     }
 
     static <T, HasTs, E extends EmbeddedCollectionMetaOperations<T, HasTs>>
@@ -236,8 +229,7 @@ public interface ApiLogic {
             E metaOps,
             ReflectionCache reflectioncache) {
         var temp = collectionOwnerDataManager
-                .findById((Class<HasTs>) collectionOwner.getClass(),
-                        getId(collectionOwner, reflectioncache)).orElse(null);
+                .findById(getId(collectionOwner, reflectioncache)).orElse(null);
         if (temp == null) throw_entityNotFound(collectionOwner, reflectioncache);
         collectionOwner = temp;
         return updateCollectionAsEmbedded(toUpdateDataManager, toUpdate, collectionOwner, metaOps);
@@ -249,9 +241,7 @@ public interface ApiLogic {
             Iterable<T> toUpdate,
             HasTs collectionOwner,
             E metaOps) {
-        List<T> entitiesToUpdate = getCollectionById(
-                toUpdate.iterator().next().getClass(), toUpdateDataManager,
-                toUpdateDataManager.idList(toUpdate));
+        List<T> entitiesToUpdate = getCollectionById(toUpdateDataManager, toUpdateDataManager.idList(toUpdate));
         metaOps.preUpdate(entitiesToUpdate, collectionOwner);
         val result = toUpdateDataManager.cascadeUpdateCollection(entitiesToUpdate, toUpdate);
         metaOps.postUpdate(result, collectionOwner);
@@ -270,7 +260,7 @@ public interface ApiLogic {
             ReflectionCache reflectioncache) {
 
         //get collection owner
-        var temp = toAddToDataManager.findById((Class<HasTs>) toAddTo.getClass(), getId(toAddTo, reflectioncache)).orElse(null);
+        var temp = toAddToDataManager.findById(getId(toAddTo, reflectioncache)).orElse(null);
         if (temp == null) throw_entityNotFound(toAddTo, reflectioncache);
         toAddTo = temp;
         metaOps.preAttachOrAdd(toAdd, toAddTo);
@@ -304,14 +294,12 @@ public interface ApiLogic {
             E metaOps,
             ReflectionCache reflectioncache) {
         //get collection owner
-        var temp  = toAttachToDataManager.findById((Class<HasTs>) toAttachTo.getClass(), getId(toAttachTo, reflectioncache)).orElse(null);
+        var temp  = toAttachToDataManager.findById(getId(toAttachTo, reflectioncache)).orElse(null);
         if (temp == null) throw_entityNotFound(toAttachTo, reflectioncache);
         toAttachTo = temp;
         metaOps.preAttachOrAdd(toAttach, toAttachTo);
         //validate all candidates are pre-existing
-        List<T> toAttachLoaded = toAttachDataManager.findAllById(
-                (Class<T>) typeFromIterable(toAttach), 
-                toAttachDataManager.idList(toAttach));
+        List<T> toAttachLoaded = toAttachDataManager.findAllById(toAttachDataManager.idList(toAttach));
         if (toAttachLoaded.isEmpty() || toAttachLoaded.size() != toAttach.size())
             throw new IllegalArgumentException("illegal attempt made to indirectly add new strong entities");
         Collection<T> existingCollection = getEmbeddedCollectionFrom(toAttachTo, toCamelCase(embeddedFieldName), reflectioncache);
@@ -341,7 +329,7 @@ public interface ApiLogic {
             ReflectionCache reflectioncache) {
         //get collection owner
         val temp = toRemoveFromDataManager
-                .findById((Class<HasTs>) toRemoveFrom.getClass(), getId(toRemoveFrom, reflectioncache)).orElse(null);
+                .findById(getId(toRemoveFrom, reflectioncache)).orElse(null);
         if(temp == null) throw_entityNotFound(toRemoveFrom, reflectioncache);
         toRemoveFrom = temp;
         //get Set<T> toDelete
@@ -384,9 +372,6 @@ public interface ApiLogic {
     static <T, HasTs> Collection<T> getEmbeddedCollectionFrom(HasTs iHasTs, String fieldName, ReflectionCache reflectioncache) {
         return (Collection<T>) reflectioncache.getEntitiesCache().get(iHasTs.getClass().getSimpleName()).invokeGetter(iHasTs, fieldName);
     }
-    
-    static <T> Class<?> typeFromIterable(Iterable<T> iterable){
-        return iterable.iterator().next().getClass();
-    }
+
 }
 
