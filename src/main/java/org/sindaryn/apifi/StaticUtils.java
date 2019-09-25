@@ -3,7 +3,7 @@ package org.sindaryn.apifi;
 import com.google.common.collect.Sets;
 import com.squareup.javapoet.*;
 import lombok.var;
-import org.sindaryn.apifi.annotations.GraphQLApiEntity;
+
 import org.sindaryn.apifi.annotations.MetaOperations;
 import org.sindaryn.apifi.service.EmbeddedCollectionMetaOperations;
 import org.sindaryn.datafi.persistence.Archivable;
@@ -19,8 +19,7 @@ import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
-import static org.sindaryn.datafi.StaticUtils.toCamelCase;
-import static org.sindaryn.datafi.StaticUtils.toPascalCase;
+import static org.sindaryn.datafi.StaticUtils.*;
 
 public abstract class StaticUtils {
     public static List<VariableElement> getFields(TypeElement typeElement){
@@ -42,13 +41,7 @@ public abstract class StaticUtils {
 
     @SuppressWarnings("unchecked")
     public static Set<? extends TypeElement> getGraphQLApiEntities(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
-        Set<TypeElement> entities = new HashSet<>();
-        for (TypeElement annotationType : annotations) {
-            if (annotationType.getQualifiedName().toString().equals(GraphQLApiEntity.class.getCanonicalName())) {
-                entities.addAll((Collection<? extends TypeElement>) roundEnvironment.getElementsAnnotatedWith(annotationType));
-            }
-        }
-        return Sets.newHashSet(entities);
+        return getEntitiesSet(roundEnvironment);
     }
 
     public static TypeName listOf(TypeElement element) {

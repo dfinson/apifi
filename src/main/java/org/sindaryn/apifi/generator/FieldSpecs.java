@@ -3,14 +3,17 @@ package org.sindaryn.apifi.generator;
 import com.squareup.javapoet.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.sindaryn.apifi.annotations.GraphQLApiEntity;
+
+import org.sindaryn.apifi.annotations.ApiLevelMetaOperations;
 import org.sindaryn.apifi.annotations.MetaOperations;
+import org.sindaryn.apifi.service.ApiMetaOperations;
 import org.sindaryn.apifi.service.EmbeddedCollectionMetaOperations;
 import org.sindaryn.datafi.persistence.Archivable;
 import org.sindaryn.datafi.reflection.ReflectionCache;
 import org.sindaryn.datafi.service.ArchivableDataManager;
 import org.sindaryn.datafi.service.DataManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.TypeUtils;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Modifier;
@@ -61,8 +64,9 @@ public class FieldSpecs {
                 .build();
     }
 
-    public FieldSpec metaOps(GraphQLApiEntity apiEntityAnnotation, TypeElement entity) {
-        TypeElement metaOps = apiMetaOpsClazz(apiEntityAnnotation);
+    public FieldSpec metaOps(TypeElement entity) {
+        ApiLevelMetaOperations apiLevelMetaOperations = entity.getAnnotation(ApiLevelMetaOperations.class);
+        TypeElement metaOps = apiMetaOpsClazz(apiLevelMetaOperations);
         return FieldSpec.builder(
                 ParameterizedTypeName.get(ClassName.get(metaOps), ClassName.get(entity)),
                 metaOpsName(entity))
@@ -73,10 +77,12 @@ public class FieldSpecs {
 
     //This is the most concise solution I could find for accessing a class type token
     //within an annotations processor... weird I know.
-    private TypeElement apiMetaOpsClazz(GraphQLApiEntity apiEntity){
+    private TypeElement apiMetaOpsClazz(ApiLevelMetaOperations metaOperations){
+        if(metaOperations == null)
+            return processingEnv.getElementUtils().getTypeElement(ApiMetaOperations.class.getCanonicalName());
         try
         {
-            apiEntity.apiMetaOperations(); // this should throw
+            metaOperations.value(); // this should throw
         }
         //the type token is in the exception itself
         catch( MirroredTypeException mte )

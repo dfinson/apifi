@@ -6,7 +6,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import lombok.var;
-import org.sindaryn.apifi.annotations.GraphQLApiEntity;
+
+import org.sindaryn.apifi.annotations.ApiReadOnly;
+import org.sindaryn.apifi.annotations.NonDirectlyExposed;
 import org.sindaryn.apifi.security.SecurityAnnotationsHandler;
 import org.sindaryn.datafi.annotations.*;
 import org.springframework.stereotype.Service;
@@ -15,15 +17,12 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.persistence.*;
 import javax.transaction.Transactional;
-import java.lang.annotation.Annotation;
 import java.util.*;
 
 import static org.sindaryn.apifi.StaticUtils.getFields;
 import static org.sindaryn.apifi.StaticUtils.isArchivable;
-import static org.sindaryn.datafi.StaticUtils.logCompilationError;
 import static org.sindaryn.datafi.StaticUtils.writeToJavaFile;
 
 /**
@@ -58,23 +57,17 @@ public class GraphQLApiFactory {
                 .addAnnotation(Service.class)
                 .addAnnotation(Transactional.class)
                 .addAnnotation(GraphQLApi.class);
-        //.. fetch the annotation
-        GraphQLApiEntity apiEntityAnnotation = entity.getAnnotation(GraphQLApiEntity.class);
-
-
-        //and begin!
 
         //if this
-        if(apiEntityAnnotation.exposeDirectly()){
+        if(entity.getAnnotation(NonDirectlyExposed.class) == null){
             builder
                     .addMethod(methodSpecs.generateGetAllEndpoint(entity))
-                    /*.addMethod(methodSpecs.generateGetAllSortedByEndpoint(entity))*/
                     .addMethod(methodSpecs.generateGetByIdEndpoint(entity))
                     .addMethod(methodSpecs.generateGetCollectionByIdEndpoint(entity));
 
             if(isFuzzySearchable(entity)) addFuzzySearchResolver(builder, entity);
 
-            if(!apiEntityAnnotation.readOnly()){
+            if(entity.getAnnotation(ApiReadOnly.class) == null){
                 builder
                         .addMethod(methodSpecs.generateAddEndpoint(entity))
                         .addMethod(methodSpecs.generateUpdateEndpoint(entity))
@@ -93,7 +86,7 @@ public class GraphQLApiFactory {
             }
         }
         builder
-                .addField(fieldSpecs.metaOps(apiEntityAnnotation, entity))
+                .addField(fieldSpecs.metaOps(entity))
                 .addField(fieldSpecs.reflectionCache())
                 .addField(fieldSpecs.dataManager(entity));
 
@@ -156,7 +149,7 @@ public class GraphQLApiFactory {
                 addDataManager(field, builder, typeArgs);
             }
             //add to collection
-            if(entitiesInfoCache.isStrongEntity(field)){
+            if(entitiesInfoCache.exposeDirectly(field)){
                 builder.addMethod(methodSpecs.generateAttachExistingToEmbeddedCollection(field, entity));
             }else {
                 builder.addMethod(methodSpecs.generateAddNewToEmbeddedCollection(field, entity));

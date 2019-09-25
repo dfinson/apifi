@@ -1,5 +1,6 @@
 package org.sindaryn.apifi.annotations;
 
+import org.sindaryn.apifi.service.ApiMetaOperations;
 import org.sindaryn.apifi.service.EmbeddedCollectionMetaOperations;
 import org.springframework.core.annotation.AliasFor;
 
@@ -8,13 +9,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Allows for custom business logic when pre/post mutating the state of the annotated Iterable<> field
- */
-@Target(ElementType.FIELD)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MetaOperations {
+public @interface ApiLevelMetaOperations {
     @AliasFor("value")
-    Class<? extends EmbeddedCollectionMetaOperations> metaOps();
-    Class<? extends EmbeddedCollectionMetaOperations> value();
+    Class<? extends ApiMetaOperations> metaOps();
+    Class<? extends ApiMetaOperations> value();
 }

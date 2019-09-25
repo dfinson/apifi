@@ -4,7 +4,7 @@ import com.google.auto.service.AutoService;
 import com.google.common.collect.Sets;
 import com.squareup.javapoet.*;
 import io.leangen.graphql.spqr.spring.annotations.GraphQLApi;
-import org.sindaryn.apifi.annotations.GraphQLApiEntity;
+
 import org.sindaryn.datafi.annotations.GetBy;
 import org.sindaryn.datafi.annotations.WithResolver;
 import org.sindaryn.datafi.reflection.ReflectionCache;
