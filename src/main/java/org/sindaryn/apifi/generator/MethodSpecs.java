@@ -57,9 +57,7 @@ public class MethodSpecs {
         MethodSpec.Builder builder =
                 MethodSpec.methodBuilder(queryName)
                         .addModifiers(Modifier.PUBLIC)
-                        .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                                .addMember("name", "$S", queryName)
-                                .build())
+                        .addAnnotation(GraphQLQuery.class)
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
                         .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", null))
@@ -81,9 +79,7 @@ public class MethodSpecs {
         MethodSpec.Builder builder =
                 MethodSpec.methodBuilder(queryName)
                         .addModifiers(Modifier.PUBLIC)
-                        .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                                .addMember("name", "$S", queryName)
-                                .build())
+                        .addAnnotation(GraphQLQuery.class)
                         .addParameter(String.class, "searchTerm")
                         .addParameter(graphQLParameter(TypeName.INT, "offset", "0"))
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
@@ -100,35 +96,11 @@ public class MethodSpecs {
         return builder.build();
     }
 
-    /*public MethodSpec generateGetAllSortedByEndpoint(TypeElement entity) {
-        String queryName = "all" + toPlural(pascalCaseNameOf(entity));
-        MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
-                .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
-                .addParameter(TypeName.INT, "limit")
-                .addParameter(TypeName.INT, "offset")
-                .addParameter(String.class, "sortedBy")
-                .addParameter(Sort.Direction.class, "sortingDirection")
-                .addStatement("return $T.getAll($T.class, $L, limit, offset, sortedBy, sortingDirection)",
-                        ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(entity),//$T
-                        dataManagerName(entity)//$L
-                )
-                .returns(listOf(entity));
-        handleSecurityAnnotations(builder, entity, READ);
-        return builder.build();
-    }*/
-
-
     public MethodSpec generateGetByIdEndpoint(TypeElement entity) {
         String queryName = "get" + pascalCaseNameOf(entity) + "ById";
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(getIdType(entity, processingEnvironment), "input")
                 .addStatement("return $T.getById($T.class, $L, $L, input)",
                         ClassName.get(ApiLogic.class),//$T
@@ -146,9 +118,7 @@ public class MethodSpecs {
         String fieldName = field.getSimpleName().toString();
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(ClassName.get(field.asType()), fieldName)
                 .addStatement("return $T.getByUnique($T.class, $L, $L, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
@@ -167,9 +137,7 @@ public class MethodSpecs {
         String fieldName = field.getSimpleName().toString();
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(ClassName.get(field.asType()), fieldName)
                 .addStatement("return $T.getBy($T.class, $L, $L, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
@@ -188,9 +156,7 @@ public class MethodSpecs {
         String fieldName = field.getSimpleName().toString();
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(listOf(field), toPlural(fieldName))
                 .addStatement("return $T.getAllBy($T.class, $L, $L, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
@@ -210,9 +176,7 @@ public class MethodSpecs {
         String resolverParams = resolverParams(resolver);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build());
+                .addAnnotation(GraphQLQuery.class);
 
         for(String arg : resolver.args()){
             if(fieldTypes.get(arg) == null)
@@ -239,9 +203,7 @@ public class MethodSpecs {
         String mutationName = "add" + pascalCaseNameOf(entity);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(parameterizeType(entity))
                 .addStatement("$T entity = $T.add($L, input, $L)",
                         ClassName.get(entity),//$T
@@ -258,9 +220,7 @@ public class MethodSpecs {
         String mutationName = "update" + pascalCaseNameOf(entity);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(parameterizeType(entity))
                 .addStatement("$T entity = $T.update($L, input, $L, $L)",
                         ClassName.get(entity),//$T
@@ -278,9 +238,7 @@ public class MethodSpecs {
         String mutationName = "archive" + pascalCaseNameOf(entity);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(parameterizeType(entity))
                 .addStatement("$T entity = $T.archive($L, input, $L, $L)",
                         ClassName.get(entity),//$T
@@ -298,9 +256,7 @@ public class MethodSpecs {
         String mutationName = "deArchive" + pascalCaseNameOf(entity);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(parameterizeType(entity))
                 .addStatement("$T entity = $T.deArchive($L, input, $L, $L)",
                         ClassName.get(entity),//$T
@@ -318,9 +274,7 @@ public class MethodSpecs {
         String mutationName = "delete" + pascalCaseNameOf(entity);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(parameterizeType(entity))
                 .addStatement("$T entity = $T.delete($L, $L, input, $L)",
                         ClassName.get(entity),//$T
@@ -338,9 +292,7 @@ public class MethodSpecs {
         String queryName = "get" + toPlural(pascalCaseNameOf(entity)) + "ById";
         MethodSpec.Builder builder = MethodSpec.methodBuilder(queryName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(ParameterSpec.builder(listOf(getIdType(entity, processingEnvironment)), "input").build())
                 .addStatement("return $T.getCollectionById($L, input)",
                         ClassName.get(ApiLogic.class),//$T
@@ -355,9 +307,7 @@ public class MethodSpecs {
         String mutationName = "add" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asParamList(entity))
                 .addStatement("$L = $T.addCollection($L, input, $L)",
                         entitiesList(entity),//$L
@@ -375,9 +325,7 @@ public class MethodSpecs {
         String mutationName = "update" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asParamList(entity))
                 .addStatement("$L = $T.updateCollection($L, input, $L)",
                         entitiesList(entity),//$L
@@ -395,9 +343,7 @@ public class MethodSpecs {
         String mutationName = "archive" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asParamList(entity))
                 .addStatement("$L = $T.archiveCollection($L, input, $L)",
                         entitiesList(entity),//$L
@@ -415,9 +361,7 @@ public class MethodSpecs {
         String mutationName = "deArchive" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asParamList(entity))
                 .addStatement("$L = $T.deArchiveCollection($L, input, $L)",
                         entitiesList(entity),//$L
@@ -435,9 +379,7 @@ public class MethodSpecs {
         String mutationName = "delete" + toPlural(pascalCaseNameOf(entity));
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asParamList(entity))
                 .addStatement("$L = $T.deleteCollection($L, input, $L)",
                         entitiesList(entity),//$L
@@ -459,9 +401,7 @@ public class MethodSpecs {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(suppressDeprecationWarning())
                 .addAnnotation(Batched.class)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(input)
                 .addStatement("return $T.getAsEmbeddedEntity($L, input, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
@@ -482,9 +422,7 @@ public class MethodSpecs {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(suppressDeprecationWarning())
                 .addAnnotation(Batched.class)
-                .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                        .addMember("name", "$S", queryName)
-                        .build())
+                .addAnnotation(GraphQLQuery.class)
                 .addParameter(input)
                 .addStatement("return $T.getAsEmbeddedCollection($L, input, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
@@ -501,9 +439,7 @@ public class MethodSpecs {
         String mutationName = "addNew" + pascalCaseNameOf(embedded) + "To" + pascalCaseNameOf(owner);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asEmbeddedCollectionParamList(embedded))
                 .addParameter(ParameterSpec.builder(ClassName.get(owner), camelcaseNameOf(owner)).build())
                 .addStatement("return $T.addNewToEmbeddedCollection($L, $L, $L, $S, input, $L, $L)",
@@ -524,9 +460,7 @@ public class MethodSpecs {
         String mutationName = "attachExisting" + pascalCaseNameOf(embedded) + "To" + pascalCaseNameOf(owner);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asEmbeddedCollectionParamList(embedded))
                 .addParameter(ParameterSpec.builder(ClassName.get(owner), camelcaseNameOf(owner)).build())
                 .addStatement("return $T.attachExistingToEmbeddedCollection($L, $L, $L, $S, input, $L, $L)",
@@ -547,9 +481,7 @@ public class MethodSpecs {
         String mutationName = "update" + pascalCaseNameOf(embedded) + "In" + pascalCaseNameOf(owner);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asEmbeddedCollectionParamList(embedded))
                 .addParameter(ParameterSpec.builder(ClassName.get(owner), camelcaseNameOf(owner)).build())
                 .addStatement("return $T.updateEmbeddedCollection($L, $L, $L, input, $L, $L)",
@@ -570,9 +502,7 @@ public class MethodSpecs {
         String mutationName = "remove" + pascalCaseNameOf(embedded) + "From" + pascalCaseNameOf(owner);
         MethodSpec.Builder builder = MethodSpec.methodBuilder(mutationName)
                 .addModifiers(Modifier.PUBLIC)
-                .addAnnotation(AnnotationSpec.builder(GraphQLMutation.class)
-                        .addMember("name", "$S", mutationName)
-                        .build())
+                .addAnnotation(GraphQLMutation.class)
                 .addParameter(asEmbeddedCollectionParamList(embedded))
                 .addParameter(ParameterSpec.builder(ClassName.get(owner), camelcaseNameOf(owner)).build())
                 .addStatement("return $T.removeFromEmbeddedCollection($L, $L, $L, $S, input, $L, $L)",
