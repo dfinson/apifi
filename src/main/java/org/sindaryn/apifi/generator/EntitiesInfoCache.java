@@ -4,7 +4,7 @@ package org.sindaryn.apifi.generator;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
-import org.sindaryn.apifi.annotations.NonDirectlyExposed;
+import org.sindaryn.apifi.annotations.NonDirectlyExposable;
 
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -29,7 +29,7 @@ public class EntitiesInfoCache {
     public boolean exposeDirectly(VariableElement embeddedCollection){
         String typeNameString = getCollectionType(embeddedCollection);
         TypeElement typeElement = typeElementMap.get(typeNameString);
-        return typeElement.getAnnotation(NonDirectlyExposed.class) == null;
+        return typeElement.getAnnotation(NonDirectlyExposable.class) == null;
     }
     public String getCollectionType(VariableElement element){
         return element

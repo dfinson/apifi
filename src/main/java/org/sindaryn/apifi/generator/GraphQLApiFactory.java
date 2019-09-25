@@ -8,7 +8,7 @@ import lombok.val;
 import lombok.var;
 
 import org.sindaryn.apifi.annotations.ApiReadOnly;
-import org.sindaryn.apifi.annotations.NonDirectlyExposed;
+import org.sindaryn.apifi.annotations.NonDirectlyExposable;
 import org.sindaryn.apifi.security.SecurityAnnotationsHandler;
 import org.sindaryn.datafi.annotations.*;
 import org.springframework.stereotype.Service;
@@ -59,7 +59,7 @@ public class GraphQLApiFactory {
                 .addAnnotation(GraphQLApi.class);
 
         //if this
-        if(entity.getAnnotation(NonDirectlyExposed.class) == null){
+        if(entity.getAnnotation(NonDirectlyExposable.class) == null){
             builder
                     .addMethod(methodSpecs.generateGetAllEndpoint(entity))
                     .addMethod(methodSpecs.generateGetByIdEndpoint(entity))
