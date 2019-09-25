@@ -130,9 +130,8 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(getIdType(entity, processingEnvironment), "input")
-                .addStatement("return $T.getById($T.class, $L, $L, input)",
+                .addStatement("return $T.getById($L, $L, input)",
                         ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(entity),//$T
                         dataManagerName(entity),//$L
                         metaOpsName(entity)//$L
                 )
@@ -488,9 +487,8 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(input)
-                .addStatement("return $T.getAsEmbeddedCollection($T.class, $L, input, $S, $L)",
+                .addStatement("return $T.getAsEmbeddedCollection($L, input, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
-                        collectionTypeName(embedded),//$T
                         dataManagerName(embedded),//$L
                         camelcaseNameOf(embedded),//$S
                         reflectionCache//$L
