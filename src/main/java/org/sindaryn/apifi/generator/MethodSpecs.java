@@ -463,9 +463,8 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(input)
-                .addStatement("return $T.getAsEmbeddedEntity($T.class, $L, input, $S, $L)",
+                .addStatement("return $T.getAsEmbeddedEntity($L, input, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(embedded.asType()),//$T
                         dataManagerName(embedded),//$L
                         embedded.getSimpleName(),//$S
                         reflectionCache//$L
