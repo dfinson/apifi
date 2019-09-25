@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <datafi.version>53bf0b6</datafi.version>
+        <datafi.version>de22344</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <graphql-spqr-spring-boot-starter.version>0.0.4</graphql-spqr-spring-boot-starter.version>
     </properties>
