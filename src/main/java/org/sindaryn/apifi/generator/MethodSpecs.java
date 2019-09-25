@@ -130,7 +130,7 @@ public class MethodSpecs {
                         .addMember("name", "$S", queryName)
                         .build())
                 .addParameter(getIdType(entity, processingEnvironment), "input")
-                .addStatement("return $T.getById($T, $L, $L, input)",
+                .addStatement("return $T.getById($T.class, $L, $L, input)",
                         ClassName.get(ApiLogic.class),//$T
                         ClassName.get(entity),//$T
                         dataManagerName(entity),//$L
