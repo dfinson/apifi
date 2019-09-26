@@ -7,7 +7,7 @@
     + [Domain model](#domain-model)
     + [Service layer](#service-layer)
 * [The standard CRUD schema](#the-standard-crud-schema)
-* [@GraphQLApiEntity](#-graphqlapientity)
+* [Entity level API configuration](#entity-level-api-configuration)
 * [Custom resolvers](#custom-resolvers)
 * [Collections](#collections)
 * [ApiMetaOperations<T>](#apimetaoperations-t-)
@@ -26,19 +26,18 @@ Apifi is available on maven central:
 <dependency>
   <groupId>org.sindaryn</groupId>
     <artifactId>apify</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 ```
 ### Requirements
-1. The main class must be annotated either with `@SpringBootApplication`, or `@MainClass`.
-2. All entities **must** have a public `getId()` method.
+1. All entities **must** have a public `getId()` method.
 
 ### Hello World
-Apifi autogenerates GraphQL Service beans, containing all requisite queries and resolvers for data model entities annotated with `@GraphQLApiEntity`.
+Apifi autogenerates GraphQL Service beans, containing all requisite queries and resolvers for data model entities annotated with `@Entity` and / or `@Table`.
 #### Domain model
 ```
 @Entity
-@GraphQLApiEntity
+
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -57,52 +56,52 @@ public class PersonGraphQLService {
 
   /* ... various injected dependencies ... */ 
   
-  @GraphQLQuery(name = "allPersons")
+  @GraphQLQuery
   public List<Person> allPersons(int limit, int offset) {
-    return ApiLogic.getAll(Person.class, personDataManager, limit, offset);
+    return ApiLogic.getAll(personDataManager, limit, offset);
   }
 
-  @GraphQLQuery(name = "getPersonById")
+  @GraphQLQuery
   public Person getPersonById(String input) {
-    return ApiLogic.getById(Person.class, personDataManager,input);
+    return ApiLogic.getById(personDataManager,input);
   }
 
-  @GraphQLQuery(name = "getPersonsById")
+  @GraphQLQuery
   public List<Person> getPersonsById(List<String> input) {
-    return ApiLogic.getCollectionById(Person.class, personDataManager, input);
+    return ApiLogic.getCollectionById(personDataManager, input);
   }
 
-  @GraphQLMutation(name = "addPerson")
+  @GraphQLMutation
   public Person addPerson(Person input) {
     Person entity = ApiLogic.add(personDataManager, input, personMetaOperations);
     return entity;
   }
 
-  @GraphQLMutation(name = "updatePerson")
+  @GraphQLMutation
   public Person updatePerson(Person input) {
     Person entity = ApiLogic.update(personDataManager, input, reflectionCache, personMetaOperations);
     return entity;
   }
 
-  @GraphQLMutation(name = "deletePerson")
+  @GraphQLMutation
   public Person deletePerson(Person input) {
     Person entity = ApiLogic.delete(personDataManager, reflectionCache, input, personMetaOperations);
     return entity;
   }
 
-  @GraphQLMutation(name = "addPersons")
+  @GraphQLMutation
   public List<Person> addPersons(List<Person> input) {
     List<Person> entities = ApiLogic.addCollection(personDataManager, input, personMetaOperations);
     return entities;
   }
 
-  @GraphQLMutation(name = "updatePersons")
+  @GraphQLMutation
   public List<Person> updatePersons(List<Person> input) {
     List<Person> entities = ApiLogic.updateCollection(personDataManager, input, personMetaOperations);
     return entities;
   }
 
-  @GraphQLMutation(name = "deletePersons")
+  @GraphQLMutation
   public List<Person> deletePersons(List<Person> input) {
     List<Person> entities = ApiLogic.deleteCollection(personDataManager, input, personMetaOperations);
     return entities;
@@ -120,9 +119,9 @@ As in the above example, the standard, baseline graphql schema which is autogene
 1. `all...`
     
     ```
-    @GraphQLQuery(name = "allPersons")
+    @GraphQLQuery
       public List<Person> allPersons(int limit, int offset) {
-        return ApiLogic.getAll(Person.class, personDataManager, limit, offset);
+        return ApiLogic.getAll(personDataManager, limit, offset);
       }
    ```
     **Input**: The paging `limit` and `offset` which tell the API how many results per page to return.
@@ -131,9 +130,9 @@ As in the above example, the standard, baseline graphql schema which is autogene
 2. `get...ById`
     
     ```
-      @GraphQLQuery(name = "getPersonById")
+      @GraphQLQuery
       public Person getPersonById(String input) {
-        return ApiLogic.getById(Person.class, personDataManager,input);
+        return ApiLogic.getById(personDataManager,input);
       }
    ```
     **Input**: The id value by which to find the required entity instance.
@@ -141,9 +140,9 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 3. `get...sById`
     ```
-      @GraphQLQuery(name = "getPersonsById")
+      @GraphQLQuery
       public List<Person> getPersonsById(List<String> input) {
-        return ApiLogic.getCollectionById(Person.class, personDataManager, input);
+        return ApiLogic.getCollectionById(personDataManager, input);
       }
    ```
     **Input**: The id values by which to find the required entity instances.
@@ -151,7 +150,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 4. `add...`
     ```
-      @GraphQLMutation(name = "addPerson")
+      @GraphQLMutation
       public Person addPerson(Person input) {
         Person entity = ApiLogic.add(personDataManager, input, personMetaOperations);
         return entity;
@@ -162,7 +161,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 5. `update...`
     ```
-      @GraphQLMutation(name = "updatePerson")
+      @GraphQLMutation
       public Person updatePerson(Person input) {
         Person entity = ApiLogic.update(personDataManager, input, reflectionCache, personMetaOperations);
         return entity;
@@ -173,7 +172,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 6. `delete...`
     ```
-      @GraphQLMutation(name = "deletePerson")
+      @GraphQLMutation
       public Person deletePerson(Person input) {
         Person entity = ApiLogic.delete(personDataManager, reflectionCache, input, personMetaOperations);
         return entity;
@@ -184,7 +183,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 7. `add...s`
     ```
-        @GraphQLMutation(name = "addPersons")
+        @GraphQLMutation
         public List<Person> addPersons(List<Person> input) {
         List<Person> entities = ApiLogic.addCollection(personDataManager, input, personMetaOperations);
         return entities;
@@ -195,7 +194,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 8. `update...s`
     ```
-      @GraphQLMutation(name = "updatePersons")
+      @GraphQLMutation
       public List<Person> updatePersons(List<Person> input) {
         List<Person> entities = ApiLogic.updateCollection(personDataManager, input, personMetaOperations);
         return entities;
@@ -206,7 +205,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
 9. `delete...s`
     ```
-      @GraphQLMutation(name = "deletePersons")
+      @GraphQLMutation
       public List<Person> deletePersons(List<Person> input) {
         List<Person> entities = ApiLogic.deleteCollection(personDataManager, input, personMetaOperations);
         return entities;
@@ -215,11 +214,12 @@ As in the above example, the standard, baseline graphql schema which is autogene
     **Input**: A list of entities to delete.
     **Output**: The newly deleted entities.
     
-### @GraphQLApiEntity
-This annotation tells marks an entity for inclusion within the autogenerated API schema. It accepts three arguments:
-1. `boolean exposeDirectly() default true;`: Tells Apifi whether this is an entity which should have it's own top-level queries and mutations exposed as part of the api schema. This is set to `true` by default, but it should be noted that in certain instances this should be set to `false`. For example, assume say we have two entities; `Car` and `SteeringWheel`. It's fairly obvious that in this case the **composite entity** called `SteeringWheel` has no independent lifecycle and is instantiable only within the context of `Car`. In this case, `Car` should be exposed directly as part of the schema, as opposed to `SteeringWheel`, which should be accessable and mutatable only by way of the queries and resolvers exposed by the `Car` graphql service.
-2. `boolean readOnly() default false;`: Assuming the previous value is set to `true`, this flag determines whether both the queries **and** mutations are to be included in the schema, or just the queries. This is useful when designating certain components of a given data model as read-only, with no possibility of state mutation via the API.
-3. `Class<? extends ApiMetaOperations> apiMetaOperations() default ApiMetaOperations.class;`: Often times, additional logical operations are required before and / or after the execution of a mutation. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended in order to achieve this. We'll get into it in more depth a bit further on.
+### Entity level API configuration
+By default, Apifi generates one of these service beans for all entities / tables. There are however several entity level annotations which can modilfy or extend this default behavior:
+
+1. `@NonDirectlyExposable`: Tells Apifi that this is an entity which should **not** have it's own top-level queries and mutations exposed as part of the api schema. This is useful if for example,  we have two entities; `Car` and `SteeringWheel`. It's fairly obvious that in this case the **composite entity** called `SteeringWheel` has no independent lifecycle and is instantiable only within the context of `Car`. In this case, `Car` should be exposed directly as part of the schema, as opposed to `SteeringWheel`, which should be accessable and mutatable only by way of the queries and resolvers exposed by the `Car` graphql service.
+2. `@ApiReadOnly`:  Assuming the previous annotation is **not** present, this annotation tells Apifi to only include GraphQL queries but not mutations in the generated GraphQLService bean. This is useful when designating certain components of a given data model as read-only, with no possibility of state mutation via the API.
+3. `@ApiLevelMetaOperations`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended in order to achieve this. We'll get into it in more depth a bit further on.
 
 ### Custom resolvers 
 
@@ -227,7 +227,6 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
 1. `@GetBy`: To fetch a list of entity instances with the search criteria being the value of a specific field, the field can be annotated with the `@GetBy` annotation and a custom `List<...> get...By...(field value as arg)` resolver will be added to the GraphQL service bean. For example: 
     ```
     @Entity
-    @GraphQLApiEntity
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
@@ -243,9 +242,9 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     PersonGraphQLService{
     ...
       //fetch a list of people who are "age" years old
-      @GraphQLQuery(name = "getPersonsByAge")
+      @GraphQLQuery
       public List<Person> getPersonsByAge(Integer age) {
-        return ApiLogic.getBy(Person.class, personDataManager, "age", age);
+        return ApiLogic.getBy(personDataManager, "age", age);
       }
     ...
     }
@@ -253,7 +252,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
 2. `@GetAllBy`: To fetch a list of entity instances with the search criteria being the value of a specific field being contained within a list of corresponding inputted values, the field can be annotated with the `@GetAllBy` annotation and a custom `List<...> getAll...By...(list of field values to look for)` resolver will be added to the GraphQL service bean. For example:
     ```
     @Entity
-    @GraphQLApiEntity
+    
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
@@ -269,9 +268,9 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     PersonGraphQLService{
     ...
       //fetch a list of people whos name is included in the "names" list
-      @GraphQLQuery(name = "getAllPersonsByNames")
+      @GraphQLQuery
       public List<Person> getAllPersonsByNames(List<String> names) {
-        return ApiLogic.getAllBy(Person.class, personDataManager, "name", names);
+        return ApiLogic.getAllBy(personDataManager, "name", names);
       }
     ...
     }
@@ -279,7 +278,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
 3. `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` resolver will be added to the GraphQL service bean. For example:
     ```
     @Entity
-    @GraphQLApiEntity
+    
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
@@ -295,9 +294,9 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     @...
     PersonGraphQLService{
       ...
-      @GraphQLQuery(name = "getPersonBySocialSecurityNumber")
+      @GraphQLQuery
       public Person getPersonBySocialSecurityNumber(String socialSecurityNumber) {
-        return ApiLogic.getByUnique(Person.class, personDataManager, "socialSecurityNumber", socialSecurityNumber);
+        return ApiLogic.getByUnique(personDataManager, "socialSecurityNumber", socialSecurityNumber);
       }
     ...
     }
@@ -307,7 +306,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     In any event, here is an example of `@WithResolver` usage:
     ```
     @Entity
-    @GraphQLApiEntity
+    
     @WithResolver(name = "getPersonsByNameOrAge", where = "p.name = :name OR p.age = :age", args = {"name", "age"})
     public class Person {
         @Id
@@ -322,10 +321,10 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     @...
     PersonGraphQLService{
     ...
-      @GraphQLQuery(name = "getPersonsByNameOrAge")
+      @GraphQLQuery
       public List<Person> getPersonsByNameOrAge(String name, Integer age) {
         List<Object> args = Arrays.asList(name, age);
-        return ApiLogic.selectBy(Person.class, personDataManager, "getPersonsByNameOrAge", args);
+        return ApiLogic.selectBy(personDataManager, "getPersonsByNameOrAge", args);
       }
     ...
     }
@@ -337,7 +336,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
 
 ```
 @Entity
-@GraphQLApiEntity
+
 public class Person {
     @Id
     private String id = UUID.randomUUID().toString();
@@ -351,7 +350,7 @@ public class Person {
 And our new `Hobby` entity:
 ```
 @Entity
-@GraphQLApiEntity(exposeDirectly = false)
+(exposeDirectly = false)
 public class Hobby {
     @Id
     private String id = UUID.randomUUID().toString();
@@ -363,7 +362,7 @@ Let's have a look at the generated code, method by method:
 
 1. Read collection:
     ```
-    @GraphQLQuery(name = "hobbies")
+    @GraphQLQuery
     public List<List<Hobby>> hobbies(@GraphQLContext List<Person> input) {
     return ApiLogic.getAsEmbeddedCollection(...);
     }
@@ -386,19 +385,19 @@ Let's have a look at the generated code, method by method:
     
 2. Add / attach to collection:
     ```
-    @GraphQLMutation(name = "addNewHobbiesToPerson")
+    @GraphQLMutation
     public List<Hobby> addNewHobbiesToPerson(List<Hobby> input, Person person) {
         return ApiLogic.addNewToEmbeddedCollection(...);
     }
     ```
     This mutation accepts two arguments:
-     - `List<...> input`: The entities - in this case; hobbies, to add the the given person. Recall the first argument to `@GraphQLApiEntity` is `boolean exposeDirectly()`. If the type of entity referenced in the given collection is marked as one to be `exposedDirectly()`, it makes no sense to create new instances within the context of an embedded collection. However in this instance hobby is not marked for direct API exposure, hence the `addNewHobbiesToPerson` resolver, and not the `attachExisting...To...` equivalent resolver for opposite cases. 
+     - `List<...> input`: The entities - in this case; hobbies, to add the the given person. Recall the first argument to `` is `boolean exposeDirectly()`. If the type of entity referenced in the given collection is marked as one to be `exposedDirectly()`, it makes no sense to create new instances within the context of an embedded collection. However in this instance hobby is not marked for direct API exposure, hence the `addNewHobbiesToPerson` resolver, and not the `attachExisting...To...` equivalent resolver for opposite cases. 
      - `Person person`: The host entity which the collection in question belongs to.
       
  
  3. Update elements in collection:
     ```
-      @GraphQLMutation(name = "updateHobbiesInPerson")
+      @GraphQLMutation
       public List<Hobby> updateHobbiesInPerson(List<Hobby> input, Person person) {
         return ApiLogic.updateEmbeddedCollection(...);
       }
@@ -407,7 +406,7 @@ Let's have a look at the generated code, method by method:
     
 4. Remove elements from collection:
     ```
-      @GraphQLMutation(name = "removeHobbiesFromPerson")
+      @GraphQLMutation
       public List<Hobby> removeHobbiesFromPerson(List<Hobby> input, Person person) {
         return ApiLogic.removeFromEmbeddedCollection(...);
       }
@@ -428,7 +427,7 @@ As briefly mentioned above, Apifi APIs are designed for extensibility. This is w
 ```
 Note the two lines `if (metaOps != null) metaOps.preAddEntities(input);`, and `if (metaOps != null) metaOps.postAddEntities(result);`. These method calls allow for the `metaOps` instance which was passed as an argument to execute custom defined logic before and / or after the state mutation. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following state mutations.
 
-In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as the third argument to the `@GraphQLApiEntity` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
+In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as the third argument to the `` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
 ```
 @Component
 public class ApiMetaOperations<T> {
@@ -456,7 +455,7 @@ public class ApiMetaOperations<T> {
 The methods and code are fairly self-explanatory. As is observable, the default `ApiMetaOperations<T>` class which is passed as that third argument to `GraphQLApiEntity` has no actual impact. To override this default behaviour (or lack thereof), the base class must be extended and implemented as required. Let's go through a familiar example. Given our `Person` entity:
 ```
 @Entity
-@GraphQLApiEntity
+
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -482,10 +481,10 @@ public class PersonMetaOperations extends ApiMetaOperations<Person> {
     
 }
 ```
-The final step is to pass the corresponding class type token as an argument to the `@GraphQLApiEntity` annotation on `Person`:
+The final step is to pass the corresponding class type token as an argument to the `` annotation on `Person`:
 ```
 @Entity
-@GraphQLApiEntity(apiMetaOperations = PersonMetaOperations.class)
+(apiMetaOperations = PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -500,7 +499,7 @@ The required custom behaviour is now fully defined and operational. Obviously th
 As demostrated above, embedded collections must be dealt with in their own way. This is why the standard `ApiMetaOperations<T>` cannot apply to mutations performed on embedded collections. In order to add custom pre or post mutation logic to embedded collection related api mutations, the collection in question must first be annotated with the `@MetaOperations(...)` annotation, as follows:
 ```
 @Entity
-@GraphQLApiEntity(apiMetaOperations = PersonMetaOperations.class)
+(apiMetaOperations = PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -549,7 +548,7 @@ Finally, the class type token for `HobbiesInPersonMetaOperations` must be passed
 
 ```
 @Entity
-@GraphQLApiEntity(apiMetaOperations = PersonMetaOperations.class)
+(apiMetaOperations = PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -616,7 +615,7 @@ Let's get specific with an example:
 
 ```
 @Entity
-@GraphQLApiEntity
+
 @Secure(rolesAllowed = "ROLE_ADMIN")
 public class Person {
     @Id
@@ -726,7 +725,7 @@ Oftentimes, more granular control over which methods can be accessed and execute
     
     ```
     @Entity
-    @GraphQLApiEntity
+    
     @Secure(
         rolesAllowed = "permitAll()", 
         rolesAllowedCreate = "ROLE_ADMIN", 
@@ -750,57 +749,57 @@ Oftentimes, more granular control over which methods can be accessed and execute
       
       ...
       
-      @GraphQLQuery(name = "allPersons")
+      @GraphQLQuery
       public List<Person> allPersons(int limit, int offset) {
-        return ApiLogic.getAll(Person.class, personDataManager, limit, offset);
+        return ApiLogic.getAll(personDataManager, limit, offset);
       }
     
-      @GraphQLQuery(name = "getPersonById")
+      @GraphQLQuery
       public Person getPersonById(String input) {
-        return ApiLogic.getById(Person.class, personDataManager,input);
+        return ApiLogic.getById(personDataManager,input);
       }
     
-      @GraphQLQuery(name = "getPersonsById")
+      @GraphQLQuery
       public List<Person> getPersonsById(List<String> input) {
-        return ApiLogic.getCollectionById(Person.class, personDataManager, input);
+        return ApiLogic.getCollectionById(personDataManager, input);
       }
     
-      @GraphQLMutation(name = "addPerson")
+      @GraphQLMutation
       @RolesAllowed("ROLE_ADMIN")
       public Person addPerson(Person input) {
         Person entity = ApiLogic.add(personDataManager, input, personMetaOperations);
         return entity;
       }
     
-      @GraphQLMutation(name = "updatePerson")
+      @GraphQLMutation
       @RolesAllowed("ROLE_SECRETARY")
       public Person updatePerson(Person input) {
         Person entity = ApiLogic.update(personDataManager, input, reflectionCache, personMetaOperations);
         return entity;
       }
     
-      @GraphQLMutation(name = "deletePerson")
+      @GraphQLMutation
       @RolesAllowed("ROLE_SUPERVISOR")
       public Person deletePerson(Person input) {
         Person entity = ApiLogic.delete(personDataManager, reflectionCache, input, personMetaOperations);
         return entity;
       }
     
-      @GraphQLMutation(name = "addPersons")
+      @GraphQLMutation
       @RolesAllowed("ROLE_ADMIN")
       public List<Person> addPersons(List<Person> input) {
         List<Person> entities = ApiLogic.addCollection(personDataManager, input, personMetaOperations);
         return entities;
       }
     
-      @GraphQLMutation(name = "updatePersons")
+      @GraphQLMutation
       @RolesAllowed("ROLE_SECRETARY")
       public List<Person> updatePersons(List<Person> input) {
         List<Person> entities = ApiLogic.updateCollection(personDataManager, input, personMetaOperations);
         return entities;
       }
     
-      @GraphQLMutation(name = "deletePersons")
+      @GraphQLMutation
       @RolesAllowed("ROLE_SUPERVISOR")
       public List<Person> deletePersons(List<Person> input) {
         List<Person> entities = ApiLogic.deleteCollection(personDataManager, input, personMetaOperations);
@@ -821,7 +820,6 @@ Oftentimes, more granular control over which methods can be accessed and execute
  2. Annotation arguments that were passed to a field level `@Secure`. Specifically, a field level `@Secure(...)` adorning a field also annotated with a `@GetBy`, `@GetAllBy` or `@GetByUnique` annotation. This is useful for defining granular access control for the corresponding API exposed resolvers. For example:
     ```
     @Entity
-    @GraphQLApiEntity
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
@@ -833,10 +831,10 @@ Oftentimes, more granular control over which methods can be accessed and execute
     ```
     Results in the following autogenerated code:
     ```
-      @GraphQLQuery(name = "getPersonsByName")
+      @GraphQLQuery
       @PreAuthorize("ROLE_ADMIN")
       public List<Person> getPersonsByName(String name) {
-        return ApiLogic.getBy(Person.class, personDataManager, "name", name);
+        return ApiLogic.getBy(personDataManager, "name", name);
       }
     ```
     The same flow applies to `@GetAllBy` and `@GetByUnique`.

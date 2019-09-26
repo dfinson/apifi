@@ -139,9 +139,8 @@ public class MethodSpecs {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(GraphQLQuery.class)
                 .addParameter(ClassName.get(field.asType()), fieldName)
-                .addStatement("return $T.getBy($T.class, $L, $L, $S, $L)",
+                .addStatement("return $T.getBy($L, $L, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(entity),//$T
                         dataManagerName(entity),//$L
                         metaOpsName(entity),//$L
                         field.getSimpleName(),//$S
@@ -158,9 +157,8 @@ public class MethodSpecs {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(GraphQLQuery.class)
                 .addParameter(listOf(field), toPlural(fieldName))
-                .addStatement("return $T.getAllBy($T.class, $L, $L, $S, $L)",
+                .addStatement("return $T.getAllBy($L, $L, $S, $L)",
                         ClassName.get(ApiLogic.class),//$T
-                        ClassName.get(entity),//$T
                         dataManagerName(entity),//$L
                         metaOpsName(entity),//$L
                         fieldName,//$S
