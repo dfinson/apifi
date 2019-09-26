@@ -31,7 +31,7 @@ Apifi is available on maven central:
   <groupId>org.sindaryn</groupId>
     <artifactId>apify</artifactId>
   <version>0.0.2</version>
-</dependency>
+</dependency>   
 ```
 ### Requirement
 All entities **must** have a public `getId()` method.
