@@ -422,10 +422,11 @@ public class MethodSpecs {
                 .addAnnotation(Batched.class)
                 .addAnnotation(GraphQLQuery.class)
                 .addParameter(input)
-                .addStatement("return $T.getAsEmbeddedCollection($L, input, $S, $L)",
+                .addStatement("return $T.getAsEmbeddedCollection($L, input, $S, $L, $L)",
                         ClassName.get(ApiLogic.class),//$T
                         dataManagerName(embedded),//$L
                         camelcaseNameOf(embedded),//$S
+                        embeddedCollectionMetaOpsName(embedded),//$T
                         reflectionCache//$L
                 )
                 .returns(listOfLists(embedded));

@@ -191,17 +191,21 @@ public interface ApiLogic {
         return toDeletes;
     }
 
-    static <T, HasTs> List<List<T>>
+    static <T, HasTs, E extends EmbeddedCollectionMetaOperations<T, HasTs>> List<List<T>>
     getAsEmbeddedCollection(
             BaseDataManager<T> dataManager,
             List<HasTs> input,
             String embeddedFieldName,
+            E metaOps,
             ReflectionCache reflectioncache) {
         List<List<T>> lists = new ArrayList<>();
-        input.forEach(IHasTs -> lists.add(
-                dataManager.findAllById(
-                        dataManager.idList(
-                                getEmbeddedCollectionFrom(IHasTs, embeddedFieldName, reflectioncache)))));
+        input.forEach(hasTs -> {
+            final List<T> embeddedCollection =
+                    dataManager.findAllById(dataManager
+                            .idList(getEmbeddedCollectionFrom(hasTs, embeddedFieldName, reflectioncache)));
+            metaOps.postFetch(embeddedCollection, hasTs);
+            lists.add(embeddedCollection);
+        });
         return lists;
     }
 

@@ -1,19 +1,23 @@
 # Apifi
 
-- [Introduction](#introduction)
+* [Introduction](#introduction)
 * [Installation](#installation)
 * [Requirements](#requirements)
 * [Hello World](#hello-world)
-    + [Domain model](#domain-model)
-    + [Service layer](#service-layer)
+    * [Domain model](#domain-model)
+    * [Service layer](#service-layer)
 * [The standard CRUD schema](#the-standard-crud-schema)
 * [Entity level API configuration](#entity-level-api-configuration)
 * [Custom resolvers](#custom-resolvers)
+* [Free text search](#free-text-search)
+	* [Overview](#overview)
+	* [Domain model](#domain-model-1)
+	* [Generated Service Layer](#generated-service-layer)
 * [Collections](#collections)
 * [ApiMetaOperations<T>](#apimetaoperations-t-)
 * [EmbeddedCollectionMetaOperations](#embeddedcollectionmetaoperations)
 * [@Secure(...) - Spring security integration](#-secure-----spring-security-integration)
-    + [Overview](#overview)
+    * [Overview](#overview-1)
 * [License](#license)
 
 ## Introduction
@@ -29,8 +33,8 @@ Apifi is available on maven central:
   <version>0.0.2</version>
 </dependency>
 ```
-### Requirements
-1. All entities **must** have a public `getId()` method.
+### Requirement
+All entities **must** have a public `getId()` method.
 
 ### Hello World
 Apifi autogenerates GraphQL Service beans, containing all requisite queries and resolvers for data model entities annotated with `@Entity` and / or `@Table`.
@@ -120,12 +124,19 @@ As in the above example, the standard, baseline graphql schema which is autogene
     
     ```
     @GraphQLQuery
-      public List<Person> allPersons(int limit, int offset) {
+      public List<Person> allPersons(
+	  @GraphQLArgument(name = "offset", defaultValue = "0") int offset,
+      @GraphQLArgument(name = "limit", defaultValue = "50") int limit,
+      @GraphQLArgument(name = "sortBy") String sortBy,
+      @GraphQLArgument(name = "sortDirection", defaultValue = "\"ASC\"") Sort.Direction sortDirection) {
         return ApiLogic.getAll(personDataManager, limit, offset);
       }
    ```
-    **Input**: The paging `limit` and `offset` which tell the API how many results per page to return.
-    **Output**: `(limit - offset)` entity instances.
+    **Input**: 
+      - `int limit, int offset` : the result of `all...` is paginated. These arguments specify the page offset and size. If not specified, the first 50 records will be returned.
+	  - `String sortBy, Sort.Direction sortDirection`: The first argument specifies the name of a field within the given entity type by which to sort the results (if no such field exists an `IllegalArgumentException` is thrown), the second argument specifies whether this sort is to be applied in ascending (`ASC`) or descending (`DESC`) order. If the `String sortBy` argument is provided but the `Sort.Direction sortDirection` argument is not, the sort will be applied in ascending order.
+
+ **Output**: `(limit - offset)` entity instances, either sorted or not, depending on the arguments provided.
     
 2. `get...ById`
     
@@ -169,6 +180,8 @@ As in the above example, the standard, baseline graphql schema which is autogene
    ```
     **Input**: An entity "instance" with updated values with which to assign / overwrite the corresponding values of the entity with the same id.
     **Output**: The newly updated entity.
+
+    **_Important note:_** _This update relies on the `cascadedUpdate(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of the object to update and assigns them to the the corresponding values within the updated object passed as the second argument. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
     
 6. `delete...`
     ```
@@ -202,6 +215,8 @@ As in the above example, the standard, baseline graphql schema which is autogene
    ```
     **Input**: A list of entities to update.
     **Output**: The newly updated entities.
+
+    **_Important note:_** _This update relies on the `cascadedUpdateCollection(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of every object to update and assigns them to the the corresponding values within the corresponding updated object passed in as input. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
     
 9. `delete...s`
     ```
@@ -218,13 +233,15 @@ As in the above example, the standard, baseline graphql schema which is autogene
 By default, Apifi generates one of these service beans for all entities / tables. There are however several entity level annotations which can modilfy or extend this default behavior:
 
 1. `@NonDirectlyExposable`: Tells Apifi that this is an entity which should **not** have it's own top-level queries and mutations exposed as part of the api schema. This is useful if for example,  we have two entities; `Car` and `SteeringWheel`. It's fairly obvious that in this case the **composite entity** called `SteeringWheel` has no independent lifecycle and is instantiable only within the context of `Car`. In this case, `Car` should be exposed directly as part of the schema, as opposed to `SteeringWheel`, which should be accessable and mutatable only by way of the queries and resolvers exposed by the `Car` graphql service.
+
 2. `@ApiReadOnly`:  Assuming the previous annotation is **not** present, this annotation tells Apifi to only include GraphQL queries but not mutations in the generated GraphQLService bean. This is useful when designating certain components of a given data model as read-only, with no possibility of state mutation via the API.
-3. `@ApiLevelMetaOperations`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended in order to achieve this. We'll get into it in more depth a bit further on.
+
+3. `@ApiLevelMetaOperations{Class<? extends ApiMetaOperations> value();}`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended and passed in as an argument to this annotation in order to achieve this. We'll get into it in more depth a bit further on.
 
 ### Custom resolvers 
 
 In addition to the standard CRUD operation resolvers, custom resolvers can be added by making use of the following annotations:
-1. `@GetBy`: To fetch a list of entity instances with the search criteria being the value of a specific field, the field can be annotated with the `@GetBy` annotation and a custom `List<...> get...By...(field value as arg)` resolver will be added to the GraphQL service bean. For example: 
+-  `@GetBy`: To fetch a list of entity instances with the search criteria being the value of a specific field, the field can be annotated with the `@GetBy` annotation and a custom `List<...> get...By...(field value as arg)` resolver will be added to the GraphQL service bean. For example: 
     ```
     @Entity
     public class Person {
@@ -249,7 +266,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     ...
     }
     ```
-2. `@GetAllBy`: To fetch a list of entity instances with the search criteria being the value of a specific field being contained within a list of corresponding inputted values, the field can be annotated with the `@GetAllBy` annotation and a custom `List<...> getAll...By...(list of field values to look for)` resolver will be added to the GraphQL service bean. For example:
+-  `@GetAllBy`: To fetch a list of entity instances with the search criteria being the value of a specific field being contained within a list of corresponding inputted values, the field can be annotated with the `@GetAllBy` annotation and a custom `List<...> getAll...By...(list of field values to look for)` resolver will be added to the GraphQL service bean. For example:
     ```
     @Entity
     
@@ -275,7 +292,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     ...
     }
     ```
-3. `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` resolver will be added to the GraphQL service bean. For example:
+-  `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` resolver will be added to the GraphQL service bean. For example:
     ```
     @Entity
     
@@ -301,7 +318,7 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     ...
     }
     ```
-4. `@WithResolver(...)`: To fetch a list of entity instances using a custom JPQL query, the relevant entity-class can be annotated  with the `@WithResolver(...)` annotation and a corresponding resolver will be added to the GraphQL service bean. The `@WithResolver(...)` annotation feature is a bit more involved than the others, and builds upon it's implementation in the [Datafi](https://github.com/sindaryn/datafi) library. If you are unfamiliar with it's usage, head on over to the Datafi [Readme](https://github.com/sindaryn/datafi/blob/master/README.md). As is the case with the previous three annotations, Apifi extends the functionality provided by [Datafi](https://github.com/sindaryn/datafi) by generating the code required to expose that data layer resolver to the web. 
+-  `@WithResolver(...)`: To fetch a list of entity instances using a custom JPQL query, the relevant entity-class can be annotated  with the `@WithResolver(...)` annotation and a corresponding resolver will be added to the GraphQL service bean. The `@WithResolver(...)` annotation feature is a bit more involved than the others, and builds upon it's implementation in the [Datafi](https://github.com/sindaryn/datafi) library. If you are unfamiliar with it's usage, head on over to the Datafi [Readme](https://github.com/sindaryn/datafi/blob/master/README.md). As is the case with the previous three annotations, Apifi extends the functionality provided by [Datafi](https://github.com/sindaryn/datafi) by generating the code required to expose that data layer resolver to the web. 
     
     In any event, here is an example of `@WithResolver` usage:
     ```
@@ -330,6 +347,49 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
     }
     ```
     Important note: `@WithResolver(...)` is a repeatable annotation, therefore as many custom JPQL query based resolvers per class may be assigned as needed.
+
+### Free text search
+
+##### Overview
+
+Apifi comes with non case sensitive free text - or "fuzzy" search out of the box. This extends and relies upon the [free text search feature in Datafi](https://github.com/sindaryn/datafi#free-text-search). To make use of this feature, annotate any **String typed** field with `@FuzzySearchBy`, or alternatively, annotate the class itself with `@FuzzySearchByFields({"field1", "field2", etc...})`. For example:
+
+##### Domain model  
+```  
+@Entity
+//@FuzzySearchByFields({"name", "email"}) - this is equivalent to the field level annotations below
+public class Person{  
+
+@Id 
+private String id = UUID.randomUUID().toString(); 
+
+@FuzzySearchBy
+private String name;
+@FuzzySearchBy
+private String email;
+//...
+}  
+```  
+
+##### Generated Service Layer  
+```  
+@...  
+public class PersonGraphQLService{  
+...
+@GraphQLQuery
+public List<User> personsFuzzySearch(String searchTerm, //in this case can be either (partial or complete) name  or email
+@GraphQLArgument(name = "offset", defaultValue = "0") int offset,
+@GraphQLArgument(name = "limit", defaultValue = "50") int limit,
+@GraphQLArgument(name = "sortBy") String sortBy,
+@GraphQLArgument(name = "sortDirection", defaultValue = "\"ASC\"") Sort.Direction sortDirection) {
+return ApiLogic.fuzzySearch(User.class, userDataManager, userMetaOperations, offset, limit, searchTerm, sortBy, sortDirection);
+}
+...
+}  
+
+```
+`fuzzySearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `fuzzySearch` takes in the 2 optional arguments `int offset` and `int limit` - in that order. These are "optional" in the sense that if not specified, the offset and limit will default to 0 and 50 respectively. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If no matching field is found an `IllegalArgumentException` is thrown. `Sort.Direction sortDirection` determines the ordering strategy. If not specified it defaults to ascending order (`ASC`).
+
 
 ### Collections
 `Iterable<...>` collections are unique in that they are not "assigned" per say - they're **added to**, **updated in**, and **removed from**. As such, some specialized resolvers are required in order to work with them. Before we can demonstrate these, we'll need to add a collection to our example. Fortunately, our `Person` appears to have picked up a few hobbies!
@@ -367,10 +427,10 @@ Let's have a look at the generated code, method by method:
     return ApiLogic.getAsEmbeddedCollection(...);
     }
     ```
-    This query resolver allows graphql queries such as the following to be executed:
+    This query resolver allows graphql queries such as the following to be executed :
     ```
     query getHobbiesOfPersons{
-      allPersons(limit:25, offset:0){
+      allPersons(offset: 0, limit: 75, sortBy: "title", sortDirection: DESC){
       ...
         hobbies{
           id
@@ -391,8 +451,8 @@ Let's have a look at the generated code, method by method:
     }
     ```
     This mutation accepts two arguments:
-     - `List<...> input`: The entities - in this case; hobbies, to add the the given person. Recall the first argument to `` is `boolean exposeDirectly()`. If the type of entity referenced in the given collection is marked as one to be `exposedDirectly()`, it makes no sense to create new instances within the context of an embedded collection. However in this instance hobby is not marked for direct API exposure, hence the `addNewHobbiesToPerson` resolver, and not the `attachExisting...To...` equivalent resolver for opposite cases. 
-     - `Person person`: The host entity which the collection in question belongs to.
+     - `List<...> input`: The entities - in this case; hobbies, to add the the given person. Recall the `@NonDirectlyExposable` annotation. If the type of entity referenced in the given collection is annotated as such - and therefore has no independent lifecycle, it makes sense to create new instances within the context of an embedded collection within a host Aggregate entity. In this instance hobby is not marked for direct API exposure, hence the `addNewHobbiesToPerson` resolver, and not the `attachExisting...To...` equivalent resolver for cases where the referenced entity type has its own top level queries and mutations exposed. 
+     - `Person person`: The host entity which the collection in question belongs to. The (deserialized) instance passed to this argument must include the `id`.
       
  
  3. Update elements in collection:
@@ -419,30 +479,48 @@ As briefly mentioned above, Apifi APIs are designed for extensibility. This is w
 ```
     static <T, E extends ApiMetaOperations<T>> List<T>
     addCollection(DataManager<T> dataManager, List<T> input, E metaOps) {
-        if (metaOps != null) metaOps.preAddEntities(input);
+        metaOps.preAddEntities(input);
         val result = dataManager.saveAll(input);
-        if (metaOps != null) metaOps.postAddEntities(result);
+        metaOps.postAddEntities(result);
         return result;
     }
 ```
-Note the two lines `if (metaOps != null) metaOps.preAddEntities(input);`, and `if (metaOps != null) metaOps.postAddEntities(result);`. These method calls allow for the `metaOps` instance which was passed as an argument to execute custom defined logic before and / or after the state mutation. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following state mutations.
+Note the two lines `metaOps.preAddEntities(input);`, and `metaOps.postAddEntities(result);`. These method calls allow for the `metaOps` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
 
-In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as the third argument to the `` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
+In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiLevelMetaOperations(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
 ```
 @Component
 public class ApiMetaOperations<T> {
 
-    @Autowired @Getter
-    private ReflectionCache reflectionCache;
-    @Autowired @Getter
-    private DataManager<T> dataManager;
+    //don't worry about these
+    @Autowired
+    protected ReflectionCache reflectionCache;
+    @Autowired
+    protected DataManager<T> dataManager;
 
+    //queries
+    public void preFetchEntityInGetById(Object id){}
+    public void preFetchEntityInGetByUnique(Object argument){}
+    public void preFetchEntityInGetBy(Object argument){}
+    public void preFetchEntityInGetAllBy(List<?> arguments){}
+    public void preFetchEntityInCustomResolver(List<?> arguments){}
+    public void preFetchEntitiesInGetAll(Class<T> clazz) {}
+    public void preFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm){}
+    public void postFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm, List<T> fetched){}
+    public void postFetchEntity(T fetched){}
+    public void postFetchEntities(Collection<T> fetched){fetched.forEach(this::postFetchEntity);}
+
+    //mutations
     public void preAddEntity(T toAdd){}
     public void postAddEntity(T added){}
     public void preUpdateEntity(T toUpdate){}
     public void postUpdateEntity(T toUpdate){}
     public void preDeleteEntity(T toDelete){}
     public void postDeleteEntity(T deleted){}
+    public void preArchiveEntity(T toArchive){}
+    public void postArchiveEntity(T toArchive){}
+    public void preDeArchiveEntity(T toDeArchive){}
+    public void postDeArchiveEntity(T toDeArchive){}
 
     public void preAddEntities(Collection<T> toAdd){toAdd.forEach(this::preAddEntity);}
     public void postAddEntities(Collection<T> added){added.forEach(this::postAddEntity);}
@@ -450,6 +528,10 @@ public class ApiMetaOperations<T> {
     public void postUpdateEntities(Collection<T> toUpdate){toUpdate.forEach(this::postUpdateEntity);}
     public void preDeleteEntities(Collection<T> toDelete){toDelete.forEach(this::preDeleteEntity);}
     public void postDeleteEntities(Collection<T> deleted){deleted.forEach(this::postDeleteEntity);}
+    public void preArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::preArchiveEntity);}
+    public void postArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::postArchiveEntity);}
+    public void preDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::preDeArchiveEntity);}
+    public void postDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::postDeArchiveEntity);}
 }
 ```
 The methods and code are fairly self-explanatory. As is observable, the default `ApiMetaOperations<T>` class which is passed as that third argument to `GraphQLApiEntity` has no actual impact. To override this default behaviour (or lack thereof), the base class must be extended and implemented as required. Let's go through a familiar example. Given our `Person` entity:
@@ -481,10 +563,10 @@ public class PersonMetaOperations extends ApiMetaOperations<Person> {
     
 }
 ```
-The final step is to pass the corresponding class type token as an argument to the `` annotation on `Person`:
+The final step is to pass the corresponding class type token as an argument to the `@ApiLevelMetaOperations` annotation on `Person`:
 ```
 @Entity
-(apiMetaOperations = PersonMetaOperations.class)
+@ApiLevelMetaOperations(PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -523,6 +605,7 @@ public class EmbeddedCollectionMetaOperations<T, HasTs>{
     @Autowired @Getter
     private DataManager<HasTs> hasTsDataManager;
 
+    public void postFetch(Collection<T> Ts, HasTs hasTs){}
     public void preRemove(Collection<T> Ts, HasTs hasTs){}
     public void postRemove(Collection<T> Ts, HasTs hasTs){}
     public void preAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
@@ -548,7 +631,6 @@ Finally, the class type token for `HobbiesInPersonMetaOperations` must be passed
 
 ```
 @Entity
-(apiMetaOperations = PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -563,7 +645,7 @@ public class Person{
 Apifi supports full integration with spring security - or more specifically; spring security annotations. This is feature can be utilized via the`@Secure(...)` annotation. This annotation can be applied on the class or field level.
 
 #### Overview
-Here's how the `@Secure` annotation looks on the inside:
+Here's how the `@Secure` annotation looks under the hood:
 ```
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -615,7 +697,6 @@ Let's get specific with an example:
 
 ```
 @Entity
-
 @Secure(rolesAllowed = "ROLE_ADMIN")
 public class Person {
     @Id

@@ -18,6 +18,7 @@ public class EmbeddedCollectionMetaOperations<T, HasTs>{
     @Autowired @Getter
     private DataManager<HasTs> hasTsDataManager;
 
+    public void postFetch(Collection<T> Ts, HasTs hasTs){}
     public void preRemove(Collection<T> Ts, HasTs hasTs){}
     public void postRemove(Collection<T> Ts, HasTs hasTs){}
     public void preAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
