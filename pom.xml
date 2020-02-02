@@ -4,25 +4,25 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>apify</artifactId>
-    <version>0.0.1</version>
+    <artifactId>apifi</artifactId>
+    <version>0.0.3</version>
 
     <parent>
-        <groupId>org.sindaryn</groupId>
-        <artifactId>Odhron</artifactId>
-        <version>0.0.2</version>
+        <groupId>dev.sanda</groupId>
+        <artifactId>Sensei</artifactId>
+        <version>0.0.3</version>
         <relativePath/>
     </parent>
 
     <properties>
-        <datafi.version>0.0.2</datafi.version>
+        <datafi.version>0.0.3</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <graphql-spqr-spring-boot-starter.version>0.0.4</graphql-spqr-spring-boot-starter.version>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.sindaryn</groupId>
+            <groupId>dev.sanda</groupId>
             <artifactId>datafi</artifactId>
             <version>${datafi.version}</version>
         </dependency>
@@ -52,10 +52,10 @@
     <description>
         Java 8+ annotation processor for auto generation and rapid development of GraphQL APIs
     </description>
-    <url>https://github.com/sindaryn/apifi</url>
+    <url>https://github.com/sanda-dev/apifi</url>
     <scm>
-        <connection>scm:git:git://github.com/sindaryn/apifi.git</connection>
-        <developerConnection>scm:git:ssh://github.com:sindaryn/apifi.git</developerConnection>
-        <url>http://github.com/sindaryn/apifi</url>
+        <connection>scm:git:git://github.com/sanda-dev/apifi.git</connection>
+        <developerConnection>scm:git:ssh://github.com:sanda-dev/apifi.git</developerConnection>
+        <url>http://github.com/sanda-dev/apifi</url>
     </scm>
 </project>

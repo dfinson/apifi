@@ -16,7 +16,7 @@
 * [Collections](#collections)
 * [ApiMetaOperations<T>](#apimetaoperations-t-)
 * [EmbeddedCollectionMetaOperations](#embeddedcollectionmetaoperations)
-* [@Secure(...) - Spring security integration](#-secure-----spring-security-integration)
+* [@Secure(...) - Spring security integration](#-withSecurity-----spring-security-integration)
     * [Overview](#overview-1)
 * [License](#license)
 
@@ -183,7 +183,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     **Input**: An entity "instance" with updated values with which to assign / overwrite the corresponding values of the entity with the same id.
     **Output**: The newly updated entity.
 
-    **_Important note:_** _This update relies on the `cascadedUpdate(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of the object to update and assigns them to the the corresponding values within the updated object passed as the second argument. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
+    **_Important note:_** _This update relies on the `cascadeUpdate(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of the object to update and assigns them to the the corresponding values within the updated object passed as the second argument. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
     
 6. `delete...`
     ```
@@ -218,7 +218,7 @@ As in the above example, the standard, baseline graphql schema which is autogene
     **Input**: A list of entities to update.
     **Output**: The newly updated entities.
 
-    **_Important note:_** _This update relies on the `cascadedUpdateCollection(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of every object to update and assigns them to the the corresponding values within the corresponding updated object passed in as input. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
+    **_Important note:_** _This update relies on the `cascadeUpdateCollection(...)` method defined in `DataManager<T>` which reflectively iterates over all fields of every object to update and assigns them to the the corresponding values within the corresponding updated object passed in as input. Any field can be excluded from this kind of update by being annotated as `@NonApiUpdatable`._
     
 9. `delete...s`
     ```
@@ -238,7 +238,7 @@ By default, Apifi generates one of these service beans for all entities / tables
 
 2. `@ApiReadOnly`:  Assuming the previous annotation is **not** present, this annotation tells Apifi to only include GraphQL queries but not mutations in the generated GraphQLService bean. This is useful when designating certain components of a given data model as read-only, with no possibility of state mutation via the API.
 
-3. `@ApiLevelMetaOperations{Class<? extends ApiMetaOperations> value();}`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended and passed in as an argument to this annotation in order to achieve this. We'll get into it in more depth a bit further on.
+3. `@ApiHooksAndCustomResolvers{Class<? extends ApiMetaOperations> value();}`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended and passed in as an argument to this annotation in order to achieve this. We'll get into it in more depth a bit further on.
 
 ### Custom resolvers 
 
@@ -480,16 +480,16 @@ As briefly mentioned above, Apifi APIs are designed for extensibility. This is w
 
 ```
     static <T, E extends ApiMetaOperations<T>> List<T>
-    addCollection(DataManager<T> dataManager, List<T> input, E metaOps) {
-        metaOps.preAddEntities(input);
+    addCollection(DataManager<T> dataManager, List<T> input, E apiHooks) {
+        apiHooks.preAddEntities(input);
         val result = dataManager.saveAll(input);
-        metaOps.postAddEntities(result);
+        apiHooks.postAddEntities(result);
         return result;
     }
 ```
-Note the two lines `metaOps.preAddEntities(input);`, and `metaOps.postAddEntities(result);`. These method calls allow for the `metaOps` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
+Note the two lines `apiHooks.preAddEntities(input);`, and `apiHooks.postAddEntities(result);`. These method calls allow for the `apiHooks` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
 
-In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiLevelMetaOperations(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
+In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiHooksAndCustomResolvers(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
 ```
 @Component
 public class ApiMetaOperations<T> {
@@ -565,10 +565,10 @@ public class PersonMetaOperations extends ApiMetaOperations<Person> {
     
 }
 ```
-The final step is to pass the corresponding class type token as an argument to the `@ApiLevelMetaOperations` annotation on `Person`:
+The final step is to pass the corresponding class type token as an argument to the `@ApiHooksAndCustomResolvers` annotation on `Person`:
 ```
 @Entity
-@ApiLevelMetaOperations(PersonMetaOperations.class)
+@ApiHooksAndCustomResolvers(PersonMetaOperations.class)
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
@@ -639,7 +639,7 @@ public class Person{
     private String name;
     private Integer age;
     @ManyToMany
-    @MetaOperations(metaOps = HobbiesInPersonMetaOperations.class)
+    @MetaOperations(apiHooks = HobbiesInPersonMetaOperations.class)
     private Set<Hobby> hobbies;
 }
 ```
