@@ -16,7 +16,7 @@
 * [Collections](#collections)
 * [ApiMetaOperations<T>](#apimetaoperations-t-)
 * [EmbeddedCollectionMetaOperations](#embeddedcollectionmetaoperations)
-* [@Secure(...) - Spring security integration](#-withSecurity-----spring-security-integration)
+* [@Secure(...) - Spring security integration](#-withServiceLevelSecurity-----spring-security-integration)
     * [Overview](#overview-1)
 * [License](#license)
 
@@ -28,7 +28,7 @@ The [Datafi](https://github.com/sindaryn/datafi) library fully automates the gen
 Apifi is available on maven central:
 ```
 <dependency>
-  <groupId>org.sindaryn</groupId>
+  <groupId>dev.sanda</groupId>
     <artifactId>apify</artifactId>
   <version>0.0.2</version>
 </dependency>   
@@ -354,20 +354,20 @@ In addition to the standard CRUD operation resolvers, custom resolvers can be ad
 
 ##### Overview
 
-Apifi comes with non case sensitive free text - or "fuzzy" search out of the box. This extends and relies upon the [free text search feature in Datafi](https://github.com/sindaryn/datafi#free-text-search). To make use of this feature, annotate any **String typed** field with `@FuzzySearchBy`, or alternatively, annotate the class itself with `@FuzzySearchByFields({"field1", "field2", etc...})`. For example:
+Apifi comes with non case sensitive free text - or "fuzzy" search out of the box. This extends and relies upon the [free text search feature in Datafi](https://github.com/sindaryn/datafi#free-text-search). To make use of this feature, annotate any **String typed** field with `@FreeTextSearchBy`, or alternatively, annotate the class itself with `@FreeTextSearchByFields({"field1", "field2", etc...})`. For example:
 
 ##### Domain model  
 ```  
 @Entity
-//@FuzzySearchByFields({"name", "email"}) - this is equivalent to the field level annotations below
+//@FreeTextSearchByFields({"name", "email"}) - this is equivalent to the field level annotations below
 public class Person{  
 
 @Id 
 private String id = UUID.randomUUID().toString(); 
 
-@FuzzySearchBy
+@FreeTextSearchBy
 private String name;
-@FuzzySearchBy
+@FreeTextSearchBy
 private String email;
 //...
 }  
@@ -384,13 +384,13 @@ public List<User> personsFuzzySearch(String searchTerm, //in this case can be ei
 @GraphQLArgument(name = "limit", defaultValue = "50") int limit,
 @GraphQLArgument(name = "sortBy") String sortBy,
 @GraphQLArgument(name = "sortDirection", defaultValue = "\"ASC\"") Sort.Direction sortDirection) {
-return ApiLogic.fuzzySearch(User.class, userDataManager, userMetaOperations, offset, limit, searchTerm, sortBy, sortDirection);
+return ApiLogic.freeTextSearch(User.class, userDataManager, userMetaOperations, offset, limit, searchTerm, sortBy, sortDirection);
 }
 ...
 }  
 
 ```
-`fuzzySearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `fuzzySearch` takes in the 2 optional arguments `int offset` and `int limit` - in that order. These are "optional" in the sense that if not specified, the offset and limit will default to 0 and 50 respectively. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If no matching field is found an `IllegalArgumentException` is thrown. `Sort.Direction sortDirection` determines the ordering strategy. If not specified it defaults to ascending order (`ASC`).
+`freeTextSearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `freeTextSearch` takes in the 2 optional arguments `int offset` and `int limit` - in that order. These are "optional" in the sense that if not specified, the offset and limit will default to 0 and 50 respectively. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If no matching field is found an `IllegalArgumentException` is thrown. `Sort.Direction sortDirection` determines the ordering strategy. If not specified it defaults to ascending order (`ASC`).
 
 
 ### Collections
@@ -426,7 +426,7 @@ Let's have a look at the generated code, method by method:
     ```
     @GraphQLQuery
     public List<List<Hobby>> hobbies(@GraphQLContext List<Person> input) {
-    return ApiLogic.getAsEmbeddedCollection(...);
+    return ApiLogic.getEmbeddedCollection(...);
     }
     ```
     This query resolver allows graphql queries such as the following to be executed :
@@ -480,14 +480,14 @@ As briefly mentioned above, Apifi APIs are designed for extensibility. This is w
 
 ```
     static <T, E extends ApiMetaOperations<T>> List<T>
-    addCollection(DataManager<T> dataManager, List<T> input, E apiHooks) {
-        apiHooks.preAddEntities(input);
+    addCollection(DataManager<T> dataManager, List<T> input, E foreignKeyCollectionApi) {
+        foreignKeyCollectionApi.preAddEntities(input);
         val result = dataManager.saveAll(input);
-        apiHooks.postAddEntities(result);
+        foreignKeyCollectionApi.postAddEntities(result);
         return result;
     }
 ```
-Note the two lines `apiHooks.preAddEntities(input);`, and `apiHooks.postAddEntities(result);`. These method calls allow for the `apiHooks` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
+Note the two lines `foreignKeyCollectionApi.preAddEntities(input);`, and `foreignKeyCollectionApi.postAddEntities(result);`. These method calls allow for the `foreignKeyCollectionApi` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
 
 In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiHooksAndCustomResolvers(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
 ```
@@ -639,7 +639,7 @@ public class Person{
     private String name;
     private Integer age;
     @ManyToMany
-    @MetaOperations(apiHooks = HobbiesInPersonMetaOperations.class)
+    @MetaOperations(foreignKeyCollectionApi = HobbiesInPersonMetaOperations.class)
     private Set<Hobby> hobbies;
 }
 ```

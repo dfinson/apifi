@@ -1,6 +1,5 @@
 package dev.sanda.apifi.service;
 
-import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -9,45 +8,51 @@ import java.util.Collection;
 import java.util.List;
 
 @Component
-public class ApiHooksAndCustomResolvers<T> {
+public abstract class ApiHooksAndCustomResolvers<T> {
 
     @Autowired
-    protected ReflectionCache reflectionCache;
+    private DataManager<T> dataManager;
+    protected DataManager<T> dataManager(){return dataManager;}
     @Autowired
-    protected DataManager<T> dataManager;
+    private ServiceContext context;
+    protected ServiceContext context(){return context;}
 
     //queries
-    public void preFetchEntityInGetById(Object id){}
-    public void preFetchEntityInGetByUnique(Object argument){}
-    public void preFetchEntityInGetBy(Object argument){}
-    public void preFetchEntityInGetAllBy(List<?> arguments){}
-    public void preFetchEntityInCustomResolver(List<?> arguments){}
-    public void preGetPaginatedBatch(Class<T> clazz) {}
-    public void preFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm){}
-    public void postFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm, List<T> fetched){}
-    public void postFetchEntity(T fetched){}
-    public void postFetchEntities(Collection<T> fetched){fetched.forEach(this::postFetchEntity);}
+    public void preGetById(Object id){}
+    public void preApiFindByUnique(Object argument){}
+    public void postApiFindByUnique(T result) {}
+    public void preApiFindBy(Object argument){}
+    public void postApiFindBy(List<T> result) {}
+    public void preApiFindAllBy(String fieldName, List<?> arguments){}
+    public void postApiFindAllBy(String fieldName, List<T> result) {}
+    public void preGetPaginatedBatch() {}
+    public void postGetPaginatedBatch(List<T> result){}
+    public void preFetchEntitiesInFreeTextSearch(String searchTerm){}
+    public void postFetchEntitiesInFuzzySearch(String searchTerm, List<T> fetched){}
+    public void postGetById(T fetched){}
+    public void preGetArchivedPaginatedBatch(){}
+    public void postGetArchivedPaginatedBatch(List<T> result) {}
 
     //mutations
-    public void preAddEntity(T toAdd){}
-    public void postAddEntity(T added){}
-    public void preUpdateEntity(T toUpdate){}
-    public void postUpdateEntity(T toUpdate){}
-    public void preDeleteEntity(T toDelete){}
-    public void postDeleteEntity(T deleted){}
-    public void preArchiveEntity(T toArchive){}
-    public void postArchiveEntity(T toArchive){}
-    public void preDeArchiveEntity(T toDeArchive){}
-    public void postDeArchiveEntity(T toDeArchive){}
+    public void preCreate(T toAdd){}
+    public void postCreate(T added){}
+    public void preUpdate(T toUpdate){}
+    public void postUpdate(T toUpdate){}
+    public void preDelete(T toDelete){}
+    public void postDelete(T deleted){}
+    public void preArchive(T toArchive){}
+    public void postArchive(T toArchive){}
+    public void preDeArchive(T toDeArchive){}
+    public void postDeArchive(T toDeArchive){}
 
-    public void preAddEntities(Collection<T> toAdd){toAdd.forEach(this::preAddEntity);}
-    public void postAddEntities(Collection<T> added){added.forEach(this::postAddEntity);}
-    public void preUpdateEntities(Collection<T> toUpdate){toUpdate.forEach(this::preUpdateEntity);}
-    public void postUpdateEntities(Collection<T> toUpdate){toUpdate.forEach(this::postUpdateEntity);}
-    public void preDeleteEntities(Collection<T> toDelete){toDelete.forEach(this::preDeleteEntity);}
-    public void postDeleteEntities(Collection<T> deleted){deleted.forEach(this::postDeleteEntity);}
-    public void preArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::preArchiveEntity);}
-    public void postArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::postArchiveEntity);}
-    public void preDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::preDeArchiveEntity);}
-    public void postDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::postDeArchiveEntity);}
+    public void preBatchCreate(Collection<T> toAdd){toAdd.forEach(this::preCreate);}
+    public void postBatchCreate(Collection<T> added){added.forEach(this::postCreate);}
+    public void preBatchUpdate(Collection<T> toUpdate){toUpdate.forEach(this::preUpdate);}
+    public void postBatchUpdate(Collection<T> toUpdate){toUpdate.forEach(this::postUpdate);}
+    public void preDeleteEntities(Collection<T> toDelete){toDelete.forEach(this::preDelete);}
+    public void postDeleteEntities(Collection<T> deleted){deleted.forEach(this::postDelete);}
+    public void preBatchArchive(Collection<T> toArchive){toArchive.forEach(this::preArchive);}
+    public void postBatchArchive(Collection<T> toArchive){toArchive.forEach(this::postArchive);}
+    public void preBatchDeArchive(List<T> toDeArchive){toDeArchive.forEach(this::preDeArchive);}
+    public void postBatchDeArchive(List<T> toDeArchive){toDeArchive.forEach(this::postDeArchive);}
 }

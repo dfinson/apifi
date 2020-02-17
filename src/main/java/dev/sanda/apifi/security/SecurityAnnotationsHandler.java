@@ -2,7 +2,7 @@ package dev.sanda.apifi.security;
 
 
 import com.squareup.javapoet.AnnotationSpec;
-import dev.sanda.apifi.annotations.WithSecurity;
+import dev.sanda.apifi.annotations.WithServiceLevelSecurity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
@@ -25,37 +25,37 @@ public class SecurityAnnotationsHandler {
     
     public Map.Entry<List<AnnotationSpec>, List<Class<? extends Annotation>>> handleCRUD(Element element, List<Class<? extends Annotation>> alreadyAssigned){
         List<AnnotationSpec> result = new ArrayList<>();
-        WithSecurity withSecurity = element.getAnnotation(WithSecurity.class);
-        if(withSecurity == null) return immutableEntry(result, alreadyAssigned);
+        WithServiceLevelSecurity withServiceLevelSecurity = element.getAnnotation(WithServiceLevelSecurity.class);
+        if(withServiceLevelSecurity == null) return immutableEntry(result, alreadyAssigned);
         
-        if(!withSecurity.secured().equals("") && !alreadyAssigned.contains(SECURED)){
-            result.add(securityAnnotation(SECURED, withSecurity.secured()));
+        if(!withServiceLevelSecurity.secured().equals("") && !alreadyAssigned.contains(SECURED)){
+            result.add(securityAnnotation(SECURED, withServiceLevelSecurity.secured()));
             alreadyAssigned.add(SECURED);
         }
-        if(!withSecurity.rolesAllowed().equals("")&& !alreadyAssigned.contains(ROLES_ALLOWED)){
-            result.add(securityAnnotation(ROLES_ALLOWED, withSecurity.rolesAllowed()));
+        if(!withServiceLevelSecurity.rolesAllowed().equals("")&& !alreadyAssigned.contains(ROLES_ALLOWED)){
+            result.add(securityAnnotation(ROLES_ALLOWED, withServiceLevelSecurity.rolesAllowed()));
             alreadyAssigned.add(ROLES_ALLOWED);
         }
-        if(!withSecurity.preAuthorize().equals("")&& !alreadyAssigned.contains(PRE_AUTHORIZE)){
-            result.add(securityAnnotation(PRE_AUTHORIZE, withSecurity.preAuthorize()));
+        if(!withServiceLevelSecurity.preAuthorize().equals("")&& !alreadyAssigned.contains(PRE_AUTHORIZE)){
+            result.add(securityAnnotation(PRE_AUTHORIZE, withServiceLevelSecurity.preAuthorize()));
             alreadyAssigned.add(PRE_AUTHORIZE);
         }
-        if(!withSecurity.postAuthorize().equals("")&& !alreadyAssigned.contains(POST_AUTORIZE)){
-            result.add(securityAnnotation(POST_AUTORIZE, withSecurity.postAuthorize()));
+        if(!withServiceLevelSecurity.postAuthorize().equals("")&& !alreadyAssigned.contains(POST_AUTORIZE)){
+            result.add(securityAnnotation(POST_AUTORIZE, withServiceLevelSecurity.postAuthorize()));
             alreadyAssigned.add(POST_AUTORIZE);
         }
-        if(!withSecurity.preFilter().equals("")&& !alreadyAssigned.contains(PRE_FILTER)){
+        if(!withServiceLevelSecurity.preFilter().equals("")&& !alreadyAssigned.contains(PRE_FILTER)){
             AnnotationSpec.Builder builder = AnnotationSpec
                     .builder(PreFilter.class)
-                    .addMember("value", "$S", withSecurity.preFilter());
-            if(!withSecurity.preFilterTarget().equals("")){
-                builder.addMember("filterTarget", "$S", withSecurity.preFilterTarget());
+                    .addMember("value", "$S", withServiceLevelSecurity.preFilter());
+            if(!withServiceLevelSecurity.preFilterTarget().equals("")){
+                builder.addMember("filterTarget", "$S", withServiceLevelSecurity.preFilterTarget());
             }
             result.add(builder.build());
             alreadyAssigned.add(PRE_FILTER);
         }
-        if(!withSecurity.postFilter().equals("")&& !alreadyAssigned.contains(POST_FILTER)){
-            result.add(securityAnnotation(POST_FILTER, withSecurity.postFilter()));
+        if(!withServiceLevelSecurity.postFilter().equals("")&& !alreadyAssigned.contains(POST_FILTER)){
+            result.add(securityAnnotation(POST_FILTER, withServiceLevelSecurity.postFilter()));
             alreadyAssigned.add(POST_FILTER);
         }
         return immutableEntry(result, alreadyAssigned);
@@ -63,37 +63,37 @@ public class SecurityAnnotationsHandler {
     
     public Map.Entry<List<AnnotationSpec>, List<Class<? extends Annotation>>> handleCreate(Element element, List<Class<? extends Annotation>> alreadyAssigned){
         List<AnnotationSpec> result = new ArrayList<>();
-        WithSecurity withSecurity = element.getAnnotation(WithSecurity.class);
-        if(withSecurity == null) return immutableEntry(result, alreadyAssigned);
+        WithServiceLevelSecurity withServiceLevelSecurity = element.getAnnotation(WithServiceLevelSecurity.class);
+        if(withServiceLevelSecurity == null) return immutableEntry(result, alreadyAssigned);
 
-        if(!withSecurity.securedCreate().equals("") && !alreadyAssigned.contains(SECURED)){
-            result.add(securityAnnotation(SECURED, withSecurity.securedCreate()));
+        if(!withServiceLevelSecurity.securedCreate().equals("") && !alreadyAssigned.contains(SECURED)){
+            result.add(securityAnnotation(SECURED, withServiceLevelSecurity.securedCreate()));
             alreadyAssigned.add(SECURED);
         }
-        if(!withSecurity.rolesAllowedCreate().equals("")&& !alreadyAssigned.contains(ROLES_ALLOWED)){
-            result.add(securityAnnotation(ROLES_ALLOWED, withSecurity.rolesAllowedCreate()));
+        if(!withServiceLevelSecurity.rolesAllowedCreate().equals("")&& !alreadyAssigned.contains(ROLES_ALLOWED)){
+            result.add(securityAnnotation(ROLES_ALLOWED, withServiceLevelSecurity.rolesAllowedCreate()));
             alreadyAssigned.add(ROLES_ALLOWED);
         }
-        if(!withSecurity.preAuthorizeCreate().equals("")&& !alreadyAssigned.contains(PRE_AUTHORIZE)){
-            result.add(securityAnnotation(PRE_AUTHORIZE, withSecurity.preAuthorizeCreate()));
+        if(!withServiceLevelSecurity.preAuthorizeCreate().equals("")&& !alreadyAssigned.contains(PRE_AUTHORIZE)){
+            result.add(securityAnnotation(PRE_AUTHORIZE, withServiceLevelSecurity.preAuthorizeCreate()));
             alreadyAssigned.add(PRE_AUTHORIZE);
         }
-        if(!withSecurity.postAuthorizeCreate().equals("")&& !alreadyAssigned.contains(POST_AUTORIZE)){
-            result.add(securityAnnotation(POST_AUTORIZE, withSecurity.postAuthorizeCreate()));
+        if(!withServiceLevelSecurity.postAuthorizeCreate().equals("")&& !alreadyAssigned.contains(POST_AUTORIZE)){
+            result.add(securityAnnotation(POST_AUTORIZE, withServiceLevelSecurity.postAuthorizeCreate()));
             alreadyAssigned.add(POST_AUTORIZE);
         }
-        if(!withSecurity.preFilterCreate().equals("")&& !alreadyAssigned.contains(PRE_FILTER)){
+        if(!withServiceLevelSecurity.preFilterCreate().equals("")&& !alreadyAssigned.contains(PRE_FILTER)){
             AnnotationSpec.Builder builder = AnnotationSpec
                     .builder(PreFilter.class)
-                    .addMember("value", "$S", withSecurity.preFilterCreate());
-            if(!withSecurity.preFilterTargetCreate().equals("")){
-                builder.addMember("filterTarget", "$S", withSecurity.preFilterTargetCreate());
+                    .addMember("value", "$S", withServiceLevelSecurity.preFilterCreate());
+            if(!withServiceLevelSecurity.preFilterTargetCreate().equals("")){
+                builder.addMember("filterTarget", "$S", withServiceLevelSecurity.preFilterTargetCreate());
             }
             result.add(builder.build());
             alreadyAssigned.add(PRE_FILTER);
         }
-        if(!withSecurity.postFilterCreate().equals("")&& !alreadyAssigned.contains(POST_FILTER)){
-            result.add(securityAnnotation(POST_FILTER, withSecurity.postFilterCreate()));
+        if(!withServiceLevelSecurity.postFilterCreate().equals("")&& !alreadyAssigned.contains(POST_FILTER)){
+            result.add(securityAnnotation(POST_FILTER, withServiceLevelSecurity.postFilterCreate()));
             alreadyAssigned.add(POST_FILTER);
         }
         return immutableEntry(result, alreadyAssigned);
@@ -101,37 +101,37 @@ public class SecurityAnnotationsHandler {
     
     public Map.Entry<List<AnnotationSpec>, List<Class<? extends Annotation>>> handleRead(Element element, List<Class<? extends Annotation>> alreadyAssigned) {
         List<AnnotationSpec> result = new ArrayList<>();
-        WithSecurity withSecurity = element.getAnnotation(WithSecurity.class);
-        if (withSecurity == null) return immutableEntry(result, alreadyAssigned);
+        WithServiceLevelSecurity withServiceLevelSecurity = element.getAnnotation(WithServiceLevelSecurity.class);
+        if (withServiceLevelSecurity == null) return immutableEntry(result, alreadyAssigned);
 
-        if (!withSecurity.securedRead().equals("") && !alreadyAssigned.contains(SECURED)) {
-            result.add(securityAnnotation(SECURED, withSecurity.securedRead()));
+        if (!withServiceLevelSecurity.securedRead().equals("") && !alreadyAssigned.contains(SECURED)) {
+            result.add(securityAnnotation(SECURED, withServiceLevelSecurity.securedRead()));
             alreadyAssigned.add(SECURED);
         }
-        if (!withSecurity.rolesAllowedRead().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
-            result.add(securityAnnotation(ROLES_ALLOWED, withSecurity.rolesAllowedRead()));
+        if (!withServiceLevelSecurity.rolesAllowedRead().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
+            result.add(securityAnnotation(ROLES_ALLOWED, withServiceLevelSecurity.rolesAllowedRead()));
             alreadyAssigned.add(ROLES_ALLOWED);
         }
-        if (!withSecurity.preAuthorizeRead().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
-            result.add(securityAnnotation(PRE_AUTHORIZE, withSecurity.preAuthorizeRead()));
+        if (!withServiceLevelSecurity.preAuthorizeRead().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
+            result.add(securityAnnotation(PRE_AUTHORIZE, withServiceLevelSecurity.preAuthorizeRead()));
             alreadyAssigned.add(PRE_AUTHORIZE);
         }
-        if (!withSecurity.postAuthorizeRead().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
-            result.add(securityAnnotation(POST_AUTORIZE, withSecurity.postAuthorizeRead()));
+        if (!withServiceLevelSecurity.postAuthorizeRead().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
+            result.add(securityAnnotation(POST_AUTORIZE, withServiceLevelSecurity.postAuthorizeRead()));
             alreadyAssigned.add(POST_AUTORIZE);
         }
-        if (!withSecurity.preFilterRead().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
+        if (!withServiceLevelSecurity.preFilterRead().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
             AnnotationSpec.Builder builder = AnnotationSpec
                     .builder(PreFilter.class)
-                    .addMember("value", "$S", withSecurity.preFilterRead());
-            if (!withSecurity.preFilterTargetRead().equals("")) {
-                builder.addMember("filterTarget", "$S", withSecurity.preFilterTargetRead());
+                    .addMember("value", "$S", withServiceLevelSecurity.preFilterRead());
+            if (!withServiceLevelSecurity.preFilterTargetRead().equals("")) {
+                builder.addMember("filterTarget", "$S", withServiceLevelSecurity.preFilterTargetRead());
             }
             result.add(builder.build());
             alreadyAssigned.add(PRE_FILTER);
         }
-        if (!withSecurity.postFilterRead().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
-            result.add(securityAnnotation(POST_FILTER, withSecurity.postFilterRead()));
+        if (!withServiceLevelSecurity.postFilterRead().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
+            result.add(securityAnnotation(POST_FILTER, withServiceLevelSecurity.postFilterRead()));
             alreadyAssigned.add(POST_FILTER);
         }
         return immutableEntry(result, alreadyAssigned);
@@ -139,37 +139,37 @@ public class SecurityAnnotationsHandler {
     
     public Map.Entry<List<AnnotationSpec>, List<Class<? extends Annotation>>> handleUpdate(Element element, List<Class<? extends Annotation>> alreadyAssigned) {
         List<AnnotationSpec> result = new ArrayList<>();
-        WithSecurity withSecurity = element.getAnnotation(WithSecurity.class);
-        if (withSecurity == null) return immutableEntry(result, alreadyAssigned);
+        WithServiceLevelSecurity withServiceLevelSecurity = element.getAnnotation(WithServiceLevelSecurity.class);
+        if (withServiceLevelSecurity == null) return immutableEntry(result, alreadyAssigned);
 
-        if (!withSecurity.securedUpdate().equals("") && !alreadyAssigned.contains(SECURED)) {
-            result.add(securityAnnotation(SECURED, withSecurity.securedUpdate()));
+        if (!withServiceLevelSecurity.securedUpdate().equals("") && !alreadyAssigned.contains(SECURED)) {
+            result.add(securityAnnotation(SECURED, withServiceLevelSecurity.securedUpdate()));
             alreadyAssigned.add(SECURED);
         }
-        if (!withSecurity.rolesAllowedUpdate().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
-            result.add(securityAnnotation(ROLES_ALLOWED, withSecurity.rolesAllowedUpdate()));
+        if (!withServiceLevelSecurity.rolesAllowedUpdate().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
+            result.add(securityAnnotation(ROLES_ALLOWED, withServiceLevelSecurity.rolesAllowedUpdate()));
             alreadyAssigned.add(ROLES_ALLOWED);
         }
-        if (!withSecurity.preAuthorizeUpdate().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
-            result.add(securityAnnotation(PRE_AUTHORIZE, withSecurity.preAuthorizeUpdate()));
+        if (!withServiceLevelSecurity.preAuthorizeUpdate().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
+            result.add(securityAnnotation(PRE_AUTHORIZE, withServiceLevelSecurity.preAuthorizeUpdate()));
             alreadyAssigned.add(PRE_AUTHORIZE);
         }
-        if (!withSecurity.postAuthorizeUpdate().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
-            result.add(securityAnnotation(POST_AUTORIZE, withSecurity.postAuthorizeUpdate()));
+        if (!withServiceLevelSecurity.postAuthorizeUpdate().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
+            result.add(securityAnnotation(POST_AUTORIZE, withServiceLevelSecurity.postAuthorizeUpdate()));
             alreadyAssigned.add(POST_AUTORIZE);
         }
-        if (!withSecurity.preFilterCreate().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
+        if (!withServiceLevelSecurity.preFilterCreate().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
             AnnotationSpec.Builder builder = AnnotationSpec
                     .builder(PreFilter.class)
-                    .addMember("value", "$S", withSecurity.preFilterUpdate());
-            if (!withSecurity.preFilterTargetUpdate().equals("")) {
-                builder.addMember("filterTarget", "$S", withSecurity.preFilterTargetUpdate());
+                    .addMember("value", "$S", withServiceLevelSecurity.preFilterUpdate());
+            if (!withServiceLevelSecurity.preFilterTargetUpdate().equals("")) {
+                builder.addMember("filterTarget", "$S", withServiceLevelSecurity.preFilterTargetUpdate());
             }
             result.add(builder.build());
             alreadyAssigned.add(PRE_FILTER);
         }
-        if (!withSecurity.postFilterUpdate().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
-            result.add(securityAnnotation(POST_FILTER, withSecurity.postFilterUpdate()));
+        if (!withServiceLevelSecurity.postFilterUpdate().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
+            result.add(securityAnnotation(POST_FILTER, withServiceLevelSecurity.postFilterUpdate()));
             alreadyAssigned.add(POST_FILTER);
         }
         return immutableEntry(result, alreadyAssigned);
@@ -177,37 +177,37 @@ public class SecurityAnnotationsHandler {
     
     public Map.Entry<List<AnnotationSpec>, List<Class<? extends Annotation>>> handleDelete(Element element, List<Class<? extends Annotation>> alreadyAssigned) {
         List<AnnotationSpec> result = new ArrayList<>();
-        WithSecurity withSecurity = element.getAnnotation(WithSecurity.class);
-        if (withSecurity == null) return immutableEntry(result, alreadyAssigned);
+        WithServiceLevelSecurity withServiceLevelSecurity = element.getAnnotation(WithServiceLevelSecurity.class);
+        if (withServiceLevelSecurity == null) return immutableEntry(result, alreadyAssigned);
 
-        if (!withSecurity.securedDelete().equals("") && !alreadyAssigned.contains(SECURED)) {
-            result.add(securityAnnotation(SECURED, withSecurity.securedDelete()));
+        if (!withServiceLevelSecurity.securedDelete().equals("") && !alreadyAssigned.contains(SECURED)) {
+            result.add(securityAnnotation(SECURED, withServiceLevelSecurity.securedDelete()));
             alreadyAssigned.add(SECURED);
         }
-        if (!withSecurity.rolesAllowedDelete().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
-            result.add(securityAnnotation(ROLES_ALLOWED, withSecurity.rolesAllowedDelete()));
+        if (!withServiceLevelSecurity.rolesAllowedDelete().equals("") && !alreadyAssigned.contains(ROLES_ALLOWED)) {
+            result.add(securityAnnotation(ROLES_ALLOWED, withServiceLevelSecurity.rolesAllowedDelete()));
             alreadyAssigned.add(ROLES_ALLOWED);
         }
-        if (!withSecurity.preAuthorizeDelete().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
-            result.add(securityAnnotation(PRE_AUTHORIZE, withSecurity.preAuthorizeDelete()));
+        if (!withServiceLevelSecurity.preAuthorizeDelete().equals("") && !alreadyAssigned.contains(PRE_AUTHORIZE)) {
+            result.add(securityAnnotation(PRE_AUTHORIZE, withServiceLevelSecurity.preAuthorizeDelete()));
             alreadyAssigned.add(PRE_AUTHORIZE);
         }
-        if (!withSecurity.postAuthorizeDelete().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
-            result.add(securityAnnotation(POST_AUTORIZE, withSecurity.postAuthorizeDelete()));
+        if (!withServiceLevelSecurity.postAuthorizeDelete().equals("") && !alreadyAssigned.contains(POST_AUTORIZE)) {
+            result.add(securityAnnotation(POST_AUTORIZE, withServiceLevelSecurity.postAuthorizeDelete()));
             alreadyAssigned.add(POST_AUTORIZE);
         }
-        if (!withSecurity.preFilterCreate().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
+        if (!withServiceLevelSecurity.preFilterCreate().equals("") && !alreadyAssigned.contains(PRE_FILTER)) {
             AnnotationSpec.Builder builder = AnnotationSpec
                     .builder(PreFilter.class)
-                    .addMember("value", "$S", withSecurity.preFilterDelete());
-            if (!withSecurity.preFilterTargetDelete().equals("")) {
-                builder.addMember("filterTarget", "$S", withSecurity.preFilterTargetDelete());
+                    .addMember("value", "$S", withServiceLevelSecurity.preFilterDelete());
+            if (!withServiceLevelSecurity.preFilterTargetDelete().equals("")) {
+                builder.addMember("filterTarget", "$S", withServiceLevelSecurity.preFilterTargetDelete());
             }
             result.add(builder.build());
             alreadyAssigned.add(PRE_FILTER);
         }
-        if (!withSecurity.postFilterDelete().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
-            result.add(securityAnnotation(POST_FILTER, withSecurity.postFilterDelete()));
+        if (!withServiceLevelSecurity.postFilterDelete().equals("") && !alreadyAssigned.contains(POST_FILTER)) {
+            result.add(securityAnnotation(POST_FILTER, withServiceLevelSecurity.postFilterDelete()));
             alreadyAssigned.add(POST_FILTER);
         }
 

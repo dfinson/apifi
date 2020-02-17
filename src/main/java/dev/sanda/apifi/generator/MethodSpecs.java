@@ -3,10 +3,8 @@ package dev.sanda.apifi.generator;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.ApifiStaticUtils;
-import dev.sanda.apifi.generator.api_builder.CustomResolverApiBuildInfo;
 import dev.sanda.apifi.service.ApiLogic;
 import graphql.execution.batched.Batched;
-import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -82,7 +80,7 @@ public class MethodSpecs {
                         .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
                         .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", null))
                         .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
-                        .addStatement("return $T.fuzzySearch($T.class, $L, $L, offset, limit, searchTerm, sortBy, sortDirection)",
+                        .addStatement("return $T.freeTextSearch($T.class, $L, $L, offset, limit, searchTerm, sortBy, sortDirection)",
                                 ClassName.get(ApiLogic.class),//$T
                                 ClassName.get(entity),//$T
                                 ApifiStaticUtils.dataManagerName(entity),//$L
@@ -390,11 +388,11 @@ public class MethodSpecs {
                 .addAnnotation(Batched.class)
                 .addAnnotation(GraphQLQuery.class)
                 .addParameter(input)
-                .addStatement("return $T.getAsEmbeddedCollection($L, input, $S, $L, $L)",
+                .addStatement("return $T.getEmbeddedCollection($L, input, $S, $L, $L)",
                         ClassName.get(ApiLogic.class),//$T
                         ApifiStaticUtils.dataManagerName(embedded),//$L
                         ApifiStaticUtils.camelcaseNameOf(embedded),//$S
-                        ApifiStaticUtils.embeddedCollectionMetaOpsName(embedded),//$T
+                        ApifiStaticUtils.embeddedCollectionApiHooksName(embedded),//$T
                         ApifiStaticUtils.reflectionCache//$L
                 )
                 .returns(ApifiStaticUtils.listOfLists(embedded));
@@ -415,7 +413,7 @@ public class MethodSpecs {
                         ApifiStaticUtils.dataManagerName(embedded),//$L
                         ApifiStaticUtils.camelcaseNameOf(owner),//$L
                         ApifiStaticUtils.camelcaseNameOf(embedded),//$S
-                        ApifiStaticUtils.embeddedCollectionMetaOpsName(embedded),//$L
+                        ApifiStaticUtils.embeddedCollectionApiHooksName(embedded),//$L
                         ApifiStaticUtils.reflectionCache//$L
                 )
                 .returns(ApifiStaticUtils.listOfEmbedded(embedded));
@@ -436,7 +434,7 @@ public class MethodSpecs {
                         ApifiStaticUtils.dataManagerName(embedded),//$L
                         ApifiStaticUtils.camelcaseNameOf(owner),//$L
                         ApifiStaticUtils.camelcaseNameOf(embedded),//$S
-                        ApifiStaticUtils.embeddedCollectionMetaOpsName(embedded),//$L
+                        ApifiStaticUtils.embeddedCollectionApiHooksName(embedded),//$L
                         ApifiStaticUtils.reflectionCache//$L
                 )
                 .returns(ApifiStaticUtils.listOfEmbedded(embedded));
@@ -457,7 +455,7 @@ public class MethodSpecs {
                         ApifiStaticUtils.dataManagerName(embedded),//$L
                         ApifiStaticUtils.camelcaseNameOf(owner),//$L
                         /*camelcaseNameOf(embedded),//$S*/
-                        ApifiStaticUtils.embeddedCollectionMetaOpsName(embedded),//$L
+                        ApifiStaticUtils.embeddedCollectionApiHooksName(embedded),//$L
                         ApifiStaticUtils.reflectionCache//$L
                 )
                 .returns(ApifiStaticUtils.listOfEmbedded(embedded));
@@ -472,13 +470,12 @@ public class MethodSpecs {
                 .addAnnotation(GraphQLMutation.class)
                 .addParameter(ApifiStaticUtils.asEmbeddedCollectionParamList(embedded))
                 .addParameter(ParameterSpec.builder(ClassName.get(owner), ApifiStaticUtils.camelcaseNameOf(owner)).build())
-                .addStatement("return $T.removeFromEmbeddedCollection($L, $L, $L, $S, input, $L, $L)",
+                .addStatement("return $T.removeFromEmbeddedCollection($L, $L, $S, input, $L, $L)",
                         ClassName.get(ApiLogic.class),//$T
                         ApifiStaticUtils.dataManagerName(owner),//$L
-                        ApifiStaticUtils.dataManagerName(embedded),//$L
                         ApifiStaticUtils.camelcaseNameOf(owner),//$L
                         ApifiStaticUtils.camelcaseNameOf(embedded),//$S
-                        ApifiStaticUtils.embeddedCollectionMetaOpsName(embedded),//$L
+                        ApifiStaticUtils.embeddedCollectionApiHooksName(embedded),//$L
                         ApifiStaticUtils.reflectionCache//$L
                 )
                 .returns(ApifiStaticUtils.listOfEmbedded(embedded));
@@ -528,13 +525,5 @@ public class MethodSpecs {
     private final static String READ = "Read";
     private final static String UPDATE = "Update";
     private final static String DELETE = "Delete";
-
-    private ParameterSpec graphQLParameter(TypeName typeName, String name, String defaultValue) {
-        AnnotationSpec.Builder annotation = AnnotationSpec.builder(GraphQLArgument.class)
-                .addMember("name", "$S", name);
-        if(defaultValue != null)
-                annotation.addMember("defaultValue", "$S", defaultValue);
-        return ParameterSpec.builder(typeName, name).addAnnotation(annotation.build()).build();
-    }
 }
 

@@ -18,6 +18,8 @@
         <datafi.version>0.0.3</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <graphql-spqr-spring-boot-starter.version>0.0.4</graphql-spqr-spring-boot-starter.version>
+        <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
+        <mockeri.version>0.0.2</mockeri.version>
     </properties>
 
     <dependencies>
@@ -46,6 +48,44 @@
             <artifactId>graphql-spqr-spring-boot-starter</artifactId>
             <version>${graphql-spqr-spring-boot-starter.version}</version>
         </dependency>
+
+        <!-- testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>java-hamcrest</artifactId>
+            <version>${java-hamcrest-version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.sanda</groupId>
+            <artifactId>mockeri</artifactId>
+            <version>${mockeri.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.1.8.RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
 
     <name>Apifi</name>

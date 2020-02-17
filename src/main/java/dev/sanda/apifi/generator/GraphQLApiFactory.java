@@ -2,6 +2,8 @@ package dev.sanda.apifi.generator;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.ApifiStaticUtils;
+import dev.sanda.apifi.generator.entity.EntitiesInfoCache;
+import dev.sanda.apifi.generator.entity.EntityApiGenerator;
 import io.leangen.graphql.spqr.spring.annotations.GraphQLApi;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,9 @@ import javax.persistence.*;
 import javax.transaction.Transactional;
 import java.util.*;
 
+import static dev.sanda.apifi.ApifiStaticUtils.getFields;
+import static dev.sanda.datafi.DatafiStaticUtils.writeToJavaFile;
+
 /**
  * generates a single web-exposed graphql service bean for a given entity
  */
@@ -27,7 +32,7 @@ public class GraphQLApiFactory {
     @NonNull
     private ProcessingEnvironment processingEnvironment;
     @NonNull
-    private EntitiesInfoCache entitiesInfoCache;
+    private Map<TypeElement, EntityApiGenerator> entitiesApiBuildInfo;
     private FieldSpecs fieldSpecs;
     private MethodSpecs methodSpecs;
     private SecurityAnnotationsHandler securityAnnotationsHandler = new SecurityAnnotationsHandler();
@@ -84,10 +89,9 @@ public class GraphQLApiFactory {
                 .addField(fieldSpecs.reflectionCache())
                 .addField(fieldSpecs.dataManager(entity));
 
-        for(VariableElement field : ApifiStaticUtils.getFields(entity)){
-            if(isForeignKeyOrKeys(field))
+        for(VariableElement field : getFields(entity))
+            if (isForeignKeyOrKeys(field))
                 addEmbeddedFieldResolvers(entity, field, builder);
-        }
         addGetByAndGetAllByResolvers(entity, builder);
         addCustomResolvers(entity, builder);
         handleSecurityAnnotations(builder, entity);
@@ -99,9 +103,9 @@ public class GraphQLApiFactory {
     }
 
     private boolean isFuzzySearchable(TypeElement entity) {
-        if(entity.getAnnotation(FuzzySearchByFields.class) != null) return true;
+        if(entity.getAnnotation(FreeTextSearchByFields.class) != null) return true;
         for (Element enclosedElement : entity.getEnclosedElements())
-            if (enclosedElement.getKind().isField() && enclosedElement.getAnnotation(FuzzySearchBy.class) != null)
+            if (enclosedElement.getKind().isField() && enclosedElement.getAnnotation(FreeTextSearchBy.class) != null)
                 return true;
         return false;
     }
@@ -115,7 +119,7 @@ public class GraphQLApiFactory {
     }
 
     private void addGetByAndGetAllByResolvers(TypeElement entity, TypeSpec.Builder builder) {
-        for(VariableElement field : ApifiStaticUtils.getFields(entity)){
+        for(VariableElement field : getFields(entity)){
             if(field.getAnnotation(GetAllBy.class) != null)
                 builder.addMethod(methodSpecs.generateGetByAllEndpoint(entity, field));
             if(field.getAnnotation(GetBy.class) != null)
@@ -123,14 +127,6 @@ public class GraphQLApiFactory {
             else if(field.getAnnotation(GetByUnique.class) != null)
                 builder.addMethod(methodSpecs.generateGetByUniqueEndpoint(entity, field));
         }
-    }
-
-    private boolean isForeignKeyOrKeys(VariableElement field) {
-        return
-                field.getAnnotation(OneToMany.class) != null ||
-                field.getAnnotation(ManyToOne.class) != null ||
-                field.getAnnotation(OneToOne.class) != null ||
-                field.getAnnotation(ManyToMany.class) != null;
     }
 
     private void addEmbeddedFieldResolvers(TypeElement entity, VariableElement field, TypeSpec.Builder builder) {

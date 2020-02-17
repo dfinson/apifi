@@ -4,8 +4,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import dev.sanda.apifi.ApifiStaticUtils;
-import dev.sanda.apifi.annotations.ApiHooks;
-import dev.sanda.apifi.service.ApiHooksAndCustomResolvers;
+import dev.sanda.apifi.annotations.ForeignKeyCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
@@ -22,6 +21,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 
 import static dev.sanda.apifi.ApifiStaticUtils.apiHooksName;
+import static dev.sanda.apifi.ApifiStaticUtils.camelcaseNameOf;
 import static dev.sanda.datafi.DatafiStaticUtils.toPascalCase;
 
 /**
@@ -33,8 +33,8 @@ public class FieldSpecs {
 
     @NonNull
     private ProcessingEnvironment processingEnv;
-    @NonNull
-    private EntitiesInfoCache entitiesInfoCache;
+    /*@NonNull
+    private EntitiesInfoCache entitiesInfoCache;*/
 
     public FieldSpec reflectionCache() {
         return FieldSpec.builder(ReflectionCache.class, ApifiStaticUtils.reflectionCache, Modifier.PRIVATE)
@@ -45,7 +45,7 @@ public class FieldSpecs {
     public FieldSpec dataManager(TypeElement entity){
         return FieldSpec.builder(
                 ParameterizedTypeName.get(ClassName.get(DataManager.class), ClassName.get(entity)),
-                ApifiStaticUtils.camelcaseNameOf(entity) + "DataManager")
+                camelcaseNameOf(entity) + "DataManager")
                 .addAnnotation(Autowired.class)
                 .addModifiers(Modifier.PRIVATE)
                 .build();
@@ -60,44 +60,38 @@ public class FieldSpecs {
                 .build();
     }
 
-    public FieldSpec apiHooks(TypeElement entity) {
+    /*public FieldSpec apiHooks(TypeElement entity) {
         TypeElement apiHooks = entitiesInfoCache.getEntitiesApiHooksMap().get(entity.getSimpleName().toString());
         return FieldSpec.builder(
                 ParameterizedTypeName.get(ClassName.get(apiHooks), ClassName.get(entity)), apiHooksName(entity))
                 .addAnnotation(Autowired.class)
                 .addModifiers(Modifier.PRIVATE)
                 .build();
-    }
+    }*/
 
     public FieldSpec embeddedCollectionApiHooks(VariableElement field) {
         ParameterizedTypeName apiHooksType = null;
-        ApiHooks apiHooks = field.getAnnotation(ApiHooks.class);
-        if(apiHooks != null){
-            try{
-                apiHooks.value();
-            }catch (MirroredTypeException mte){
-                Types TypeUtils = this.processingEnv.getTypeUtils();
-                apiHooksType = ParameterizedTypeName.get(ClassName.get((TypeElement)TypeUtils.asElement(mte.getTypeMirror())));
-            }
-        }else {
-            TypeElement typeElement =
-                    entitiesInfoCache
-                            .getTypeElementMap()
-                            .get(entitiesInfoCache.getCollectionType(field));
-            apiHooksType =
-                    ParameterizedTypeName.get(
-                    ClassName.get(EmbeddedCollectionApiHooks.class),
-                    ClassName.get(typeElement),
-                    ClassName.get((TypeElement) field.getEnclosingElement()));
+        ForeignKeyCollectionApi foreignKeyCollectionApi = field.getAnnotation(ForeignKeyCollectionApi.class);
+        if(foreignKeyCollectionApi != null){
+            apiHooksType = extractApiHooksTypeFromClazzToken(apiHooksType, foreignKeyCollectionApi);
         }
         assert apiHooksType != null;
         return
                 FieldSpec
                 .builder(apiHooksType,
-                        ApifiStaticUtils.camelcaseNameOf(field) +
-                              EmbeddedCollectionApiHooks.class.getSimpleName(),
+                        camelcaseNameOf(field) + EmbeddedCollectionApiHooks.class.getSimpleName(),
                         Modifier.PRIVATE)
                         .addAnnotation(Autowired.class)
                 .build();
+    }
+
+    public ParameterizedTypeName extractApiHooksTypeFromClazzToken(ParameterizedTypeName apiHooksType, ForeignKeyCollectionApi foreignKeyCollectionApi) {
+        try{
+            foreignKeyCollectionApi.apiHooks();
+        }catch (MirroredTypeException mte){
+            Types TypeUtils = this.processingEnv.getTypeUtils();
+            apiHooksType = ParameterizedTypeName.get(ClassName.get((TypeElement)TypeUtils.asElement(mte.getTypeMirror())));
+        }
+        return apiHooksType;
     }
 }

@@ -2,6 +2,7 @@ package dev.sanda.apifi.generator;
 
 import com.google.auto.service.AutoService;
 import dev.sanda.apifi.ApifiStaticUtils;
+import dev.sanda.apifi.generator.entity.EntitiesInfoCache;
 
 
 import javax.annotation.processing.*;

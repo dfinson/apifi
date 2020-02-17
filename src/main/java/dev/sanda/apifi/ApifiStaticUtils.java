@@ -1,24 +1,25 @@
 package dev.sanda.apifi;
 
 import com.squareup.javapoet.*;
-import dev.sanda.apifi.annotations.ApiHooks;
+import dev.sanda.apifi.annotations.ForeignKeyCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
-import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.ReflectionCache;
+import io.leangen.graphql.annotations.GraphQLArgument;
+import lombok.val;
 import lombok.var;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
@@ -60,8 +61,8 @@ public abstract class ApifiStaticUtils {
         return ParameterizedTypeName.get(ClassName.get(List.class), typeName);
     }
 
-    public static String dataManagerName(Element entity) {
-        return camelcaseNameOf(entity) + "DataManager";
+    public static String dataManagerName(Element element) {
+        return camelcaseNameOf(element) + "DataManager";
     }
 
     public static TypeName collectionTypeName(VariableElement embedded) {
@@ -107,10 +108,23 @@ public abstract class ApifiStaticUtils {
         return CodeBlock.builder().add("$T entities", listOfEntities).build();
     }
 
+    @SafeVarargs
     public static <A extends Annotation> ParameterSpec asParamList(Element element, Class<A>... annotations) {
         ClassName list = ClassName.get("java.util", "List");
         TypeName typeClassName = TypeName.get(element.asType());
         var builder = ParameterSpec.builder(ParameterizedTypeName.get(list, typeClassName), "input");
+        if (annotations.length > 0) {
+            for (Class<A> annotation : annotations) {
+                builder.addAnnotation(annotation);
+            }
+        }
+        return builder.build();
+    }
+
+    @SafeVarargs
+    public static <A extends Annotation> ParameterSpec asParamList(TypeName typeName, Class<A>... annotations) {
+        ClassName list = ClassName.get("java.util", "List");
+        var builder = ParameterSpec.builder(ParameterizedTypeName.get(list, typeName), "input");
         if (annotations.length > 0) {
             for (Class<A> annotation : annotations) {
                 builder.addAnnotation(annotation);
@@ -143,17 +157,11 @@ public abstract class ApifiStaticUtils {
         return ParameterizedTypeName.get(ClassName.get(List.class), collectionTypeName(element));
     }
 
-    public static String embeddedCollectionMetaOpsName(VariableElement embedded) {
-        ApiHooks apiHooks = embedded.getAnnotation(ApiHooks.class);
-        if (apiHooks == null)
-            return toCamelCase(embedded.getSimpleName().toString()) +
-                    toPascalCase(EmbeddedCollectionApiHooks.class.getSimpleName());
-
-        Class<?> apiHooksImpl = apiHooks.value();
-        if (apiHooksImpl.isAnnotationPresent(Component.class) || apiHooksImpl.isAnnotationPresent(Service.class))
-            return toCamelCase(apiHooksImpl.getSimpleName());
-        return "new " + apiHooksImpl.getSimpleName() + "()";
+    public static String embeddedCollectionApiHooksName(VariableElement embedded) {
+        val apiHooks = embedded.getAnnotation(ForeignKeyCollectionApi.class);
+        return apiHooks != null ? camelcaseNameOf(embedded) + EmbeddedCollectionApiHooks.class.getSimpleName() : "null";
     }
+
     public static boolean isTypeElementOfType(Element element, String typeCanonicalName, ProcessingEnvironment processingEnv) {
         return processingEnv
                 .getTypeUtils()
@@ -167,15 +175,47 @@ public abstract class ApifiStaticUtils {
         return reflectionCache.getEntitiesCache().get(clazz.getSimpleName()).isArchivable();
     }
 
-    public static <T> Object getId(T input, ReflectionCache reflectionCache) {
-        return reflectionCache.getIdOf(input.getClass().getSimpleName(), input);
-    }
-
     public static String getCollectionType(VariableElement element){
         return element
                 .asType()
                 .toString()
                 .replaceAll("^.+<", "")
                 .replaceAll(">", "");
+    }
+
+    public static boolean isIterable(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
+        TypeMirror iterableType =
+                processingEnv.getTypeUtils()
+                        .erasure(
+                                processingEnv
+                                        .getElementUtils()
+                                        .getTypeElement("java.lang.Iterable")
+                                        .asType()
+                        );
+        return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
+    }
+
+    public static boolean isFromType(TypeName requestType, TypeName expectedType) {
+        if(requestType instanceof ParameterizedTypeName) {
+            TypeName typeName = ((ParameterizedTypeName) requestType).rawType;
+            return (typeName.equals(expectedType));
+        }
+        return false;
+    }
+
+    public static ParameterSpec graphQLParameter(TypeName typeName, String name, String defaultValue) {
+        AnnotationSpec.Builder annotation = AnnotationSpec.builder(GraphQLArgument.class)
+                .addMember("name", "$S", name);
+        if(defaultValue != null)
+            annotation.addMember("defaultValue", "$S", defaultValue);
+        return ParameterSpec.builder(typeName, name).addAnnotation(annotation.build()).build();
+    }
+
+    public static boolean isForeignKeyOrKeys(VariableElement field) {
+        return
+                field.getAnnotation(OneToMany.class) != null ||
+                field.getAnnotation(ManyToOne.class) != null ||
+                field.getAnnotation(OneToOne.class) != null ||
+                field.getAnnotation(ManyToMany.class) != null;
     }
 }

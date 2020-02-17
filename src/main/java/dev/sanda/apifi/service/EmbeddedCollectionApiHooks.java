@@ -7,22 +7,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.List;
 
 @Component
-public class EmbeddedCollectionApiHooks<T, HasTs>{
+public class EmbeddedCollectionApiHooks<TEmbedded, T>{
 
     @Autowired @Getter
     private ReflectionCache reflectionCache;
     @Autowired @Getter
-    private DataManager<T> tDataManager;
+    private DataManager<TEmbedded> tDataManager;
     @Autowired @Getter
-    private DataManager<HasTs> hasTsDataManager;
+    private DataManager<T> hasTsDataManager;
 
-    public void postFetch(Collection<T> Ts, HasTs hasTs){}
-    public void preRemove(Collection<T> Ts, HasTs hasTs){}
-    public void postRemove(Collection<T> Ts, HasTs hasTs){}
-    public void preAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
-    public void postAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
-    public void preUpdate(Collection<T> Ts, HasTs hasTs){}
-    public void postUpdate(Collection<T> Ts, HasTs hasTs){}
+    public void preFetch(T t) {}
+    public void postFetch(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void preRemove(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void postRemove(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void preAssociate(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void postAssociate(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void preUpdate(Collection<TEmbedded> tEmbeddeds, T t){}
+    public void postUpdate(Collection<TEmbedded> tEmbeddeds, T t){}
 }
