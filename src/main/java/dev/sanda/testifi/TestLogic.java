@@ -347,9 +347,9 @@ public final class TestLogic<T> {
     }
 
     public <TEmbedded>
-    void addNewToEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
-                                        String fieldName,
-                                        EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+    void associateWithEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
+                                             String fieldName,
+                                             EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
         T toAddTo = entityMocker.instantiateEntity(clazz);
         @NonNull final Class<TEmbedded> tEmbeddedClass = tEmbeddedDataManager.getClazz();
         List<TEmbedded> toCreate = transientlyInstantiateCollectionOf(tEmbeddedClass, entityMocker);

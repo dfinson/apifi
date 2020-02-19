@@ -656,15 +656,36 @@ public class EntityApiGenerator {
         }
 
         private MethodSpec genAssociateWithEmbeddedCollectionTest(VariableElement fk) {
-
+            String testName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity) + "Test";
+            return MethodSpec.methodBuilder(testName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(Test.class)
+                    .addStatement("testLogic.associateWithEmbeddedCollectionTest($L, $S, $L)",
+                            dataManagerName(fk), fk.getSimpleName(), embeddedCollectionApiHooksName(fk))
+                    .returns(void.class)
+                    .build();
         }
 
         private MethodSpec genUpdateInEmbeddedCollectionTest(VariableElement fk) {
-
+            String testName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "Test";
+            return MethodSpec.methodBuilder(testName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(Test.class)
+                    .addStatement("testLogic.updateEmbeddedCollectionTest($L, $S, $L)",
+                            dataManagerName(fk), fk.getSimpleName(), embeddedCollectionApiHooksName(fk))
+                    .returns(void.class)
+                    .build();
         }
 
         private MethodSpec genRemoveFromEmbeddedCollectionTest(VariableElement fk) {
-
+            String testName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity) + "Test";
+            return MethodSpec.methodBuilder(testName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addAnnotation(Test.class)
+                    .addStatement("testLogic.removeFromEmbeddedCollectionTest($L, $S, $L)",
+                            dataManagerName(fk), fk.getSimpleName(), embeddedCollectionApiHooksName(fk))
+                    .returns(void.class)
+                    .build();
         }
 
         //field spec helpers
