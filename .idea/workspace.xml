@@ -171,10 +171,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="557" y="288" width="308" height="216" key="#com.intellij.ide.util.projectWizard.JdkChooserPanel.MyDialog/67.27.1299.741@67.27.1299.741" timestamp="1580242774304" />
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1581873630870">
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1582141631573">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1581873630870" />
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1582141631573" />
     <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1580754743579">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -183,6 +183,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="249" y="54" width="924" height="684" key="Maven.ArtifactSearchDialog/67.27.1299.741@67.27.1299.741" timestamp="1581798432323" />
+    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt" timestamp="1582144635796">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt/67.27.1299.741@67.27.1299.741" timestamp="1582144635796" />
     <state x="205" y="31" key="SettingsEditor" timestamp="1580741024244">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -191,21 +195,29 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="67" y="27" width="1253" height="699" maximized="true" key="dock-window-1/67.27.1299.741@67.27.1299.741" timestamp="1582138546075" />
-    <state x="449" y="149" width="545" height="495" key="extract.method.dialog" timestamp="1581626720180">
+    <state x="449" y="149" width="554" height="501" key="extract.method.dialog" timestamp="1582144619457">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="449" y="149" width="545" height="495" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1581626720180" />
+    <state x="449" y="149" width="554" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1582144619457" />
     <state x="282" y="95" width="869" height="602" key="find.popup" timestamp="1581971515948">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="282" y="95" width="869" height="602" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1581971515948" />
+    <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1582139038267">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1582139038267" />
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1581634837656">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog/67.27.1299.741@67.27.1299.741" timestamp="1581634837656" />
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1581972298784">
+    <state x="380" y="175" key="run.anything.popup" timestamp="1582144879432">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1581972298784" />
+    <state x="380" y="175" key="run.anything.popup/67.27.1299.741@67.27.1299.741" timestamp="1582144879432" />
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1582141687315">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1582141687315" />
   </component>
 </project>

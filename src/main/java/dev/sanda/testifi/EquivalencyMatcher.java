@@ -1,13 +1,13 @@
 package dev.sanda.testifi;
 
 
+import dev.sanda.datafi.annotations.attributes.NonApiUpdatable;
+import dev.sanda.datafi.annotations.attributes.NonApiUpdatables;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import dev.sanda.datafi.annotations.NonApiUpdatable;
-import dev.sanda.datafi.annotations.NonApiUpdatables;
 
 import javax.persistence.Column;
 import java.lang.reflect.Field;

@@ -4,7 +4,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import dev.sanda.apifi.ApifiStaticUtils;
-import dev.sanda.apifi.annotations.ForeignKeyCollectionApi;
+import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
@@ -20,7 +20,6 @@ import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 
-import static dev.sanda.apifi.ApifiStaticUtils.apiHooksName;
 import static dev.sanda.apifi.ApifiStaticUtils.camelcaseNameOf;
 import static dev.sanda.datafi.DatafiStaticUtils.toPascalCase;
 
@@ -71,9 +70,9 @@ public class FieldSpecs {
 
     public FieldSpec embeddedCollectionApiHooks(VariableElement field) {
         ParameterizedTypeName apiHooksType = null;
-        ForeignKeyCollectionApi foreignKeyCollectionApi = field.getAnnotation(ForeignKeyCollectionApi.class);
-        if(foreignKeyCollectionApi != null){
-            apiHooksType = extractApiHooksTypeFromClazzToken(apiHooksType, foreignKeyCollectionApi);
+        EmbeddedCollectionApi embeddedCollectionApi = field.getAnnotation(EmbeddedCollectionApi.class);
+        if(embeddedCollectionApi != null){
+            apiHooksType = extractApiHooksTypeFromClazzToken(apiHooksType, embeddedCollectionApi);
         }
         assert apiHooksType != null;
         return
@@ -85,9 +84,9 @@ public class FieldSpecs {
                 .build();
     }
 
-    public ParameterizedTypeName extractApiHooksTypeFromClazzToken(ParameterizedTypeName apiHooksType, ForeignKeyCollectionApi foreignKeyCollectionApi) {
+    public ParameterizedTypeName extractApiHooksTypeFromClazzToken(ParameterizedTypeName apiHooksType, EmbeddedCollectionApi embeddedCollectionApi) {
         try{
-            foreignKeyCollectionApi.apiHooks();
+            embeddedCollectionApi.apiHooks();
         }catch (MirroredTypeException mte){
             Types TypeUtils = this.processingEnv.getTypeUtils();
             apiHooksType = ParameterizedTypeName.get(ClassName.get((TypeElement)TypeUtils.asElement(mte.getTypeMirror())));

@@ -480,14 +480,14 @@ As briefly mentioned above, Apifi APIs are designed for extensibility. This is w
 
 ```
     static <T, E extends ApiMetaOperations<T>> List<T>
-    addCollection(DataManager<T> dataManager, List<T> input, E foreignKeyCollectionApi) {
-        foreignKeyCollectionApi.preAddEntities(input);
+    addCollection(DataManager<T> dataManager, List<T> input, E embeddedCollectionApi) {
+        embeddedCollectionApi.preAddEntities(input);
         val result = dataManager.saveAll(input);
-        foreignKeyCollectionApi.postAddEntities(result);
+        embeddedCollectionApi.postAddEntities(result);
         return result;
     }
 ```
-Note the two lines `foreignKeyCollectionApi.preAddEntities(input);`, and `foreignKeyCollectionApi.postAddEntities(result);`. These method calls allow for the `foreignKeyCollectionApi` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
+Note the two lines `embeddedCollectionApi.preAddEntities(input);`, and `embeddedCollectionApi.postAddEntities(result);`. These method calls allow for the `embeddedCollectionApi` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
 
 In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiHooksAndCustomResolvers(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
 ```
@@ -639,7 +639,7 @@ public class Person{
     private String name;
     private Integer age;
     @ManyToMany
-    @MetaOperations(foreignKeyCollectionApi = HobbiesInPersonMetaOperations.class)
+    @MetaOperations(embeddedCollectionApi = HobbiesInPersonMetaOperations.class)
     private Set<Hobby> hobbies;
 }
 ```

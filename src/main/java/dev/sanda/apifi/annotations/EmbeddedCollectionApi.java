@@ -12,13 +12,10 @@ import java.lang.annotation.Target;
 
 import static dev.sanda.apifi.generator.entity.ForeignKeyCollectionResolverType.ALL;
 
-/**
- * Allows for custom business logic when pre/post mutating the state of the annotated Iterable<> field
- */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ForeignKeyCollectionApi {
+public @interface EmbeddedCollectionApi {
     Class<? extends EmbeddedCollectionApiHooks> apiHooks() default NullEmbeddedCollectionApiHooks.class;
-    boolean addPreExistingOnly() default false;
+    boolean associatePreExistingOnly() default false;
     ForeignKeyCollectionResolverType[] resolvers() default ALL;
 }

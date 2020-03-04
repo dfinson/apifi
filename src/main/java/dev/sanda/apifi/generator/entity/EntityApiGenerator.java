@@ -2,15 +2,15 @@ package dev.sanda.apifi.generator.entity;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.ApifiStaticUtils;
-import dev.sanda.apifi.annotations.ForeignKeyCollectionApi;
+import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.generator.custom_resolver.CustomResolverApiBuildInfo;
 import dev.sanda.apifi.generator.custom_resolver.CustomResolverArgumentsMap;
 import dev.sanda.apifi.service.ApiLogic;
-import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.spqr.spring.annotations.GraphQLApi;
@@ -24,9 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.util.Types;
 import javax.transaction.Transactional;
@@ -189,24 +187,27 @@ public class EntityApiGenerator {
             fields.stream().filter(ApifiStaticUtils::isForeignKeyOrKeys).collect(Collectors.toList())
             .forEach(fk -> {
                 if(isIterable(fk.asType(), processingEnv)){
-                    //read
-                    serviceBuilder.addMethod(genGetEmbeddedCollection(fk, serviceBuilder, testBuilder));
-                    testBuilder.addMethod(genGetEmbeddedCollectionTest(fk));
 
-                    val config = fk.getAnnotation(ForeignKeyCollectionApi.class);
+                    val config = fk.getAnnotation(EmbeddedCollectionApi.class);
                     val resolvers = Arrays.asList(config.resolvers());
+
+                    //read
+                    if(!isGraphQLIgnored(fk)){
+                        serviceBuilder.addMethod(genGetEmbeddedCollection(fk, serviceBuilder, testBuilder));
+                        testBuilder.addMethod(genGetEmbeddedCollectionTest(fk));
+                    }
                     //associate
-                    if(resolvers.contains(ASSOCIATE) || resolvers.contains(ALL)){
+                    if(resolvers.contains(ASSOCIATE_WITH) || resolvers.contains(ALL)){
                         serviceBuilder.addMethod(genAssociateWithEmbeddedCollection(fk));
                         testBuilder.addMethod(genAssociateWithEmbeddedCollectionTest(fk));
                     }
                     //update
-                    if(resolvers.contains(ForeignKeyCollectionResolverType.UPDATE) || resolvers.contains(ALL)){
+                    if(resolvers.contains(ForeignKeyCollectionResolverType.UPDATE_IN) || resolvers.contains(ALL)){
                         serviceBuilder.addMethod(genUpdateInEmbeddedCollection(fk));
                         testBuilder.addMethod(genUpdateInEmbeddedCollectionTest(fk));
                     }
                     //remove
-                    if(resolvers.contains(REMOVE) || resolvers.contains(ALL)){
+                    if(resolvers.contains(REMOVE_FROM) || resolvers.contains(ALL)){
                         serviceBuilder.addMethod(genRemoveFromEmbeddedCollection(fk));
                         testBuilder.addMethod(genRemoveFromEmbeddedCollectionTest(fk));
                     }
@@ -367,10 +368,7 @@ public class EntityApiGenerator {
                     .build();
         }
         @SuppressWarnings("deprecation")
-        private MethodSpec genGetEmbeddedCollection(
-                VariableElement embedded,
-                TypeSpec.Builder serviceBuilder,
-                TypeSpec.Builder testBuilder) {
+        private MethodSpec genGetEmbeddedCollection(VariableElement embedded, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder) {
             String queryName = camelcaseNameOf(embedded);
             ParameterSpec input = asParamList(entity, GraphQLContext.class);
             String embeddedCollectionApiHooksName = embeddedCollectionApiHooksName(embedded);
@@ -423,14 +421,13 @@ public class EntityApiGenerator {
                 builder.addStatement("$L.handleRequest(argumentsMap)", info.getQualifier());
             return builder.build();
         }
-
         private MethodSpec genAssociateWithEmbeddedCollection(VariableElement fk) {
             String mutationName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity);
-            val config = fk.getAnnotation(ForeignKeyCollectionApi.class);
+            val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
             if(config != null && !config.apiHooks().equals(NullEmbeddedCollectionApiHooks.class))
                 apiHooks = config.apiHooks();
-            boolean addPreExistingOnly = config != null && config.addPreExistingOnly();
+            boolean addPreExistingOnly = config != null && config.associatePreExistingOnly();
             String apiLogicBackingMethod =
                     addPreExistingOnly ? "associatePreExistingWithEmbeddedCollection" : "associateWithEmbeddedCollection";
             ParameterSpec input = asParamList(collectionTypeName(fk));
@@ -447,10 +444,9 @@ public class EntityApiGenerator {
                     .returns(listOf(collectionTypeName(fk)));
             return builder.build();
         }
-
         private MethodSpec genRemoveFromEmbeddedCollection(VariableElement fk) {
             String mutationName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity);
-            val config = fk.getAnnotation(ForeignKeyCollectionApi.class);
+            val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
             if(config != null && !config.apiHooks().equals(NullEmbeddedCollectionApiHooks.class))
                 apiHooks = config.apiHooks();
@@ -467,10 +463,9 @@ public class EntityApiGenerator {
                     .returns(listOf(collectionTypeName(fk)));
             return builder.build();
         }
-
         private MethodSpec genUpdateInEmbeddedCollection(VariableElement fk) {
             String mutationName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
-            val config = fk.getAnnotation(ForeignKeyCollectionApi.class);
+            val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
             if(config != null && !config.apiHooks().equals(NullEmbeddedCollectionApiHooks.class))
                 apiHooks = config.apiHooks();
@@ -501,7 +496,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genGetEmbeddedCollectionTest(VariableElement embedded) {
             String testName = "get" + toPlural(pascalCaseNameOf(embedded)) + "From" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -514,7 +508,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genGetArchivedPaginatedBatchTest() {
             String testName = "archived" + pluralPascalCaseName(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -524,7 +517,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genBatchDeArchiveTest() {
             String testName = "deArchive" + toPlural(pascalCaseNameOf(entity)) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -534,7 +526,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genDeArchiveTest() {
             String testName = "deArchive" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -544,7 +535,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genBatchArchiveTest() {
             String testName = "archive" + toPlural(pascalCaseNameOf(entity)) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -554,7 +544,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genArchiveTest() {
             String testName = "archive" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -564,7 +553,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genBatchDeleteTest() {
             String testName = "delete" + pluralPascalCaseName(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -574,7 +562,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genDeleteTest() {
             String testName = "delete" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -584,7 +571,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genBatchUpdateTest() {
             String testName = "update" + pluralPascalCaseName(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -594,7 +580,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genUpdateTest() {
             String testName = "update" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -604,7 +589,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genBatchCreateTest() {
             String testName = "create" + pluralPascalCaseName(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -614,7 +598,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genCreateTest() {
             String testName = "create" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -624,7 +607,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genGetBatchByIdsTest() {
             String testName = "get" + pluralPascalCaseName(entity) + "ByIdTest";
             return MethodSpec.methodBuilder(testName)
@@ -634,7 +616,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genGetByIdTest() {
             String testName = "get" + pascalCaseNameOf(entity) + "ByIdTest";
             return MethodSpec.methodBuilder(testName)
@@ -644,7 +625,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genGetPaginatedBatchTest() {
             String testName = pluralCamelCaseName(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -654,7 +634,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genAssociateWithEmbeddedCollectionTest(VariableElement fk) {
             String testName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -665,7 +644,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genUpdateInEmbeddedCollectionTest(VariableElement fk) {
             String testName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -676,7 +654,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         private MethodSpec genRemoveFromEmbeddedCollectionTest(VariableElement fk) {
             String testName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -712,10 +689,10 @@ public class EntityApiGenerator {
 
         public FieldSpec embeddedCollectionApiHooks(VariableElement field) {
             ParameterizedTypeName apiHooksType = null;
-            ForeignKeyCollectionApi foreignKeyCollectionApi = field.getAnnotation(ForeignKeyCollectionApi.class);
-            if(foreignKeyCollectionApi != null){
+            EmbeddedCollectionApi embeddedCollectionApi = field.getAnnotation(EmbeddedCollectionApi.class);
+            if(embeddedCollectionApi != null){
                 try{
-                    foreignKeyCollectionApi.apiHooks();
+                    embeddedCollectionApi.apiHooks();
                 }catch (MirroredTypeException mte){
                     Types TypeUtils = this.processingEnv.getTypeUtils();
                     apiHooksType = ParameterizedTypeName.get(ClassName.get((TypeElement)TypeUtils.asElement(mte.getTypeMirror())));
@@ -732,6 +709,21 @@ public class EntityApiGenerator {
         }
 
         //misc util methods
+
+        private boolean isGraphQLIgnored(VariableElement fk) {
+            val getter =
+                    entity
+                    .getEnclosedElements()
+                    .stream()
+                    .filter(elem ->
+                            elem.getKind().equals(ElementKind.METHOD) &&
+                            elem.getSimpleName().toString().equals("get" + pascalCaseNameOf(fk)) &&
+                            ((ExecutableElement)elem).getReturnType().equals(fk.asType()))
+                    .findFirst().orElse(null);
+            if(getter == null) return fk.getAnnotation(GraphQLIgnore.class) != null;
+            return getter.getAnnotation(GraphQLIgnore.class) != null;
+        }
+
         private void addApiHooksIfPresent(VariableElement embedded, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder, String embeddedCollectionApiHooksName) {
             if(embeddedCollectionApiHooksName.equals("null")) return;
             final FieldSpec apiHooks = embeddedCollectionApiHooks(embedded);

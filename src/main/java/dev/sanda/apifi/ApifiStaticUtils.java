@@ -1,7 +1,7 @@
 package dev.sanda.apifi;
 
 import com.squareup.javapoet.*;
-import dev.sanda.apifi.annotations.ForeignKeyCollectionApi;
+import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
@@ -14,6 +14,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -133,6 +134,15 @@ public abstract class ApifiStaticUtils {
         return builder.build();
     }
 
+    public static boolean isAssignableFrom(ProcessingEnvironment processingEnv, TypeElement typeElement, String targetTypeName){ Elements elementUtil;
+        TypeMirror targetType = getTargetType(processingEnv, targetTypeName);
+        return processingEnv.getTypeUtils().isAssignable(typeElement.asType(), targetType);
+    }
+
+    public static TypeMirror getTargetType(ProcessingEnvironment processingEnv, String targetTypeName){
+        return processingEnv.getElementUtils().getTypeElement(targetTypeName).asType();
+    }
+
     public static ParameterSpec asEmbeddedCollectionParamList(VariableElement embedded){
         ClassName list = ClassName.get("java.util", "List");
         TypeName typeClassName = collectionTypeName(embedded);
@@ -158,7 +168,7 @@ public abstract class ApifiStaticUtils {
     }
 
     public static String embeddedCollectionApiHooksName(VariableElement embedded) {
-        val apiHooks = embedded.getAnnotation(ForeignKeyCollectionApi.class);
+        val apiHooks = embedded.getAnnotation(EmbeddedCollectionApi.class);
         return apiHooks != null ? camelcaseNameOf(embedded) + EmbeddedCollectionApiHooks.class.getSimpleName() : "null";
     }
 
