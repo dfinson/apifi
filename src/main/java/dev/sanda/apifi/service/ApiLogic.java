@@ -23,7 +23,7 @@ import static dev.sanda.datafi.DatafiStaticUtils.*;
 public final class ApiLogic<T> {
 
     @Autowired(required = false)
-    private ApiHooksAndCustomResolvers<T> apiHooks;
+    private ApiHooks<T> apiHooks;
     @Autowired
     private ReflectionCache reflectionCache;
     @Autowired

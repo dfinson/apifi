@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Component
-public abstract class ApiHooksAndCustomResolvers<T> {
+public abstract class ApiHooks<T> {
 
     @Autowired
     private DataManager<T> dataManager;

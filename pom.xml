@@ -20,6 +20,7 @@
         <graphql-spqr-spring-boot-starter.version>0.0.4</graphql-spqr-spring-boot-starter.version>
         <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
         <mockeri.version>0.0.2</mockeri.version>
+        <javatuples.version>1.2</javatuples.version>
     </properties>
 
     <dependencies>
@@ -27,6 +28,12 @@
             <groupId>dev.sanda</groupId>
             <artifactId>datafi</artifactId>
             <version>${datafi.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+            <version>${javatuples.version}</version>
         </dependency>
 
         <!-- web -->

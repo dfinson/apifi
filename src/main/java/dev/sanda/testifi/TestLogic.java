@@ -2,7 +2,7 @@ package dev.sanda.testifi;
 
 import com.google.common.collect.Lists;
 import com.maximeroussy.invitrode.WordGenerator;
-import dev.sanda.apifi.service.ApiHooksAndCustomResolvers;
+import dev.sanda.apifi.service.ApiHooks;
 import dev.sanda.apifi.service.ApiLogic;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.datafi.persistence.Archivable;
@@ -37,7 +37,7 @@ public final class TestLogic<T> {
     @Autowired
     private ReflectionCache reflectionCache;
     @Autowired(required = false)
-    private ApiHooksAndCustomResolvers<T> apiHooks;
+    private ApiHooks<T> apiHooks;
     @Autowired
     private EntityMocker entityMocker;
     

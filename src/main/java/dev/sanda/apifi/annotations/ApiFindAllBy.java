@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @FindAllBy
-public @interface ApiFindAllBy {
+public @interface ApiFindAllBy{
     String secured() default "";
     String rolesAllowed() default "";
     String preAuthorize() default "";

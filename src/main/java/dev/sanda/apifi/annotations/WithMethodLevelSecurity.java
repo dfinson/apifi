@@ -1,13 +1,14 @@
 package dev.sanda.apifi.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import dev.sanda.apifi.generator.entity.CRUDResolvers;
 
-@Target(ElementType.METHOD)
+import java.lang.annotation.*;
+
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(WithMethodLevelSecurityAccumulator.class)
 public @interface WithMethodLevelSecurity {
+
     String secured() default "";
     String rolesAllowed() default "";
     String preAuthorize() default "";
@@ -15,4 +16,5 @@ public @interface WithMethodLevelSecurity {
     String preFilter() default "";
     String preFilterTarget() default "";
     String postFilter() default "";
+    CRUDResolvers[] targets();
 }

@@ -54,10 +54,10 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Interface" />
-        <option value="AnnotationType" />
         <option value="Enum" />
         <option value="Class" />
+        <option value="AnnotationType" />
+        <option value="Interface" />
       </list>
     </option>
   </component>
@@ -96,8 +96,8 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="extract.method.default.visibility" value="public" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../testifi" />
+    <property name="extract.method.default.visibility" value="private" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../apifi_examples/clinic" />
     <property name="project.structure.last.edited" value="Global Libraries" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -109,6 +109,7 @@
       <recent name="org.sindaryn.apifi.annotations" />
     </key>
     <key name="CreateClassDialog.RecentsKey">
+      <recent name="dev.sanda.apifi.annotations" />
       <recent name="dev.sanda.apifi.generator.api_builder" />
     </key>
   </component>
@@ -175,10 +176,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1582141631573" />
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1580754743579">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1583613584441">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1580754743579" />
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1583613584441" />
     <state x="249" y="54" width="924" height="684" key="Maven.ArtifactSearchDialog" timestamp="1581798432323">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -191,22 +192,26 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="205" y="31" key="SettingsEditor/67.27.1299.741@67.27.1299.741" timestamp="1580741024244" />
+    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1584368873509">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/67.27.1299.741@67.27.1299.741" timestamp="1584368873509" />
     <state x="67" y="27" width="1253" height="699" maximized="true" key="dock-window-1" timestamp="1582138546075">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="67" y="27" width="1253" height="699" maximized="true" key="dock-window-1/67.27.1299.741@67.27.1299.741" timestamp="1582138546075" />
-    <state x="449" y="149" width="554" height="501" key="extract.method.dialog" timestamp="1582144619457">
+    <state x="449" y="149" width="554" height="501" key="extract.method.dialog" timestamp="1583611627366">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="449" y="149" width="554" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1582144619457" />
-    <state x="282" y="95" width="869" height="602" key="find.popup" timestamp="1581971515948">
+    <state x="449" y="149" width="554" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1583611627366" />
+    <state x="282" y="95" width="869" height="602" key="find.popup" timestamp="1584370414644">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="869" height="602" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1581971515948" />
-    <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1582139038267">
+    <state x="282" y="95" width="869" height="602" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1584370414644" />
+    <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1583613417486">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1582139038267" />
+    <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1583613417486" />
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1581634837656">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -215,9 +220,9 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="380" y="175" key="run.anything.popup/67.27.1299.741@67.27.1299.741" timestamp="1582144879432" />
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1582141687315">
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1583610958209">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1582141687315" />
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1583610958209" />
   </component>
 </project>

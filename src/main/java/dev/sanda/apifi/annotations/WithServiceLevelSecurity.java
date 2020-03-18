@@ -17,7 +17,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WithServiceLevelSecurity {
-
     String secured() default "";
     String rolesAllowed() default "";
     String preAuthorize() default "";
@@ -25,36 +24,4 @@ public @interface WithServiceLevelSecurity {
     String preFilter() default "";
     String preFilterTarget() default "";
     String postFilter() default "";
-
-    String securedCreate() default "";
-    String rolesAllowedCreate() default "";
-    String preAuthorizeCreate() default "";
-    String postAuthorizeCreate() default "";
-    String preFilterCreate() default "";
-    String preFilterTargetCreate() default "";
-    String postFilterCreate() default "";
-
-    String securedRead() default "";
-    String rolesAllowedRead() default "";
-    String preAuthorizeRead() default "";
-    String postAuthorizeRead() default "";
-    String preFilterRead() default "";
-    String preFilterTargetRead() default "";
-    String postFilterRead() default "";
-
-    String securedUpdate() default "";
-    String rolesAllowedUpdate() default "";
-    String preAuthorizeUpdate() default "";
-    String postAuthorizeUpdate() default "";
-    String preFilterUpdate() default "";
-    String preFilterTargetUpdate() default "";
-    String postFilterUpdate() default "";
-
-    String securedDelete() default "";
-    String rolesAllowedDelete() default "";
-    String preAuthorizeDelete() default "";
-    String postAuthorizeDelete() default "";
-    String preFilterDelete() default "";
-    String preFilterTargetDelete() default "";
-    String postFilterDelete() default "";
 }

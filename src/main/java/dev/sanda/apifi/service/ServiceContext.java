@@ -14,7 +14,6 @@ public class ServiceContext {
     private HttpSessionContext httpSessionContext;
     @Autowired
     private Map<String ,ResolverContext> resolverContexts;
-    @SuppressWarnings("unchecked")
     public <TResolverContext> TResolverContext get(String qualifier){
         return resolverContexts.containsKey(qualifier) ? (TResolverContext) resolverContexts.get(qualifier).get() : null;
     }
