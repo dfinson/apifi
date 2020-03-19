@@ -11,7 +11,10 @@ import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import dev.sanda.mockeri.generator.EntityMocker;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.val;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -28,27 +31,25 @@ import static org.junit.Assert.assertThat;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 import static dev.sanda.mockeri.generator.TestDataGenerator.randomFrom;
 
-@Component @Scope("test")
+@Component
 public final class TestLogic<T> {
-    @Autowired
+
+    @Setter
     private ApiLogic<T> apiLogic;
-    @Autowired
+    @Setter
     private DataManager<T> dataManager;
     @Autowired
     private ReflectionCache reflectionCache;
-    @Autowired(required = false)
+    @Setter
     private ApiHooks<T> apiHooks;
     @Autowired
     private EntityMocker entityMocker;
-    
+    @Setter
     private Class<T> clazz;
+    @Setter
     private String clazzSimpleName;
 
-    @PostConstruct
-    private void init(){
-        this.clazz = dataManager.getClazz();
-        this.clazzSimpleName = this.clazz.getSimpleName();
-    }
+
 
     //test methods
     public void getPaginatedBatchTest(){
@@ -149,33 +150,6 @@ public final class TestLogic<T> {
                 assertThat(fetchedInstance, isEqualTo(toGetInstance));
         }
     }
-
-   /* public void
-    selectByTest(Class<?> clazz, DataManager<T> dataManager, E metaOps,
-                 String resolverName, Collection<String> fieldNames, EntityMocker entityMocker, ReflectionCache reflectionCache){
-
-        Map<Object, T> toSelect = firstRandomNIdMap(clazz, dataManager, reflectionCache);
-
-        final CachedEntityTypeInfo entityType = reflectionCache.getEntitiesCache().get(clazzSimpleName);
-        Map<String, Object> args = new HashMap<>();
-        for(String fieldName : fieldNames)
-            args.put(fieldName, entityMocker.mockFieldValue(clazz, fieldName));
-        Collection<Field> fields = getClassFields(clazz);
-        for(Field field : fields){
-            if(fieldNames.contains(field.getName())){
-                for(Map.Entry<Object, T> instanceEntry : toSelect.entrySet()) {
-                    entityType.invokeSetter(instanceEntry.getValue(), field.getName(), args.get(field.getName()));
-                }
-            }
-        }
-        Collection<T> selected = apiLogic.selectBy(dataManager, metaOps, resolverName, new ArrayList<>(args.values()));
-        assertTrue(selected.size() >= toSelect.size());
-        for (T selectedInstance : selected){
-            T toSelectInstance = toSelect.get(getId(selectedInstance, reflectionCache));
-            if(toSelectInstance != null)
-                assertThat(selectedInstance, isEqualTo(toSelectInstance));
-        }
-    }*/
 
     public void
     createTest(){

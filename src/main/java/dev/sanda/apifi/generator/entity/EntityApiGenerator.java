@@ -6,9 +6,11 @@ import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.annotations.WithMethodLevelSecurity;
 import dev.sanda.apifi.annotations.WithServiceLevelSecurity;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
+import dev.sanda.apifi.service.ApiHooks;
 import dev.sanda.apifi.service.ApiLogic;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 import dev.sanda.datafi.service.DataManager;
+import dev.sanda.testifi.TestLogic;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLIgnore;
@@ -18,17 +20,23 @@ import io.leangen.graphql.spqr.spring.annotations.GraphQLApi;
 import lombok.val;
 import lombok.var;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.test.context.junit4.SpringRunner;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.transaction.Transactional;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,6 +47,7 @@ import static dev.sanda.datafi.DatafiStaticUtils.getIdType;
 import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
 import static dev.sanda.testifi.TestifiStaticUtils.pluralCamelCaseName;
 import static dev.sanda.testifi.TestifiStaticUtils.pluralPascalCaseName;
+import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
@@ -73,18 +82,29 @@ public class EntityApiGenerator {
             var serviceBuilder =
                     TypeSpec.classBuilder(entity.getSimpleName().toString() + "GraphQLApiService").addModifiers(PUBLIC)
                     .addAnnotation(Service.class).addAnnotation(Transactional.class).addAnnotation(GraphQLApi.class);
-            var testBuilder =
-                    TypeSpec.classBuilder(entity.getSimpleName().toString() + "GraphQLApiServiceTest").addModifiers(PUBLIC)
-                    .addAnnotation(SpringBootTest.class).addAnnotation(Transactional.class);
+            var testBuilder = TypeSpec
+                    .classBuilder(entity.getSimpleName().toString() + "GraphQLApiServiceTest").addModifiers(PUBLIC)
+                    .addAnnotation(AnnotationSpec.builder(RunWith.class)
+                        .addMember("value", "$T.class", SpringRunner.class)
+                        .build())
+                    .addAnnotation(SpringBootTest.class).addAnnotation(Transactional.class)
+                    .addAnnotation(AnnotationSpec.builder(Scope.class).build());
 
             //generate fields:
 
-            //field 1 - ApiLogic
-            val apiLogic = apiLogic();
-            serviceBuilder.addField(apiLogic);
-            testBuilder.addField(apiLogic);
+            //fields 1,2 - ApiLogic & testLogic
 
-            //field(s) 2 - foreign key data managers
+            serviceBuilder.addField(apiLogic());
+            serviceBuilder.addField(defaultDataManager());
+            testBuilder.addField(defaultDataManager());
+            testBuilder.addField(testLogic());
+            serviceBuilder.addField(defaultApiHooks());
+            testBuilder.addField(defaultApiHooks());
+            testBuilder.addField(apiLogic());
+            serviceBuilder.addMethod(postConstructInitApiLogic());
+            testBuilder.addMethod(postConstructInitTestLogic());
+
+            //field(s) 4 - foreign key data managers
             fields.forEach(field -> {
                         String typeNameKey = isIterable(field.asType(), processingEnv) ? getCollectionType(field) : field.asType().toString();
                         TypeElement type = entitiesMap.get(typeNameKey);
@@ -189,7 +209,7 @@ public class EntityApiGenerator {
                 if(isIterable(fk.asType(), processingEnv)){
 
                     val config = fk.getAnnotation(EmbeddedCollectionApi.class);
-                    val resolvers = Arrays.asList(config.resolvers());
+                    val resolvers = config != null ? Arrays.asList(config.resolvers()) : new ArrayList<>();
 
                     //read
                     if(!isGraphQLIgnored(fk)){
@@ -218,6 +238,48 @@ public class EntityApiGenerator {
             });
             //return result
             return new ServiceAndTest(serviceBuilder.build(), testBuilder.build());
+        }
+
+        private FieldSpec defaultDataManager() {
+            return FieldSpec
+                    .builder(ParameterizedTypeName.get(ClassName.get(DataManager.class), ClassName.get(entity)), "dataManager")
+                    .addAnnotation(Autowired.class)
+                    .addModifiers(PRIVATE)
+                    .build();
+        }
+
+        private MethodSpec postConstructInitTestLogic() {
+            return MethodSpec.methodBuilder("postConstructInit")
+                    .addAnnotation(PostConstruct.class)
+                    .addModifiers(PRIVATE)
+                    .returns(void.class)
+                    .addStatement("apiLogic.setApiHooks(apiHooks)")
+                    .addStatement("apiLogic.setDataManager(dataManager)")
+                    .addStatement("testLogic.setApiHooks(apiHooks)")
+                    .addStatement("testLogic.setDataManager(dataManager)")
+                    .addStatement("testLogic.setApiLogic(apiLogic)")
+                    .addStatement("testLogic.setClazz($T.class)", ClassName.get(entity))
+                    .addStatement("testLogic.setClazzSimpleName($T.class.getSimpleName())", ClassName.get(entity))
+                    .build();
+        }
+
+        private MethodSpec postConstructInitApiLogic() {
+            return MethodSpec.methodBuilder("postConstructInit")
+                    .addAnnotation(PostConstruct.class)
+                    .addModifiers(PRIVATE)
+                    .returns(void.class)
+                    .addStatement("apiLogic.setApiHooks(apiHooks)")
+                    .addStatement("apiLogic.setDataManager(dataManager)")
+                    .build();
+        }
+
+        private MethodSpec postConstructInit(String beanToInit) {
+            return MethodSpec.methodBuilder("postConstructInit")
+                    .addAnnotation(PostConstruct.class)
+                    .addModifiers(PRIVATE)
+                    .returns(void.class)
+                    .addStatement("$L.setType($T.class)", beanToInit, ClassName.get(entity))
+                    .build();
         }
 
         private void handleTargetMethodsMapping(WithMethodLevelSecurity security, Map<CRUDResolvers, List<AnnotationSpec>> methodLevelSecuritiesMap) {
@@ -527,7 +589,7 @@ public class EntityApiGenerator {
             return MethodSpec.methodBuilder(testName)
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(Test.class)
-                    .addStatement("testLogic.getEmbeddedTest($L, $L)",
+                    .addStatement("testLogic.getEmbeddedTest($L, $S)",
                             dataManagerName(embedded),
                             embedded.getSimpleName().toString())
                     .returns(void.class)
@@ -538,7 +600,7 @@ public class EntityApiGenerator {
             return MethodSpec.methodBuilder(testName)
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(Test.class)
-                    .addStatement("testLogic.getEmbeddedCollectionTest($L, $L, $L)",
+                    .addStatement("testLogic.getEmbeddedCollectionTest($L, $S, $L)",
                             dataManagerName(embedded),
                             embedded.getSimpleName().toString(),
                             embeddedCollectionApiHooksName(embedded))
@@ -704,14 +766,36 @@ public class EntityApiGenerator {
 
         //field spec helpers
         private FieldSpec dataManager(TypeElement entity, String namePrefix) {
+            String suffix = namePrefix.endsWith("DataManager") ? "" : "DataManager";
             return FieldSpec
-                    .builder(ParameterizedTypeName.get(ClassName.get(DataManager.class), ClassName.get(entity)), namePrefix + "DataManager")
+                    .builder(ParameterizedTypeName.get(ClassName.get(DataManager.class), ClassName.get(entity)), namePrefix + suffix)
                     .addModifiers(Modifier.PRIVATE)
                     .addAnnotation(Autowired.class)
                     .build();
         }
+
+        private FieldSpec defaultApiHooks(){
+            return FieldSpec
+                    .builder(ParameterizedTypeName.get(ClassName.get(ApiHooks.class), ClassName.get(entity)), "apiHooks")
+                    .addAnnotation(AnnotationSpec.builder(Autowired.class)
+                            .addMember("required", "false")
+                            .build())
+                    .addModifiers(PRIVATE)
+                    .build();
+        }
+
         private FieldSpec apiLogic() {
-            return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(ApiLogic.class), ClassName.get(entity)), "apiLogic").build();
+            return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(ApiLogic.class), ClassName.get(entity)), "apiLogic")
+                    .addAnnotation(Autowired.class)
+                    .addModifiers(PRIVATE)
+                    .build();
+        }
+
+        private FieldSpec testLogic() {
+            return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(TestLogic.class), ClassName.get(entity)), "testLogic")
+                    .addAnnotation(Autowired.class)
+                    .addModifiers(PRIVATE)
+                    .build();
         }
 
         public FieldSpec embeddedCollectionApiHooks(VariableElement field) {

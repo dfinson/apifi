@@ -37,7 +37,7 @@ public abstract class TestifiStaticUtils {
         return toPlural(toPascalCase(clazz.getSimpleName()));
     }
     public static String pluralCamelCaseName(Element element) {
-        return toPlural(toPascalCase(element.getSimpleName().toString()));
+        return toPlural(toCamelCase(element.getSimpleName().toString()));
     }
 
     @SuppressWarnings("unchecked")

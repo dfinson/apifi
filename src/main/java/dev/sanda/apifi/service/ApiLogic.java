@@ -4,8 +4,11 @@ package dev.sanda.apifi.service;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
+import lombok.Setter;
 import lombok.val;
 import lombok.var;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -14,24 +17,27 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
 import static dev.sanda.apifi.ApifiStaticUtils.isClazzArchivable;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 
 @Service
-@SuppressWarnings("unchecked")
 public final class ApiLogic<T> {
 
-    @Autowired(required = false)
+    @Setter
     private ApiHooks<T> apiHooks;
     @Autowired
     private ReflectionCache reflectionCache;
-    @Autowired
+    @Setter
     private DataManager<T> dataManager;
 
     public List<T> getPaginatedBatch(int offset, int limit, String sortBy, Sort.Direction sortDirection) {
         validateSortByIfNonNull(dataManager.getClazz(), sortBy, reflectionCache);
-        if(apiHooks != null) apiHooks.preGetPaginatedBatch();
+        if(apiHooks != null) apiHooks.preGetPaginatedBatch(dataManager);
         List<T> result;
         final PageRequest pageRequest = generatePageRequest(offset, limit, sortBy, sortDirection);
         if(isClazzArchivable(dataManager.getClazz(), reflectionCache))
@@ -39,13 +45,14 @@ public final class ApiLogic<T> {
                         .findAll((Specification<T>) (root, query, cb) -> cb.isFalse(root.get("isArchived")), pageRequest)
                         .getContent();
         else result = dataManager.findAll(pageRequest).getContent();
-        if(apiHooks != null) apiHooks.postGetPaginatedBatch(result);
+        if(apiHooks != null) apiHooks.postGetPaginatedBatch(result, dataManager);
+        logInfo("getPaginatedBatch: Got {} {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
         return result;
     }
 
     public List<T> getArchivedPaginatedBatch(int offset, int limit, String sortBy, Sort.Direction sortDirection) {
         validateSortByIfNonNull(dataManager.getClazz(), sortBy, reflectionCache);
-        if(apiHooks != null) apiHooks.preGetArchivedPaginatedBatch();
+        if(apiHooks != null) apiHooks.preGetArchivedPaginatedBatch(dataManager);
         List<T> result;
         final PageRequest pageRequest = generatePageRequest(offset, limit, sortBy, sortDirection);
         if(isClazzArchivable(dataManager.getClazz(), reflectionCache))
@@ -53,52 +60,72 @@ public final class ApiLogic<T> {
                     .findAll((Specification<T>) (root, query, cb) -> cb.isTrue(root.get("isArchived")), pageRequest)
                     .getContent();
         else result = dataManager.findAll(pageRequest).getContent();
-        if(apiHooks != null) apiHooks.postGetArchivedPaginatedBatch(result);
+        if(apiHooks != null) apiHooks.postGetArchivedPaginatedBatch(result, dataManager);
+        logInfo("getArchivedPaginatedBatch: Got {} {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
         return result;
     }
 
     public  List<T> freeTextSearch(int offset, int limit, String searchTerm, String sortBy, Sort.Direction sortDirection) {
-        if(apiHooks != null) apiHooks.preFetchEntitiesInFreeTextSearch(searchTerm);
+        if(apiHooks != null) apiHooks.preFetchEntitiesInFreeTextSearch(searchTerm, dataManager);
         List<T> result = dataManager
                 .freeTextSearchBy(searchTerm, offset, limit, sortBy, sortDirection);
-        if(apiHooks != null) apiHooks.postFetchEntitiesInFuzzySearch(searchTerm, result);
+        if(apiHooks != null) apiHooks.postFetchEntitiesInFuzzySearch(searchTerm, result, dataManager);
+        logInfo("freeTextSearch: Got {} {} by free text search term \"{}\"", result.size(), toPlural(dataManager.getClazzSimpleName()), searchTerm);
         return result;
     }
 
     public T getById(Object id) {
-        if(apiHooks != null) apiHooks.preGetById(id);
+        if(apiHooks != null) apiHooks.preGetById(id, dataManager);
         var result = dataManager.findById(id).orElse(null);
         if(result == null) throwEntityNotFoundException(dataManager.getClazzSimpleName(), id);
-        if(apiHooks != null) apiHooks.postGetById(result);
+        if(apiHooks != null) apiHooks.postGetById(result, dataManager);
+        logInfo("getById: Got {} by id #{}", dataManager.getClazzSimpleName(), id);
         return result;
     }
 
     public T apiFindByUnique(String fieldName, Object fieldValue) {
-        if(apiHooks != null) apiHooks.preApiFindByUnique(fieldValue);
+        if(apiHooks != null) apiHooks.preApiFindByUnique(fieldValue, dataManager);
         T result = dataManager.findByUnique(fieldName, fieldValue).orElse(null);
         if(result == null) throwEntityNotFoundException(dataManager.getClazzSimpleName(), fieldValue);
-        if(apiHooks != null) apiHooks.postApiFindByUnique(result);
+        if(apiHooks != null) apiHooks.postApiFindByUnique(result, dataManager);
+        logInfo("apiFindByUnique: Found {} with id {} by {} == {}",
+                dataManager.getClazzSimpleName(),
+                getId(result, reflectionCache),
+                fieldName,
+                fieldValue);
         return result;
     }
 
     public List<T> apiFindBy(String fieldName, Object argument) {
-        if(apiHooks != null) apiHooks.preApiFindBy(argument);
+        if(apiHooks != null) apiHooks.preApiFindBy(argument, dataManager);
         List<T> result = dataManager.findBy(fieldName, argument);
-        if(apiHooks != null) apiHooks.postApiFindBy(result);
+        if(apiHooks != null) apiHooks.postApiFindBy(result, dataManager);
+        logInfo("apiFindBy: found {} {} by {} == {}",
+                result.size(),
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                argument);
         return result;
     }
 
     public List<T> apiFindAllBy(String fieldName, List<?> arguments) {
-        if(apiHooks != null) apiHooks.preApiFindAllBy(fieldName, arguments);
+        if(apiHooks != null) apiHooks.preApiFindAllBy(fieldName, arguments, dataManager);
         List<T> result = dataManager.findAllBy(fieldName, arguments.toArray());
-        if(apiHooks != null) apiHooks.postApiFindAllBy(fieldName, result);
+        if(apiHooks != null) apiHooks.postApiFindAllBy(fieldName, result, dataManager);
+        logInfo("apiFindAllBy: found {} {} by [{}]",
+                result.size(),
+                dataManager.getClazzSimpleName(),
+                arguments.stream().map(Object::toString).collect(Collectors.joining(", ")));
         return result;
     }
 
     public T create(T input) {
-        if(apiHooks != null) apiHooks.preCreate(input);
+        if(apiHooks != null) apiHooks.preCreate(input, dataManager);
         val result = dataManager.save(input);
-        if(apiHooks != null) apiHooks.postCreate(result);
+        if(apiHooks != null) apiHooks.postCreate(result, dataManager);
+        logInfo("create: Created {} with id #{}",
+                dataManager.getClazzSimpleName(),
+                getId(result, reflectionCache));
         return result;
     }
 
@@ -106,19 +133,21 @@ public final class ApiLogic<T> {
         final Object id = getId(input, reflectionCache);
         T toUpdate = getById(id);
         if (toUpdate == null) throw_entityNotFound(input, reflectionCache);
-        if(apiHooks != null) apiHooks.preUpdate(toUpdate);
+        if(apiHooks != null) apiHooks.preUpdate(toUpdate, dataManager);
         dataManager.cascadeUpdate(toUpdate, input);
         val result = dataManager.save(toUpdate);
-        if(apiHooks != null) apiHooks.postUpdate(result);
+        if(apiHooks != null) apiHooks.postUpdate(result, dataManager);
+        logInfo("update: Updated {} with id #{}", dataManager.getClazzSimpleName(), getId(result, reflectionCache));
         return result;
     }
 
     public T delete(T input) {
         final Object id = getId(input, reflectionCache);
         T toDelete = getById(id);
-        if(apiHooks != null) apiHooks.preDelete(toDelete);
+        if(apiHooks != null) apiHooks.preDelete(toDelete, dataManager);
         dataManager.deleteById(id);
-        if(apiHooks != null) apiHooks.postDelete(toDelete);
+        if(apiHooks != null) apiHooks.postDelete(toDelete, dataManager);
+        logInfo("delete: deleted {} with id #{}", dataManager.getClazzSimpleName(), id);
         return toDelete;
     }
 
@@ -126,11 +155,11 @@ public final class ApiLogic<T> {
         final Object id = getId(input, reflectionCache);
         T toArchive = getById(id);
         if (toArchive == null) throw_entityNotFound(input, reflectionCache);
-        if(apiHooks != null) apiHooks.preArchive(toArchive);
+        if(apiHooks != null) apiHooks.preArchive(toArchive, dataManager);
         input.setIsArchived(true);
-        assert toArchive != null;
         val result = dataManager.save(toArchive);
-        if(apiHooks != null) apiHooks.postArchive(result);
+        if(apiHooks != null) apiHooks.postArchive(result, dataManager);
+        logInfo("archive: Archived {} with id #{}", dataManager.getClazzSimpleName(), id);
         return result;
     }
 
@@ -138,29 +167,37 @@ public final class ApiLogic<T> {
         final Object id = getId(input, reflectionCache);
         T toArchive = getById(id);
         if (toArchive == null) throw_entityNotFound(input, reflectionCache);
-        if(apiHooks != null) apiHooks.preDeArchive(toArchive);
+        if(apiHooks != null) apiHooks.preDeArchive(toArchive, dataManager);
         input.setIsArchived(false);
-        assert toArchive != null;
         val result = dataManager.save(toArchive);
-        if(apiHooks != null) apiHooks.postDeArchive(result);
+        if(apiHooks != null) apiHooks.postDeArchive(result, dataManager);
+        logInfo("deArchive: De-Archived {} with id #{}", dataManager.getClazzSimpleName(), id);
         return result;
     }
 
     public <A extends Archivable> List<T> batchArchive(List<A> input) {
-        List<A> entitiesToArchive = (List<A>) getBatchByIds(dataManager.idList((Iterable<T>) input));
-        if(apiHooks != null) apiHooks.preBatchArchive((Collection<T>) entitiesToArchive);
+        final List<Object> ids = dataManager.idList((Iterable<T>) input);
+        List<A> entitiesToArchive = (List<A>) getBatchByIds(ids);
+        if(apiHooks != null) apiHooks.preBatchArchive((Collection<T>) entitiesToArchive, dataManager);
         entitiesToArchive.forEach(entity -> entity.setIsArchived(true));
         List<T> result = dataManager.saveAll((List<T>)entitiesToArchive);
-        if(apiHooks != null) apiHooks.postBatchArchive(result);
+        if(apiHooks != null) apiHooks.postBatchArchive(result, dataManager);
+        logInfo("batchArchive: Batch archived {} with ids [{}]",
+                toPlural(dataManager.getClazzSimpleName()),
+                ids.stream().map(Object::toString).collect(Collectors.joining(", ")));
         return result;
     }
 
     public <A extends Archivable> List<T> batchDeArchive(List<A> input) {
-        List<A> entitiesToDeArchive = (List<A>) getBatchByIds(dataManager.idList((Iterable<T>) input));
-        if(apiHooks != null) apiHooks.preBatchDeArchive((List<T>) entitiesToDeArchive);
+        final List<Object> ids = dataManager.idList((Iterable<T>) input);
+        List<A> entitiesToDeArchive = (List<A>) getBatchByIds(ids);
+        if(apiHooks != null) apiHooks.preBatchDeArchive((List<T>) entitiesToDeArchive, dataManager);
         entitiesToDeArchive.forEach(entity -> entity.setIsArchived(false));
         List<T> result = dataManager.saveAll((List<T>)entitiesToDeArchive);
-        if(apiHooks != null) apiHooks.postBatchDeArchive(result);
+        if(apiHooks != null) apiHooks.postBatchDeArchive(result, dataManager);
+        logInfo("batchDeArchive: Batch de-archived {} with ids [{}]",
+                toPlural(dataManager.getClazzSimpleName()),
+                ids.stream().map(Object::toString).collect(Collectors.joining(", ")));
         return result;
     }
 
@@ -169,25 +206,37 @@ public final class ApiLogic<T> {
     }
 
     public List<T> batchCreate(List<T> input) {
-        if(apiHooks != null) apiHooks.preBatchCreate(input);
+        if(apiHooks != null) apiHooks.preBatchCreate(input, dataManager);
         val result = dataManager.saveAll(input);
-        if(apiHooks != null) apiHooks.postBatchCreate(result);
+        if(apiHooks != null) apiHooks.postBatchCreate(result, dataManager);
+        logInfo("batchCreate: created {} new {} with ids [{}]",
+                result.size(),
+                toPlural(dataManager.getClazzSimpleName()),
+                getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
         return result;
     }
 
     public List<T> batchUpdate(List<T> input) {
         List<T> toUpdate = getBatchByIds(dataManager.idList(input));
-        if(apiHooks != null) apiHooks.preBatchUpdate(toUpdate);
+        if(apiHooks != null) apiHooks.preBatchUpdate(toUpdate, dataManager);
         List<T> result = dataManager.cascadeUpdateCollection(toUpdate, input);
-        if(apiHooks != null) apiHooks.postBatchUpdate(result);
+        if(apiHooks != null) apiHooks.postBatchUpdate(result, dataManager);
+        logInfo("batchUpdate: Updated {} {} with ids [{}]",
+                result.size(),
+                toPlural(dataManager.getClazzSimpleName()),
+                getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
         return result;
     }
 
     public List<T> batchDelete(List<T> input) {
         List<T> toDelete = getBatchByIds(dataManager.idList(input));
-        if(apiHooks != null) apiHooks.preDeleteEntities(toDelete);
+        if(apiHooks != null) apiHooks.preDeleteEntities(toDelete, dataManager);
         dataManager.deleteInBatch(input);
-        if(apiHooks != null) apiHooks.postDeleteEntities(toDelete);
+        if(apiHooks != null) apiHooks.postDeleteEntities(toDelete, dataManager);
+        logInfo("batchDelete: Deleted {} {} with ids [{}]",
+                toDelete.size(),
+                toPlural(dataManager.getClazzSimpleName()),
+                getIdList(toDelete, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
         return toDelete;
     }
 
@@ -350,8 +399,10 @@ public final class ApiLogic<T> {
     }
 
      void throw_entityNotFound(Object input, ReflectionCache reflectionCache) {
-        throw new RuntimeException(
-                "Cannot find Entity " + input.getClass().getSimpleName() + " with id " + getId(input, reflectionCache));
+         final RuntimeException exception = new RuntimeException(
+                 "Cannot find Entity " + input.getClass().getSimpleName() + " with id " + getId(input, reflectionCache));
+         logError(exception.toString());
+         throw exception;
     }
 
     public <TEmbedded> Collection<TEmbedded> getEmbeddedCollectionFrom(T input, String fieldName) {
@@ -361,6 +412,22 @@ public final class ApiLogic<T> {
                         .get(input.getClass()
                                 .getSimpleName())
                         .invokeGetter(input, fieldName);
+    }
+
+    private final static Logger log = LoggerFactory.getLogger(ApiLogic.class);
+    private static Executor loggerThread = Executors.newSingleThreadExecutor();
+    private static synchronized void log(String msg, boolean isError, Object... args){
+        loggerThread.execute(() -> {
+            if (isError) log.error(msg, args);
+            else log.info(msg, args);
+        });
+    }
+    private void logInfo(String msg, Object... args){
+        log(msg, false, args);
+    }
+
+    private void logError(String msg, Object... args) {
+        log(msg, true, args);
     }
 
 }

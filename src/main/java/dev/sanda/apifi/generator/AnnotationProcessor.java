@@ -25,8 +25,8 @@ import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
 /**
  * Iterates over all elements annotated with @GraphQLApiEntity and generates the complete api
  */
-@SupportedAnnotationTypes({"*"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedAnnotationTypes({"*"})
 @AutoService(Processor.class)
 public class AnnotationProcessor extends AbstractProcessor {
     private String basePackage;
