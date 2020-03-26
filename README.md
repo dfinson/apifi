@@ -155,7 +155,7 @@ In addition to the standard CRUD operation endpoints, custom endpoints can be ad
     ...
     }
     ```
--  `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` endpoint will be added to the entities GraphQL service bean. For example:
+-  `@ApiFindByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@ApiFindByUnique` annotation and a custom `find...ByUnique...(field value)` endpoint will be added to the entities GraphQL service bean. For example:
     ```
     @Entity
     public class Person {
