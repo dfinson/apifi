@@ -101,6 +101,56 @@ Note the  `@WithCRUDEndpoints({GET_BY_ID, CREATE, UPDATE})` annotation on the Pe
 ### CRUD API endpoint customization
 Oftentimes there is a need for additional business logic on CRUD endpoints. This is where the [`ApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) interface comes into play. It contains methods which are "hooked" or called at the appropriate times during the API endpoint request handling life cycle. For example; the `preCreate(...)` method is called prior to a new entity instance passed to the CREATE endpoint being saved to the database, and the `postCreate(...)` method is called immediately after the instance has been saved.  The same goes for any and all other phases of all the other options. As a rule, the hooked methods get passed the state which is relevant to the life cycle phase in which they are called, as well as a [`DataManager<T>`]([https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java)) bean instance for the entity.
 
+To gain a better understanding as to how this works, see the following code snippet from the`ApiLogic<T>` class where the CRUD operational logic is generically implemented.  More the specifically, this is the `batchCreate(List<T> input)` method: 
+
+```
+public List<T> batchCreate(List<T> input) {  
+	if(apiHooks != null) // <--- note this
+		apiHooks.preBatchCreate(input, dataManager);  
+	val result = dataManager.saveAll(input);  
+	if(apiHooks != null) // <--- and this
+		apiHooks.postBatchCreate(result, dataManager);  
+	logInfo("batchCreate: created {} new {} with ids [{}]", result.size(),toPlural(dataManager.getClazzSimpleName()), getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));  
+	return result;  
+}
+```
+This pattern repeats itself in the same manner in all of the other `ApiLogic<T>` methods, allowing for the execution of custom defined logic prior to or following mutations and queries. In order to make use of this feature for an entity of type `T`:
+1. create a public class which implements `ApiHooks<T>`
+2. Make sure the class is wired into the application context (`@Component`, etc.).
+3. Override whichever hooks are relevant. See the relevant source code [here](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java).
+No further configuration is necessary - Apifi leverages spring dependency injection to determine whether such a class has been created for a given entity. If such a service bean has indeed been created - it will be picked up and used by `ApiLogic<T>`. 
+
+For example:
+```
+@Entity
+
+public class Person{
+    @Id
+    private String id = UUID.randomUUID().toString();
+    private String name;
+    private Integer age;
+    // getters & setters, etc...
+}
+```
+Imagine there is a requirement to print a welcome message to the console after every time a new person is added, and a goodbye message after every time a person is deleted. To do so, a custom implementation of `ApiHooks<T>` can be implemented as follows:
+```
+@Component
+public class PersonApiHooks extends ApiHooks<Person> {
+
+    @Override
+    public void postCreate(Person added, DataManager<Person> dataManager) {
+        System.out.println("Hello " + added.getName() + "!");
+    }
+
+    @Override
+    public void postDelete(Person deleted, DataManager<Person> dataManager) {
+        System.out.println("Goodbye " + deleted.getName() + ":(");
+    }
+    
+}
+```
+The same workflow applies to more complex use cases such as third party API calls, data related metrics, etc.
+
 ### Additional auto generated endpoints
 
 In addition to the standard CRUD operation endpoints, custom endpoints can be added by making use of the following annotations:
@@ -224,57 +274,6 @@ return ApiLogic.freeTextSearch(User.class, userDataManager, userMetaOperations, 
 
 ```
 `freeTextSearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `freeTextSearch` takes in the 2 arguments `int offset` and `int limit` - in that order. The `offset` must be specified, whereas the `limit` will default to 50. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If a field name is given yet no matching field is found an `IllegalArgumentException` is thrown. If left blank, it defaults to the 	id	 field. `Sort.Direction sortDirection` determines the ordering strategy (ascending / descending). If not specified it defaults to ascending order (`ASC`).
-
-### ApiHooks\<T>
-Apifi APIs are designed for extensibility. This is where `ApiHooks<T>` comes in. To get a better understanding as to how this works, see the following code snippet from the`ApiLogic<T>` class where the CRUD operational logic is generically implemented.  More the specifically, this is the `batchCreate(List<T> input)` method: 
-
-```
-public List<T> batchCreate(List<T> input) {  
-	if(apiHooks != null) // <--- note this
-		apiHooks.preBatchCreate(input, dataManager);  
-	val result = dataManager.saveAll(input);  
-	if(apiHooks != null) // <--- and this
-		apiHooks.postBatchCreate(result, dataManager);  
-	logInfo("batchCreate: created {} new {} with ids [{}]", result.size(),toPlural(dataManager.getClazzSimpleName()), getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));  
-	return result;  
-}
-```
-This pattern repeats itself in the same manner in all of the other `ApiLogic<T>` methods, allowing for the execution of custom defined logic prior to or following mutations and queries. In order to make use of this feature for an entity of type `T`:
-1. create a public class which implements `ApiHooks<T>`
-2. Make sure the class is wired into the application context (`@Component`, etc.).
-3. Override whichever hooks are relevant. See the relevant source code [here](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java).
-No further configuration is necessary - Apifi leverages spring dependency injection to determine whether such a class has been created for a given entity. If such a service bean has indeed been created - it will be picked up and used by `ApiLogic<T>`. 
-
-For example:
-```
-@Entity
-
-public class Person{
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    // getters & setters, etc...
-}
-```
-Imagine there is a requirement to print a welcome message to the console after every time a new person is added, and a goodbye message after every time a person is deleted. To do so, a custom implementation of `ApiHooks<T>` can be implemented as follows:
-```
-@Component
-public class PersonApiHooks extends ApiHooks<Person> {
-
-    @Override
-    public void postCreate(Person added, DataManager<Person> dataManager) {
-        System.out.println("Hello " + added.getName() + "!");
-    }
-
-    @Override
-    public void postDelete(Person deleted, DataManager<Person> dataManager) {
-        System.out.println("Goodbye " + deleted.getName() + ":(");
-    }
-    
-}
-```
-The same workflow applies to more complex use cases such as third party API calls, data related metrics, etc.
 
 
 ### Embedded / foreign key Collections
