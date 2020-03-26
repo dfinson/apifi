@@ -28,7 +28,7 @@ Apifi is available on maven central:
 <dependency>
   <groupId>dev.sanda</groupId>
     <artifactId>apifi</artifactId>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
 </dependency>   
 ```
 
