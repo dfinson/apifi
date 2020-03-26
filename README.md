@@ -12,7 +12,7 @@
   - [Overview](#overview)
   - [Domain model](#domain-model-1)
   - [Generated Service Layer](#generated-service-layer)
-* [ApiHooks\<T>](#apihooks--t-)
+* [ApiHooks\<T>](#apihookst)
 * [Embedded / foreign key Collections](#embedded---foreign-key-collections)
 * [Spring security integration](#spring-security-integration)
     + [Overview](#overview-1)
