@@ -1,6 +1,6 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.generator.entity.CRUDResolvers;
+import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 
 import java.lang.annotation.*;
 
@@ -16,5 +16,5 @@ public @interface WithMethodLevelSecurity {
     String preFilter() default "";
     String preFilterTarget() default "";
     String postFilter() default "";
-    CRUDResolvers[] targets();
+    CRUDEndpoints[] targets();
 }

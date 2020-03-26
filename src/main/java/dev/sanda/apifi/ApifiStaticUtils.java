@@ -16,10 +16,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
+import javax.persistence.*;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
@@ -228,5 +225,23 @@ public abstract class ApifiStaticUtils {
                 field.getAnnotation(ManyToOne.class) != null ||
                 field.getAnnotation(OneToOne.class) != null ||
                 field.getAnnotation(ManyToMany.class) != null;
+    }
+
+    public static String getIdFieldName(TypeElement entity){
+        //noinspection OptionalGetWithoutIsPresent
+        return
+                entity
+                .getEnclosedElements()
+                .stream()
+                .filter(elem -> elem.getKind().isField())
+                .filter(field -> field.getAnnotation(Id.class) != null || field.getAnnotation(EmbeddedId.class) != null)
+                .findFirst()
+                .get()
+                .getSimpleName()
+                .toString();
+    }
+
+    public static String collectionCanonicalTypeNameString(VariableElement embedded) {
+        return embedded.asType().toString().replaceAll("^.+<", "").replaceAll(">", "");
     }
 }

@@ -7,6 +7,7 @@ import dev.sanda.datafi.service.DataManager;
 import lombok.Setter;
 import lombok.val;
 import lombok.var;
+import org.apache.commons.collections4.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.ApifiStaticUtils.isClazzArchivable;
@@ -248,11 +250,11 @@ public final class ApiLogic<T> {
             DataManager<TEmbedded> tEmbeddedDataManager) {
         List<List<TEmbedded>> lists = new ArrayList<>();
         input.forEach(t -> {
-            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t);
+            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
             final List<TEmbedded> embeddedCollection =
                     tEmbeddedDataManager.findAllById(tEmbeddedDataManager
                             .idList((Iterable<TEmbedded>) getEmbeddedCollectionFrom(t, embeddedFieldName)));
-            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postFetch(embeddedCollection, t);
+            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postFetch(embeddedCollection, t, tEmbeddedDataManager, dataManager);
             lists.add(embeddedCollection);
         });
         return lists;
@@ -274,15 +276,15 @@ public final class ApiLogic<T> {
 
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
     List<TEmbedded> updateEmbeddedCollection(
-            T input,
+            T owner,
             DataManager<TEmbedded> tEmbeddedDataManager,
             Iterable<TEmbedded> toUpdate,
             E embeddedCollectionApiHooks) {
         var temp = dataManager
-                .findById(getId(input, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        input = temp;
-        return updateCollectionAsEmbedded(input, toUpdate, embeddedCollectionApiHooks, tEmbeddedDataManager);
+                .findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(owner, reflectionCache);
+        owner = temp;
+        return updateCollectionAsEmbedded(owner, toUpdate, embeddedCollectionApiHooks, tEmbeddedDataManager);
     }
 
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
@@ -292,9 +294,9 @@ public final class ApiLogic<T> {
             E embeddedCollectionApiHooks,
             DataManager<TEmbedded> tEmbeddedDataManager) {
         List<TEmbedded> entitiesToUpdate = (List<TEmbedded>) getBatchByIds(tEmbeddedDataManager.idList(toUpdate));
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preUpdate(entitiesToUpdate, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preUpdate(entitiesToUpdate, input, tEmbeddedDataManager, dataManager);
         var result = tEmbeddedDataManager.cascadeUpdateCollection(entitiesToUpdate, toUpdate);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postUpdate(result, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postUpdate(result, input, tEmbeddedDataManager, dataManager);
         return result;
     }
 
@@ -311,7 +313,7 @@ public final class ApiLogic<T> {
         var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         input = temp;
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input, tEmbeddedDataManager, dataManager);
         Collection<TEmbedded> existingCollection = getEmbeddedCollectionFrom(input, fieldName);
         existingCollection.addAll(toAssociate);
 
@@ -326,7 +328,7 @@ public final class ApiLogic<T> {
                         fieldName);
         var result = tEmbeddedDataManager.saveAll(extractFromCollection(added, toAssociate));
         dataManager.save(t);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postAssociate(result, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postAssociate(result, input, tEmbeddedDataManager, dataManager);
         return result;
     }
 
@@ -342,7 +344,7 @@ public final class ApiLogic<T> {
         var temp  = dataManager.findById(getId(input, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         input = temp;
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input, tEmbeddedDataManager, dataManager);
         //validate all candidates are pre-existing
         List<TEmbedded> toAssociateReloaded = tEmbeddedDataManager.findAllById(tEmbeddedDataManager.idList(toAssociate));
         if (toAssociateReloaded.isEmpty() || toAssociateReloaded.size() != toAssociate.size())
@@ -358,27 +360,27 @@ public final class ApiLogic<T> {
         updatedInputEntity,
         toCamelCase(embeddedFieldName));
         var result = extractFromCollection(newlyAssociated, toAssociate);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postAssociate(result, input);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postAssociate(result, input, tEmbeddedDataManager, dataManager);
         return result;
     }
 
     public  <TEmbedded>
     List<TEmbedded>
     removeFromEmbeddedCollection(
-            T input,
+            T owner,
             String toRemoveFieldName,
             List<TEmbedded> toRemove,
             EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
         //get collection owner
         val temp = dataManager
-                .findById(getId(input, reflectionCache)).orElse(null);
-        if(temp == null) throw_entityNotFound(input, reflectionCache);
-        input = temp;
-        Collection<TEmbedded> currentEmbeddedCollection = getEmbeddedCollectionFrom(input, toRemoveFieldName);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preRemove(toRemove, input);
+                .findById(getId(owner, reflectionCache)).orElse(null);
+        if(temp == null) throw_entityNotFound(owner, reflectionCache);
+        owner = temp;
+        Collection<TEmbedded> currentEmbeddedCollection = getEmbeddedCollectionFrom(owner, toRemoveFieldName);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preRemove(toRemove, owner, dataManager);
         currentEmbeddedCollection.removeIf(toRemove::contains);
-        dataManager.save(input);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postRemove(toRemove, input);
+        dataManager.save(owner);
+        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postRemove(toRemove, owner, dataManager);
         return toRemove;
     }
 
@@ -429,6 +431,5 @@ public final class ApiLogic<T> {
     private void logError(String msg, Object... args) {
         log(msg, true, args);
     }
-
 }
 

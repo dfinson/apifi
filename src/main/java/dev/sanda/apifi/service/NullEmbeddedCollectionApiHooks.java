@@ -1,4 +1,4 @@
 package dev.sanda.apifi.service;
 
-public final class NullEmbeddedCollectionApiHooks extends EmbeddedCollectionApiHooks {
+public final class NullEmbeddedCollectionApiHooks<TEmbedded, T> implements EmbeddedCollectionApiHooks<TEmbedded, T> {
 }

@@ -1,6 +1,6 @@
 package dev.sanda.apifi.generator.entity;
 
-public enum CRUDResolvers {
+public enum CRUDEndpoints {
     GET_PAGINATED_BATCH,
     GET_BY_ID, GET_BATCH_BY_IDS,
     CREATE, BATCH_CREATE,

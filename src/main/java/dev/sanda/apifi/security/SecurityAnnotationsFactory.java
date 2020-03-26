@@ -1,6 +1,8 @@
 package dev.sanda.apifi.security;
 
 import com.squareup.javapoet.AnnotationSpec;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.val;
 import lombok.var;
 import org.springframework.security.access.annotation.Secured;
@@ -8,17 +10,23 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.prepost.PreFilter;
+
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.security.RolesAllowed;
+import javax.tools.Diagnostic;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 public class SecurityAnnotationsFactory<T extends Annotation> {
 
+    @Setter
+    private static ProcessingEnvironment processingEnv;
+
     public static <E extends Annotation> boolean areSecurityAnnotationsPresent(E instance, String... methodNameSuffixes){
+        if(instance == null) return false;
         return Arrays.stream(methodNameSuffixes).anyMatch(suffix -> !of(instance, suffix).isEmpty());
     }
 
@@ -27,23 +35,24 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
         var result = new ArrayList<AnnotationSpec>();
         if(instance == null) return result;
         var factoryInstance = new SecurityAnnotationsFactory<E>(instance);
+        factoryInstance.methodNameSuffix = methodNameSuffix;
 
-        var secured = factoryInstance.getValue("secured" + methodNameSuffix);
+        var secured = factoryInstance.getValue("secured");
         if(!secured.equals("")) result.add(factoryInstance.secured());
 
-        var rolesAllowed = factoryInstance.getValue("rolesAllowed" + methodNameSuffix);
+        var rolesAllowed = factoryInstance.getValue("rolesAllowed");
         if(!rolesAllowed.equals("")) result.add(factoryInstance.rolesAllowed());
 
-        var preAuthorize = factoryInstance.getValue("preAuthorize" + methodNameSuffix);
+        var preAuthorize = factoryInstance.getValue("preAuthorize");
         if(!preAuthorize.equals("")) result.add(factoryInstance.preAuthorize());
 
-        var postAuthorize = factoryInstance.getValue("postAuthorize" + methodNameSuffix);
+        var postAuthorize = factoryInstance.getValue("postAuthorize");
         if(!postAuthorize.equals("")) result.add(factoryInstance.postAuthorize());
 
-        var preFilter = factoryInstance.getValue("preFilter" + methodNameSuffix);
+        var preFilter = factoryInstance.getValue("preFilter");
         if(!preFilter.equals("")) result.add(factoryInstance.preFilter());
 
-        var postFilter = factoryInstance.getValue("postFilter" + methodNameSuffix);
+        var postFilter = factoryInstance.getValue("postFilter");
         if(!postFilter.equals("")) result.add(factoryInstance.postFilter());
 
         return result;
@@ -68,27 +77,27 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
     private String methodNameSuffix = "";
 
     private AnnotationSpec secured() {
-        return getAnnotation(Secured.class, "secured" + methodNameSuffix);
+        return getAnnotation(Secured.class, "secured");
     }
     private AnnotationSpec rolesAllowed() {
-        return getAnnotation(RolesAllowed.class, "rolesAllowed" + methodNameSuffix);
+        return getAnnotation(RolesAllowed.class, "rolesAllowed");
     }
     private AnnotationSpec preAuthorize() {
-        return getAnnotation(PreAuthorize.class, "preAuthorize" + methodNameSuffix);
+        return getAnnotation(PreAuthorize.class, "preAuthorize");
     }
     private AnnotationSpec postAuthorize() {
-        return getAnnotation(PostAuthorize.class, "postAuthorize" + methodNameSuffix);
+        return getAnnotation(PostAuthorize.class, "postAuthorize");
     }
     private AnnotationSpec preFilter() {
         var builder = AnnotationSpec.builder(PreFilter.class)
-                .addMember("value", "$S", getValue("preFilter" + methodNameSuffix));
+                .addMember("value", "$S", getValue("preFilter"));
         val preFilterTarget = getValue("preFilterTarget");
         if(!preFilterTarget.equals(""))
-            builder.addMember("preFilterTarget", "$S", getValue("preFilterTarget" + methodNameSuffix));
+            builder.addMember("preFilterTarget", "$S", getValue("preFilterTarget"));
         return builder.build();
     }
     private AnnotationSpec postFilter() {
-        return getAnnotation(PostFilter.class, "postFilter" + methodNameSuffix);
+        return getAnnotation(PostFilter.class, "postFilter");
     }
 
     public AnnotationSpec getAnnotation(Class<? extends Annotation> type, String methodName){
@@ -100,10 +109,14 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
 
     private String getValue(String methodName){
         try {
-            Method method = clazz.getMethod(methodName);
+            Method method = clazz.getMethod(methodName + methodNameSuffix);
             return (String) method.invoke(commonSecurityAnnotationsInstance);
-        }catch (Exception ignored){
-            return "";
+        }catch (Exception e){
+            processingEnv
+                    .getMessager()
+                    .printMessage(Diagnostic.Kind.ERROR,
+                            "Error parsing security annotations: " + e.toString());
         }
+        return null;
     }
 }

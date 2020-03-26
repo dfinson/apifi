@@ -1,23 +1,21 @@
 # Apifi
 
-* [Introduction](#introduction)
+- [Introduction](#introduction)
 * [Installation](#installation)
-* [Requirements](#requirements)
 * [Hello World](#hello-world)
-    * [Domain model](#domain-model)
-    * [Service layer](#service-layer)
-* [The standard CRUD schema](#the-standard-crud-schema)
-* [Entity level API configuration](#entity-level-api-configuration)
-* [Custom resolvers](#custom-resolvers)
+    + [Domain model](#domain-model)
+    + [Service layer](#service-layer)
+* [Auto generated CRUD endpoints](#auto-generated-crud-endpoints)
+* [CRUD API endpoint customization](#crud-api-endpoint-customization)
+* [Additional auto generated endpoints](#additional-auto-generated-endpoints)
 * [Free text search](#free-text-search)
-	* [Overview](#overview)
-	* [Domain model](#domain-model-1)
-	* [Generated Service Layer](#generated-service-layer)
-* [Collections](#collections)
-* [ApiMetaOperations<T>](#apimetaoperations-t-)
-* [EmbeddedCollectionMetaOperations](#embeddedcollectionmetaoperations)
-* [@Secure(...) - Spring security integration](#-withServiceLevelSecurity-----spring-security-integration)
-    * [Overview](#overview-1)
+  - [Overview](#overview)
+  - [Domain model](#domain-model-1)
+  - [Generated Service Layer](#generated-service-layer)
+* [ApiHooks\<T>](#apihooks--t-)
+* [Embedded / foreign key Collections](#embedded---foreign-key-collections)
+* [Spring security integration](#spring-security-integration)
+    + [Overview](#overview-1)
 * [License](#license)
 
 ## Introduction
@@ -80,11 +78,12 @@ As you can see, there are three annotations on the class:
 - `@Transactional`: Tells Jpa that database operations happen within retractable transactions.
 - `@GraphQLApi`: Tells the [SPQR](https://github.com/leangen/graphql-spqr) Java-GraphQL framework (upon which this project heavily relies), to expose the contained queries and resolvers at the `/graphql` endpoint.
 
-    _**Important note:**_ _As mentioned, the default endpoint is `/graphql`, however this can be customized by setting the `graphql.spqr.http.endpoint=YOUR_CUSTOM_ENDPOINT_HERE` property in the `application.properties` / `application.yml` / other configuration source._
+    _**Note:**_ _As mentioned, the default endpoint is `/graphql`, however this can be customized by setting the `graphql.spqr.http.endpoint=YOUR_CUSTOM_ENDPOINT_HERE` property in the `application.properties` / `application.yml` / other configuration source._
 
-### @WithCrudResolvers
-Note the  `@WithCRUDResolvers({GET_BY_ID, CREATE, UPDATE})` annotation on the Person entity, and their direct correspondence to the three auto-generated methods in `PersonGraphQLService`. There are 14 options in total:
-1. GET_PAGINATED_BATCH: Returns a sorted batch of the entity in question between a given offset and limit, sorted by a a field named in the `sortBy` argument, in either ascending or descending order, as is specified by the `sortingOrder` argument. The `offset` and `sortBy` arguments are mandatory, whereas the `limit` will default to 50, and the `sortingOrder` will default to ascending. 
+### Auto generated CRUD endpoints
+Note the  `@WithCRUDEndpoints({GET_BY_ID, CREATE, UPDATE})` annotation on the Person entity, and their direct correspondence to the three auto-generated methods in `PersonGraphQLService`. There are 14 CRUDEndpoints options / types in total:
+
+1. GET_PAGINATED_BATCH: Returns a sorted batch of the entity between a given offset and limit, sorted by a a field named in the `sortBy` argument, in either ascending or descending order, as is specified by the `sortingOrder` argument. The `offset` and `sortBy` arguments are mandatory, whereas the `limit` will default to 50, and the `sortingOrder` will default to ascending. 
 2. GET_BY_ID: Fetch an instance of the entity by id.
 3. GET_BATCH_BY_IDS: Fetch a batch of entity instances by their ids.
 4. CREATE: Create a single entity.
@@ -99,130 +98,96 @@ Note the  `@WithCRUDResolvers({GET_BY_ID, CREATE, UPDATE})` annotation on the Pe
 13. BATCH_DE_ARCHIVE: Like the previous, pluralized. 
 14. GET_ARCHIVED_PAGINATED_BATCH: Similar to GET_PAGINATED_BATCH, but specifically for entity instances which have been archived.
     
-### Entity level API configuration
-By default, Apifi generates one of these service beans for all entities / tables. There are however several entity level annotations which can modilfy or extend this default behavior:
+### CRUD API endpoint customization
+Oftentimes there is a need for additional business logic on CRUD endpoints. This is where the [`ApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) interface comes into play. It contains methods which are "hooked" or called at the appropriate times during the API endpoint request handling life cycle. For example; the `preCreate(...)` method is called prior to a new entity instance passed to the CREATE endpoint being saved to the database, and the `postCreate(...)` method is called immediately after the instance has been saved.  The same goes for any and all other phases of all the other options. As a rule, the hooked methods get passed the state which is relevant to the life cycle phase in which they are called, as well as a [`DataManager<T>`]([https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java)) bean instance for the entity.
 
-1. `@NonDirectlyExposable`: Tells Apifi that this is an entity which should **not** have it's own top-level queries and mutations exposed as part of the api schema. This is useful if for example,  we have two entities; `Car` and `SteeringWheel`. It's fairly obvious that in this case the **composite entity** called `SteeringWheel` has no independent lifecycle and is instantiable only within the context of `Car`. In this case, `Car` should be exposed directly as part of the schema, as opposed to `SteeringWheel`, which should be accessable and mutatable only by way of the queries and resolvers exposed by the `Car` graphql service.
+### Additional auto generated endpoints
 
-2. `@ApiReadOnly`:  Assuming the previous annotation is **not** present, this annotation tells Apifi to only include GraphQL queries but not mutations in the generated GraphQLService bean. This is useful when designating certain components of a given data model as read-only, with no possibility of state mutation via the API.
-
-3. `@ApiHooksAndCustomResolvers{Class<? extends ApiMetaOperations> value();}`: Often times, additional logical operations are required before and / or after the execution of a resolvers base CRUD logic. For example: Given a SaaS application onboarding system, which onboards `Tenant` entities. Assuming each tenant (e.g. company) requires its own unique subdomain, the relevant DNS registrars API should be called immediately following the initial onboarding. `ApiMetaOperations<T>` is the abstract base class which can be extended and passed in as an argument to this annotation in order to achieve this. We'll get into it in more depth a bit further on.
-
-### Custom resolvers 
-
-In addition to the standard CRUD operation resolvers, custom resolvers can be added by making use of the following annotations:
--  `@GetBy`: To fetch a list of entity instances with the search criteria being the value of a specific field, the field can be annotated with the `@GetBy` annotation and a custom `List<...> get...By...(field value as arg)` resolver will be added to the GraphQL service bean. For example: 
+In addition to the standard CRUD operation endpoints, custom endpoints can be added by making use of the following annotations:
+-  `@ApiFindBy`: To fetch a list of entity instances with the search criteria being the value of a specific field, the field can be annotated with the `@ApiFindBy` annotation and a custom `List<...> get...By...(field value as arg)` resolver will be added to the GraphQL service bean. For example: 
     ```
     @Entity
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
         private String name;
-        @GetBy
+        @ApiFindBy
         private Integer age;
         private String address;
     }
     ```
-    The above `@GetBy` would generate the following resolver:
+    The above `@ApiFindBy` would generate the following resolver:
     ```
     @...
     PersonGraphQLService{
     ...
       //fetch a list of people who are "age" years old
       @GraphQLQuery
-      public List<Person> getPersonsByAge(Integer age) {
-        return ApiLogic.getBy(personDataManager, "age", age);
+      public List<Person> findPersonsByAge(Integer age) {
+        return apiLogic.apiFindBy("age", age);
       }
     ...
     }
     ```
--  `@GetAllBy`: To fetch a list of entity instances with the search criteria being the value of a specific field being contained within a list of corresponding inputted values, the field can be annotated with the `@GetAllBy` annotation and a custom `List<...> getAll...By...(list of field values to look for)` resolver will be added to the GraphQL service bean. For example:
+-  `@ApiFindAllBy`: To fetch a list of entity instances with the search criteria being the value of a specific field being contained within a list of corresponding inputted values, the field can be annotated with the `@ApiFindAllBy` annotation and a custom `List<...> findAll...By...(list of field values to look for)` endpoint will be added to the GraphQL service bean. For example:
     ```
     @Entity
     
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
-        @GetAllBy
+        @ApiFindAllBy
         private String name;
         private Integer age;
         private String address;
     }
     ```
-    The above `@GetAllBy` would generate the following resolver:
+    The above `@ApiFindAllBy` would generate the following endpoint:
     ```
     @...
     PersonGraphQLService{
     ...
       //fetch a list of people whos name is included in the "names" list
       @GraphQLQuery
-      public List<Person> getAllPersonsByNames(List<String> names) {
-        return ApiLogic.getAllBy(personDataManager, "name", names);
+      public List<Person> findAllPersonsByNames(List<String> names) {
+        return apiLogic.apiFindAllBy("name", names);
       }
     ...
     }
     ```
--  `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` resolver will be added to the GraphQL service bean. For example:
+-  `@GetByUnique`: To fetch a _single_ entity instance by the value of a unique field, the field can be annotated with the `@GetByUnique` annotation and a custom `get...ByUnique...(field value)` endpoint will be added to the entities GraphQL service bean. For example:
     ```
     @Entity
-    
     public class Person {
         @Id
         private String id = UUID.randomUUID().toString();
         private String name;
         private Integer age;
         private String address;
-        @Column(unique = true) @GetByUnique
+        @Column(unique = true) @ApiFindByUnique
         private String socialSecurityNumber;
     }
     ```
-    The above `@GetByUnique` would generate the following resolver:
+    The above `@ApiFindByUnique` would generate the following resolver:
     ```
     @...
     PersonGraphQLService{
       ...
       @GraphQLQuery
-      public Person getPersonBySocialSecurityNumber(String socialSecurityNumber) {
-        return ApiLogic.getByUnique(personDataManager, "socialSecurityNumber", socialSecurityNumber);
+      public Person findPersonByUniqueSocialSecurityNumber(String socialSecurityNumber) {
+       return apiLogic.apiFindByUnique("socialSecurityNumber", socialSecurityNumber);
       }
     ...
     }
     ```
--  `@WithResolver(...)`: To fetch a list of entity instances using a custom JPQL query, the relevant entity-class can be annotated  with the `@WithResolver(...)` annotation and a corresponding resolver will be added to the GraphQL service bean. The `@WithResolver(...)` annotation feature is a bit more involved than the others, and builds upon it's implementation in the [Datafi](https://github.com/sindaryn/datafi) library. If you are unfamiliar with it's usage, head on over to the Datafi [Readme](https://github.com/sindaryn/datafi/blob/master/README.md). As is the case with the previous three annotations, Apifi extends the functionality provided by [Datafi](https://github.com/sindaryn/datafi) by generating the code required to expose tsindarynhat data layer resolver to the web. 
-    
-    In any event, here is an example of `@WithResolver` usage:
-    ```
-    @Entity
-    
-    @WithResolver(name = "getPersonsByNameOrAge", where = "p.name = :name OR p.age = :age", args = {"name", "age"})
-    public class Person {
-        @Id
-        private String id = UUID.randomUUID().toString();
-        private String name;
-        private Integer age;
-        private String address;
-    }
-    ```
-    The above `@WithResolver(...)` would generate the following resolver:
-    ```
-    @...
-    PersonGraphQLService{
-    ...
-      @GraphQLQuery
-      public List<Person> getPersonsByNameOrAge(String name, Integer age) {
-        List<Object> args = Arrays.asList(name, age);
-        return ApiLogic.selectBy(personDataManager, "getPersonsByNameOrAge", args);
-      }
-    ...
-    }
-    ```
-    Important note: `@WithResolver(...)` is a repeatable annotation, therefore as many custom JPQL query based resolvers per class may be assigned as needed.
 
 ### Free text search
 
 ##### Overview
 
-Apifi comes with non case sensitive free text - or "fuzzy" search out of the box. This extends and relies upon the [free text search feature in Datafi](https://github.com/sanda-dev/datafi#free-text-search). To make use of this feature, annotate any **String typed** field with `@FreeTextSearchBy`, or alternatively, annotate the class itself with `@FreeTextSearchByFields({"field1", "field2", etc...})`. For example:
+Apifi comes with non case sensitive free text - or "fuzzy" search out of the box. This extends and relies upon the [free text search feature in Datafi](https://github.com/sanda-dev/datafi#free-text-search). To make use of this feature, annotate any **String typed** field with `@FreeTextSearchBy`, or alternatively, annotate the class itself with `@FreeTextSearchByFields({"field1", "field2", etc...})`. 
+
+For example:
 
 ##### Domain model  
 ```  
@@ -232,7 +197,6 @@ public class Person{
 
 @Id 
 private String id = UUID.randomUUID().toString(); 
-
 @FreeTextSearchBy
 private String name;
 @FreeTextSearchBy
@@ -247,10 +211,11 @@ private String email;
 public class PersonGraphQLService{  
 ...
 @GraphQLQuery
-public List<User> personsFuzzySearch(String searchTerm, //in this case can be either (partial or complete) name  or email
-@GraphQLArgument(name = "offset", defaultValue = "0") int offset,
+public List<User> personsFuzzySearch(
+String searchTerm, //in this case can be either (partial or complete) name  or email
+int offset,
 @GraphQLArgument(name = "limit", defaultValue = "50") int limit,
-@GraphQLArgument(name = "sortBy") String sortBy,
+@GraphQLArgument(name = "sortBy", defaultValue = "id") String sortBy,
 @GraphQLArgument(name = "sortDirection", defaultValue = "\"ASC\"") Sort.Direction sortDirection) {
 return ApiLogic.freeTextSearch(User.class, userDataManager, userMetaOperations, offset, limit, searchTerm, sortBy, sortDirection);
 }
@@ -258,15 +223,70 @@ return ApiLogic.freeTextSearch(User.class, userDataManager, userMetaOperations, 
 }  
 
 ```
-`freeTextSearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `freeTextSearch` takes in the 2 optional arguments `int offset` and `int limit` - in that order. These are "optional" in the sense that if not specified, the offset and limit will default to 0 and 50 respectively. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If no matching field is found an `IllegalArgumentException` is thrown. `Sort.Direction sortDirection` determines the ordering strategy. If not specified it defaults to ascending order (`ASC`).
+`freeTextSearch` does not return a list of all matching database records, but rather the contents of a `Page` object. This means that the search results are paginated by definition. Because of this, `freeTextSearch` takes in the 2 arguments `int offset` and `int limit` - in that order. The `offset` must be specified, whereas the `limit` will default to 50. An additional 2 optional arguments are `String sortBy` and `Sort.Direction sortDirection` - in that order. `String sortBy` specifies the name of a field within the given entity by which to apply the sort. If a field name is given yet no matching field is found an `IllegalArgumentException` is thrown. If left blank, it defaults to the 	id	 field. `Sort.Direction sortDirection` determines the ordering strategy (ascending / descending). If not specified it defaults to ascending order (`ASC`).
 
+### ApiHooks\<T>
+Apifi APIs are designed for extensibility. This is where `ApiHooks<T>` comes in. To get a better understanding as to how this works, see the following code snippet from the`ApiLogic<T>` class where the CRUD operational logic is generically implemented.  More the specifically, this is the `batchCreate(List<T> input)` method: 
 
-### Collections
-`Iterable<...>` collections are unique in that they are not "assigned" per say - they're **added to**, **updated in**, and **removed from**. As such, some specialized resolvers are required in order to work with them. Before we can demonstrate these, we'll need to add a collection to our example. Fortunately, our `Person` appears to have picked up a few hobbies!
+```
+public List<T> batchCreate(List<T> input) {  
+	if(apiHooks != null) // <--- note this
+		apiHooks.preBatchCreate(input, dataManager);  
+	val result = dataManager.saveAll(input);  
+	if(apiHooks != null) // <--- and this
+		apiHooks.postBatchCreate(result, dataManager);  
+	logInfo("batchCreate: created {} new {} with ids [{}]", result.size(),toPlural(dataManager.getClazzSimpleName()), getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));  
+	return result;  
+}
+```
+This pattern repeats itself in the same manner in all of the other `ApiLogic<T>` methods, allowing for the execution of custom defined logic prior to or following mutations and queries. In order to make use of this feature for an entity of type `T`:
+1. create a public class which implements `ApiHooks<T>`
+2. Make sure the class is wired into the application context (`@Component`, etc.).
+3. Override whichever hooks are relevant. See the relevant source code [here](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java).
+No further configuration is necessary - Apifi leverages spring dependency injection to determine whether such a class has been created for a given entity. If such a service bean has indeed been created - it will be picked up and used by `ApiLogic<T>`. 
 
+For example:
 ```
 @Entity
 
+public class Person{
+    @Id
+    private String id = UUID.randomUUID().toString();
+    private String name;
+    private Integer age;
+    // getters & setters, etc...
+}
+```
+Imagine there is a requirement to print a welcome message to the console after every time a new person is added, and a goodbye message after every time a person is deleted. To do so, a custom implementation of `ApiHooks<T>` can be implemented as follows:
+```
+@Component
+public class PersonApiHooks extends ApiHooks<Person> {
+
+    @Override
+    public void postCreate(Person added, DataManager<Person> dataManager) {
+        System.out.println("Hello " + added.getName() + "!");
+    }
+
+    @Override
+    public void postDelete(Person deleted, DataManager<Person> dataManager) {
+        System.out.println("Goodbye " + deleted.getName() + ":(");
+    }
+    
+}
+```
+The same workflow applies to more complex use cases such as third party API calls, data related metrics, etc.
+
+
+### Embedded / foreign key Collections
+`Iterable<...>` collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with `@EmbeddedCollectionApi` annotation. This annotation takes in several optional arguments, as follows:
+1. `ForeignKeyCollectionResolverType[] resolvers()` - `ForeignKeyCollectionResolverType` is an ENUM comprising three types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM, UPDATE_IN, ALL`.  This arguments delineates which CRUD endpoints should be generated for the embedded collection, and defaults to `ALL` if not specified.
+2. `Class<? extends EmbeddedCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` bean described above. It enables custom business logic to be hooked before and / or after CRUD operations. To use, create a public class which implements the `EmbeddedCollectionApiHooks<T>` interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`, etc.). If no such argument is passed, it defaults to a dummy implementation containing no business logic.
+3. `boolean associatePreExistingOnly()` - This parameter specifies whether the `ASSOCIATE_WITH` endpoint should ensure that instances being added to the collection are already present in the database. Predictably it defaults to `false`.
+4. A more advanced feature is the ability to add spring security annotations to the generated endpoints. For brevities sake I am ommiting the rather extensive list of possibilities but they can be viewed  [here](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java).
+
+A simple example:
+```
+@Entity
 public class Person {
     @Id
     private String id = UUID.randomUUID().toString();
@@ -274,13 +294,13 @@ public class Person {
     private Integer age;
     private String address;
     @OneToMany
+    @EmbeddedCollectionApi
     private Set<Hobby> hobbies;
 }
 ```
-And our new `Hobby` entity:
+And a new `Hobby` entity:
 ```
 @Entity
-(exposeDirectly = false)
 public class Hobby {
     @Id
     private String id = UUID.randomUUID().toString();
@@ -288,238 +308,66 @@ public class Hobby {
     private String description;
 }
 ```
-Let's have a look at the generated code, method by method:
+Here is a look at the generated code, method by method:
 
 1. Read collection:
+		Read collection is generated by default, with or without the presence of  `@EmbeddedCollectionApi` annotation. This default behavior can be overridden by annotating the corresponding getter with `@GraphQLIgnore` annotation (if there's no getter, annotate the field itself). 
     ```
-    @GraphQLQuery
-    public List<List<Hobby>> hobbies(@GraphQLContext List<Person> input) {
-    return ApiLogic.getEmbeddedCollection(...);
-    }
+    @...
+	@GraphQLQuery  
+	public List<List<Hobby>> hobbies(@GraphQLContext List<Person> input) {  
+	  return apiLogic.getEmbeddedCollection(...);  
+	}
     ```
-    This query resolver allows graphql queries such as the following to be executed :
+    An example query :
     ```
-    query getHobbiesOfPersons{
-      allPersons(offset: 0, limit: 75, sortBy: "title", sortDirection: DESC){
-      ...
+    query hobbiesByPerson{
+      persons(offset: 25, limit: 75, sortBy: "title", sortDirection: DESC){
+      id
+      name
         hobbies{
           id
           title
           description
         }
-      ...
       }
     }
     ```
-    This should look familiar to anyone with a working knowledge of GraphQL. It's the typical way you'd expect to retreive a foreign key collection.
     
-2. Add / attach to collection:
+8. Associate new or pre-existing items to collection:
     ```
-    @GraphQLMutation
-    public List<Hobby> addNewHobbiesToPerson(List<Hobby> input, Person person) {
-        return ApiLogic.addNewToEmbeddedCollection(...);
-    }
+	@GraphQLMutation  
+	public List<Hobby> associateHobbiesWithPerson(Person owner, List<Hobby> input) {  
+	  return apiLogic.associateWithEmbeddedCollection(...);  
+	}
     ```
-    This mutation accepts two arguments:
-     - `List<...> input`: The entities - in this case; hobbies, to add the the given person. Recall the `@NonDirectlyExposable` annotation. If the type of entity referenced in the given collection is annotated as such - and therefore has no independent lifecycle, it makes sense to create new instances within the context of an embedded collection within a host Aggregate entity. In this instance hobby is not marked for direct API exposure, hence the `addNewHobbiesToPerson` resolver, and not the `attachExisting...To...` equivalent resolver for cases where the referenced entity type has its own top level queries and mutations exposed. 
-     - `Person person`: The host entity which the collection in question belongs to. The (deserialized) instance passed to this argument must include the `id`.
-      
  
  3. Update elements in collection:
     ```
-      @GraphQLMutation
-      public List<Hobby> updateHobbiesInPerson(List<Hobby> input, Person person) {
-        return ApiLogic.updateEmbeddedCollection(...);
-      }
+    @GraphQLMutation  
+	public List<Hobby> updateHobbiesInPerson(Person owner, List<Hobby> input) {  
+	  return apiLogic.updateEmbeddedCollection(...);  
+	}
     ```
-    Accepts two arguments following a similar concept as the previous mutation - a list of elements to be updated, and a reference to the host entity. The method makes use of application-level "cascading", therefore obviating the need to worry about database-level cascading on update operations.
     
-4. Remove elements from collection:
+9. Remove elements from collection:
     ```
-      @GraphQLMutation
-      public List<Hobby> removeHobbiesFromPerson(List<Hobby> input, Person person) {
-        return ApiLogic.removeFromEmbeddedCollection(...);
-      }
+	@GraphQLMutation  
+	public List<Hobby> removeHobbiesFromPerson(Person owner, List<Hobby> input) {  
+	  return apiLogic.removeFromEmbeddedCollection(...);  
+	}
     ```
-    Accepts two arguments following a similar concept as the previous two mutations - a list of elements to be removed, and a reference to the host entity. Note that this method does NOT actually perform any deletions, but rather merely removes the foreign key references.
+**Note:** This method does *not* actually perform any deletions from the referenced table, but rather merely removes the foreign key references from the host entity. This leaves it up to the developer to use either cascading or the `postRemove` / `preRemove` hooks in `EmbeddedCollectionApiHooks<TEmbedded, T>` if there is a need for actual deletion.
 
-### ApiMetaOperations<T>
-As briefly mentioned above, Apifi APIs are designed for extensibility. This is where `ApiMetaOperations<T>` comes in. To get a better understanding as to how this works, let's take a peek into the `ApiLogic` interface where we keep our actual api-level logic - or more the specifically the `addCollection` method:
-
-```
-    static <T, E extends ApiMetaOperations<T>> List<T>
-    addCollection(DataManager<T> dataManager, List<T> input, E embeddedCollectionApi) {
-        embeddedCollectionApi.preAddEntities(input);
-        val result = dataManager.saveAll(input);
-        embeddedCollectionApi.postAddEntities(result);
-        return result;
-    }
-```
-Note the two lines `embeddedCollectionApi.preAddEntities(input);`, and `embeddedCollectionApi.postAddEntities(result);`. These method calls allow for the `embeddedCollectionApi` instance which was passed as an argument to execute custom defined logic before and / or after the core logic. This pattern repeats itself in the same manner in all of the other `ApiLogic` methods, allowing for the execution of custom defined logic prior to or following mutations and queries.
-
-In order to make use of this, the class type token of the developers custom child-class of `ApiMetaOperations<T>` must be passed as an argument to the `@ApiHooksAndCustomResolvers(...)` annotation. In order to understand how to make practical use of this feature, observe the `ApiMetaOperations<T>` source code:
-```
-@Component
-public class ApiMetaOperations<T> {
-
-    //don't worry about these
-    @Autowired
-    protected ReflectionCache reflectionCache;
-    @Autowired
-    protected DataManager<T> dataManager;
-
-    //queries
-    public void preFetchEntityInGetById(Object id){}
-    public void preFetchEntityInGetByUnique(Object argument){}
-    public void preFetchEntityInGetBy(Object argument){}
-    public void preFetchEntityInGetAllBy(List<?> arguments){}
-    public void preFetchEntityInCustomResolver(List<?> arguments){}
-    public void preFetchEntitiesInGetAll(Class<T> clazz) {}
-    public void preFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm){}
-    public void postFetchEntitiesInFuzzySearch(Class<T> clazz, String searchTerm, List<T> fetched){}
-    public void postFetchEntity(T fetched){}
-    public void postFetchEntities(Collection<T> fetched){fetched.forEach(this::postFetchEntity);}
-
-    //mutations
-    public void preAddEntity(T toAdd){}
-    public void postAddEntity(T added){}
-    public void preUpdateEntity(T toUpdate){}
-    public void postUpdateEntity(T toUpdate){}
-    public void preDeleteEntity(T toDelete){}
-    public void postDeleteEntity(T deleted){}
-    public void preArchiveEntity(T toArchive){}
-    public void postArchiveEntity(T toArchive){}
-    public void preDeArchiveEntity(T toDeArchive){}
-    public void postDeArchiveEntity(T toDeArchive){}
-
-    public void preAddEntities(Collection<T> toAdd){toAdd.forEach(this::preAddEntity);}
-    public void postAddEntities(Collection<T> added){added.forEach(this::postAddEntity);}
-    public void preUpdateEntities(Collection<T> toUpdate){toUpdate.forEach(this::preUpdateEntity);}
-    public void postUpdateEntities(Collection<T> toUpdate){toUpdate.forEach(this::postUpdateEntity);}
-    public void preDeleteEntities(Collection<T> toDelete){toDelete.forEach(this::preDeleteEntity);}
-    public void postDeleteEntities(Collection<T> deleted){deleted.forEach(this::postDeleteEntity);}
-    public void preArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::preArchiveEntity);}
-    public void postArchiveEntities(Collection<T> toArchive){toArchive.forEach(this::postArchiveEntity);}
-    public void preDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::preDeArchiveEntity);}
-    public void postDeArchiveEntities(List<T> toDeArchive){toDeArchive.forEach(this::postDeArchiveEntity);}
-}
-```
-The methods and code are fairly self-explanatory. As is observable, the default `ApiMetaOperations<T>` class which is passed as that third argument to `GraphQLApiEntity` has no actual impact. To override this default behaviour (or lack thereof), the base class must be extended and implemented as required. Let's go through a familiar example. Given our `Person` entity:
-```
-@Entity
-
-public class Person{
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    // getters & setters, etc...
-}
-```
-Assume there is a requirement to print a welcome message to the console after every time a new person is added, and a goodbye message after every time a person is deleted. To do so, a custom implementation of `ApiMetaOperations<T>` can be implemented as follows:
-```
-@Component
-public class PersonMetaOperations extends ApiMetaOperations<Person> {
-
-    @Override
-    public void postAddEntity(Person added) {
-        System.out.println("Hello " + added.getName() + "!");
-    }
-
-    @Override
-    public void postDeleteEntity(Person deleted) {
-        System.out.println("Goodbye " + deleted.getName() + ":(");
-    }
-    
-}
-```
-The final step is to pass the corresponding class type token as an argument to the `@ApiHooksAndCustomResolvers` annotation on `Person`:
-```
-@Entity
-@ApiHooksAndCustomResolvers(PersonMetaOperations.class)
-public class Person{
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    // getters & setters, etc...
-}
-```
-The required custom behaviour is now fully defined and operational. Obviously this is a trivial example, but the same workflow applies to more complex use cases such as third party API calls, data related metrics, etc.
-
-### EmbeddedCollectionMetaOperations
-As demostrated above, embedded collections must be dealt with in their own way. This is why the standard `ApiMetaOperations<T>` cannot apply to mutations performed on embedded collections. In order to add custom pre or post mutation logic to embedded collection related api mutations, the collection in question must first be annotated with the `@MetaOperations(...)` annotation, as follows:
-```
-@Entity
-(apiMetaOperations = PersonMetaOperations.class)
-public class Person{
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    @ManyToMany
-    @MetaOperations(...)
-    private Set<Person> friends;
-}
-```
-Next, the `EmbeddedCollectionMetaOperations<T, HasTs>` base class must be extended. The base `EmbeddedCollectionMetaOperations<T, HasTs>` class looks as follows:
-
-```
-@Component
-public class EmbeddedCollectionMetaOperations<T, HasTs>{
-    
-    @Autowired @Getter
-    private ReflectionCache reflectionCache;
-    @Autowired @Getter
-    private DataManager<T> tDataManager;
-    @Autowired @Getter
-    private DataManager<HasTs> hasTsDataManager;
-
-    public void postFetch(Collection<T> Ts, HasTs hasTs){}
-    public void preRemove(Collection<T> Ts, HasTs hasTs){}
-    public void postRemove(Collection<T> Ts, HasTs hasTs){}
-    public void preAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
-    public void postAttachOrAdd(Collection<T> Ts, HasTs hasTs){}
-    public void preUpdate(Collection<T> Ts, HasTs hasTs){}
-    public void postUpdate(Collection<T> Ts, HasTs hasTs){}
-}
-```
-The code above should also be fairly self explanatory. To illustrate, let's implement a child class which prints the name of each newly added hobby:
-
-```
-@Component
-public class HobbiesInPersonMetaOperations extends EmbeddedCollectionMetaOperations<Hobby, Person> {
-    
-    @Override
-    public void preAttachOrAdd(Collection<Hobby> hobbies, Person person) {
-        hobbies.forEach(newHobby -> System.out.println(newHobby.getDescription()));
-    }
-    
-}
-```
-Finally, the class type token for `HobbiesInPersonMetaOperations` must be passed as an argument to the `@MetaOperation(...)` annotation on the `Set<Hobby> hobbies` collection within `Person`:
-
-```
-@Entity
-public class Person{
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    @ManyToMany
-    @MetaOperations(embeddedCollectionApi = HobbiesInPersonMetaOperations.class)
-    private Set<Hobby> hobbies;
-}
-```
 ### Spring security integration
-Apifi supports full integration with spring security - or more specifically; spring security annotations. This is feature can be utilized via the`@Secure(...)` annotation. This annotation can be applied on the class or field level.
+Apifi supports full integration with spring security by leveraging the following 6 annotations: [`@Secured`](https://docs.spring.io/spring-security/site/docs/3.2.8.RELEASE/apidocs/org/springframework/security/access/annotation/Secured.html), [`@RolesAllowed`](https://docs.oracle.com/javaee/7/api/javax/annotation/security/RolesAllowed.html), [`@PreAuthorize`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PreAuthorize.html), [`@PostAuthorize`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PostAuthorize.html), [`@PreFilter`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PreFilter.html), and [`@PostFilter`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PostFilter.html).
 
 #### Overview
-Here's how the `@Secure` annotation looks under the hood:
+Annotation based security is especially well suited to GraphQL APIs, given that they operate off of a single endpoint. Apifi leverages spring security annotations like this:
 ```
-@Target({ElementType.FIELD, ElementType.TYPE})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Secure {
+public @interface WithServiceLevelSecurity {
     String secured() default "";
     String rolesAllowed() default "";
     String preAuthorize() default "";
@@ -527,269 +375,146 @@ public @interface Secure {
     String preFilter() default "";
     String preFilterTarget() default "";
     String postFilter() default "";
-
-    String securedCreate() default "";
-    String rolesAllowedCreate() default "";
-    String preAuthorizeCreate() default "";
-    String postAuthorizeCreate() default "";
-    String preFilterCreate() default "";
-    String preFilterTargetCreate() default "";
-    String postFilterCreate() default "";
-
-    String securedRead() default "";
-    String rolesAllowedRead() default "";
-    String preAuthorizeRead() default "";
-    String postAuthorizeRead() default "";
-    String preFilterRead() default "";
-    String preFilterTargetRead() default "";
-    String postFilterRead() default "";
-
-    String securedUpdate() default "";
-    String rolesAllowedUpdate() default "";
-    String preAuthorizeUpdate() default "";
-    String postAuthorizeUpdate() default "";
-    String preFilterUpdate() default "";
-    String preFilterTargetUpdate() default "";
-    String postFilterUpdate() default "";
-
-    String securedDelete() default "";
-    String rolesAllowedDelete() default "";
-    String preAuthorizeDelete() default "";
-    String postAuthorizeDelete() default "";
-    String preFilterDelete() default "";
-    String preFilterTargetDelete() default "";
-    String postFilterDelete() default "";
 }
 ```
-`@Secure` enables the application of any or all of 6 spring & javax security annotations: [`@Secured`](https://docs.spring.io/spring-security/site/docs/3.2.8.RELEASE/apidocs/org/springframework/security/access/annotation/Secured.html), [`@RolesAllowed`](https://docs.oracle.com/javaee/7/api/javax/annotation/security/RolesAllowed.html), [`@PreAuthorize`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PreAuthorize.html), [`@PostAuthorize`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PostAuthorize.html), [`@PreFilter`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PreFilter.html), and [`@PostFilter`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PostFilter.html).
-
-Let's get specific with an example:
-
+... and this:
 ```
-@Entity
-@Secure(rolesAllowed = "ROLE_ADMIN")
-public class Person {
-    @Id
-    private String id = UUID.randomUUID().toString();
-    private String name;
-    private Integer age;
-    private String address;
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Repeatable(WithMethodLevelSecurityAccumulator.class)
+public @interface WithMethodLevelSecurity {
+    String secured() default "";
+    String rolesAllowed() default "";
+    String preAuthorize() default "";
+    String postAuthorize() default "";
+    String preFilter() default "";
+    String preFilterTarget() default "";
+    String postFilter() default "";
+    CRUDResolvers[] targets();
 }
 ```
-Here's the resulting service bean:
-```
-@...
-@RolesAllowed("ROLE_ADMIN")
-public class PersonGraphQLService {...}
-```
-Note the `@RolesAllowed("ROLE_ADMIN")` annotation. We now have spring security ensuring that only users which spring security recognizes as having "ROLE_ADMIN" will be able to access and execute any of the contained methods. 
+At compile time, Apifi parses the string directives and applies the corresponding security annotations to their respective endpoints.  The difference between the first and second annotations above, is that the first is intended to apply at the GraphQLApi service level - meaning the security annotation is not to any specific method but to the Service bean which serves as the GraphQLApi for the CRUD operations of a given entity. This means the annotations apply to ALL the contained methods.
 
-**Importnant note:** This does **not** preconfigure spring security itself, but rather merely applies spring security annotations. The final security setup is up to the developer. 
+The second annotation is for more granular security configuration. It allows for the placing of security annotations on a target group of methods, delineated by the `CRUDResolvers[] targets();` parameter. recall that `CRUDResolvers` is the set of enum values used to tell `@WithCRUDEndpoints(...)` which GraphQL endpoints to create for the given entity. 
 
-Oftentimes, more granular control over which methods can be accessed and executed by which users is required, and just slapping on a class level security annotation won't cut it. The automated application of spring security annotations to classes and methods falls into one of two categories:
-1. Annotation parameters that were passed as arguments to the class level `@Secure(...)` annotation (as in the above example). These annotations fall into one of 5 sub-categories:
-    - CRUD: 
-        ```
-        @...
-        public @interface Secure {
-            String secured() default "";
-            String rolesAllowed() default "";
-            String preAuthorize() default "";
-            String postAuthorize() default "";
-            String preFilter() default "";
-            String preFilterTarget() default "";
-            String postFilter() default "";
-            ...
-        }
-        ```
-        Note these top-most annotation arguments are named after their corresponding security annotations with **no suffix**. They correspond to the annotations that are placed at the class level - as with our above example.
-        
-    - Create:
-       ```
-        @...
-        public @interface Secure {
-            ...
-            String securedCreate() default "";
-            String rolesAllowedCreate() default "";
-            String preAuthorizeCreate() default "";
-            String postAuthorizeCreate() default "";
-            String preFilterCreate() default "";
-            String preFilterTargetCreate() default "";
-            String postFilterCreate() default "";
-            ...
-        }
-        ```
-        As is the case with all of the following sub-categories as well, these annotations are for application at the method level. More specifically, they are applicable to _create_ methods - i.e. `add...` and `add...s`.
-        
-    - Read:
-        ```
-        @...
-        public @interface Secure {
-            ...
-            String securedRead() default "";
-            String rolesAllowedRead() default "";
-            String preAuthorizeRead() default "";
-            String postAuthorizeRead() default "";
-            String preFilterRead() default "";
-            String preFilterTargetRead() default "";
-            String postFilterRead() default "";
-            ...
-        }
-        ```
-        As their suffixes suggest, these are applicable to _read_ - i.e `get...` operations.
-        
-    - Update:
-         ```
-        @...
-        public @interface Secure {
-            ...
-            String securedUpdate() default "";
-            String rolesAllowedUpdate() default "";
-            String preAuthorizeUpdate() default "";
-            String postAuthorizeUpdate() default "";
-            String preFilterUpdate() default "";
-            String preFilterTargetUpdate() default "";
-            String postFilterUpdate() default "";
-            ...
-        }
-        ```
-        As their suffixes suggest, these are applicable to `update...` operations.
-        
-    - Delete:
-         ```
-        @...
-        public @interface Secure {
-            ...
-            String securedDelete() default "";
-            String rolesAllowedDelete() default "";
-            String preAuthorizeDelete() default "";
-            String postAuthorizeDelete() default "";
-            String preFilterDelete() default "";
-            String preFilterTargetDelete() default "";
-            String postFilterDelete() default "";
-            ...
-        }
-        ```
-        As their suffixes suggest, these are applicable to `delete...` operations.
-    
-    Let's showcase these subcategories with the following example:
-    
-    ```
-    @Entity
-    
-    @Secure(
-        rolesAllowed = "permitAll()", 
-        rolesAllowedCreate = "ROLE_ADMIN", 
-        rolesAllowedUpdate = "ROLE_SECRETARY",
-        rolesAllowedDelete = "ROLE_SUPERVISOR"
-        )
-    public class Person {
-        @Id
-        private String id = UUID.randomUUID().toString();
-        private String name;
-        private Integer age;
-        private String address;
-    }
-    ```
-    And the resulting service bean:
-    
-    ```
-    @...
-    @RolesAllowed("permitAll()")
-    public class PersonGraphQLService {
-      
-      ...
-      
-      @GraphQLQuery
-      public List<Person> allPersons(int limit, int offset) {
-        return ApiLogic.getAll(personDataManager, limit, offset);
-      }
-    
-      @GraphQLQuery
-      public Person getPersonById(String input) {
-        return ApiLogic.getById(personDataManager,input);
-      }
-    
-      @GraphQLQuery
-      public List<Person> getPersonsById(List<String> input) {
-        return ApiLogic.getCollectionById(personDataManager, input);
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_ADMIN")
-      public Person addPerson(Person input) {
-        Person entity = ApiLogic.add(personDataManager, input, personMetaOperations);
-        return entity;
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_SECRETARY")
-      public Person updatePerson(Person input) {
-        Person entity = ApiLogic.update(personDataManager, input, reflectionCache, personMetaOperations);
-        return entity;
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_SUPERVISOR")
-      public Person deletePerson(Person input) {
-        Person entity = ApiLogic.delete(personDataManager, reflectionCache, input, personMetaOperations);
-        return entity;
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_ADMIN")
-      public List<Person> addPersons(List<Person> input) {
-        List<Person> entities = ApiLogic.addCollection(personDataManager, input, personMetaOperations);
-        return entities;
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_SECRETARY")
-      public List<Person> updatePersons(List<Person> input) {
-        List<Person> entities = ApiLogic.updateCollection(personDataManager, input, personMetaOperations);
-        return entities;
-      }
-    
-      @GraphQLMutation
-      @RolesAllowed("ROLE_SUPERVISOR")
-      public List<Person> deletePersons(List<Person> input) {
-        List<Person> entities = ApiLogic.deleteCollection(personDataManager, input, personMetaOperations);
-        return entities;
-      }
-    }
-    ```
-    The breakdown:
-     - On the class level, spring security is set to `"permitAll()"`, which is therefore the default for all contained methods which do not have their own overriding security annotation. In this particular case, this includes all _read_ related resolvers such as `all...`, `get...ById`, and `get...sById`. Recall the `rolesAllowed = "permitAll()"` argument we passed to `@Secure`.
-     
-     - The _create_, or `add...` methods are annotated with `@RolesAllowed("ROLE_ADMIN")`, such that only users with an admin role can use them. Recall the `rolesAllowedCreate = "ROLE_ADMIN"` we passed to `@Secure`.
-     
-     - the `update...` methods are annotated with `@RolesAllowed("ROLE_SECRETARY")`. Recall the `rolesAllowedUpdate = "ROLE_SECRETARY"` argument that was passed to `@Secure`.
-     
-     - The `delete...` methods are annotated with `@RolesAllowed("ROLE_SUPERVISOR")`. Recall the `rolesAllowedDelete = "ROLE_SUPERVISOR"` argument passed to `@Secure`.
-     
- 
- 2. Annotation arguments that were passed to a field level `@Secure`. Specifically, a field level `@Secure(...)` adorning a field also annotated with a `@GetBy`, `@GetAllBy` or `@GetByUnique` annotation. This is useful for defining granular access control for the corresponding API exposed resolvers. For example:
-    ```
-    @Entity
-    public class Person {
-        @Id
-        private String id = UUID.randomUUID().toString();
-        @GetBy @Secure(preAuthorize = "ROLE_ADMIN")
-        private String name;
-        private Integer age;
-        private String address;
-    }
-    ```
-    Results in the following autogenerated code:
-    ```
-      @GraphQLQuery
-      @PreAuthorize("ROLE_ADMIN")
-      public List<Person> getPersonsByName(String name) {
-        return ApiLogic.getBy(personDataManager, "name", name);
-      }
-    ```
-    The same flow applies to `@GetAllBy` and `@GetByUnique`.
-    
+**Note:** Method level security annotations will override class level annotations in the even of a difference in policy.
+
+In a similar vein, embedded collection api endpoints are also securable in much the same manner. The [`@EmbeddedCollectionApi`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java) annotations also contains spring security directive parameters. The difference is there is a separate  set of such directives for each type of endpoint (i.e. `ASSOCIATE_WITH, REMOVE_FROM, UPDATE_IN`) as well as Read collection. 
+
+Example:
+```
+@Entity  
+@WithServiceLevelSecurity(rolesAllowed = "ROLE_SYS_ADMIN")  
+@WithMethodLevelSecurity(rolesAllowed = "ROLE_SECRETARY", targets = {GET_PAGINATED_BATCH, GET_BY_ID})  
+@WithMethodLevelSecurity(rolesAllowed = "ROLE_OFFICE_MANAGER", targets = {CREATE, UPDATE})  
+@WithCRUDEndpoints({GET_PAGINATED_BATCH, GET_BY_ID, CREATE, UPDATE})  
+public class Person {  
+	@Id  
+	@GeneratedValue  private Long id;  
+	@ApiFindBy(rolesAllowed = "ROLE_USER")  
+	private String name;  
+	private Integer age;  
+	@OneToMany  
+	@EmbeddedCollectionApi(postAuthorizeGet = "hasRole(ROLE_ADMIN)", preAuthorizeAssociateWith = "hasRole(ROLE_ADMIN)")  
+	private Set<Hobby> hobbies;  
+}
+```
+There's quite a bit going on here so let's break it down before looking at the resulting generated code:
+1. `@WithServiceLevelSecurity(rolesAllowed = "ROLE_SYS_ADMIN")` - This will apply a `@RolesAllowed("ROLE_SYS_ADMIN")` annotation to the `PersonGraphQLService` bean.
+2. `@WithMethodLevelSecurity(rolesAllowed = "ROLE_SECRETARY", targets = {GET_PAGINATED_BATCH, GET_BY_ID})` - This will apply a `@RolesAllowed("ROLE_SECRETARY")` annotations to the `GET_PAGINATED_BATCH` and `GET_BY_ID` endpoints in `PersonGraphQLService` (effectively overriding the previous class level directive).
+3. `@WithMethodLevelSecurity(rolesAllowed = "ROLE_OFFICE_MANAGER", targets = {CREATE, UPDATE})` - This will apply a `@RolesAllowed("ROLE_OFFICE_MANAGER")` annotations to the `CREATE` and `UPDATE` methods in `PersonGraphQLService`.
+4. `@ApiFindBy(rolesAllowed = "ROLE_USER")` on the `private String name;` field - This will apply a `@RolesAllowed("ROLE_USER")` annotations to the `findPersonsByName` endpoint in `PersonGraphQLService`.
+5. `@EmbeddedCollectionApi(postAuthorizeGet = "hasRole(ROLE_ADMIN)", preAuthorizeAssociateWith = "hasRole(ROLE_SUB_ADMIN)")` on the `private Set<Hobby> hobbies;` field - This will apply a `@PostAuthorize("hasRole(ROLE_ADMIN)")` security annotations on the Read endpoint, and a `@PreAuthorize("hasRole("ROLE_SUB_ADMIN")")`on the `ASSOCIATE_WITH` endpoint.
+
+The resulting code:
+```
+@Service
+@Transactional
+@GraphQLApi
+@RolesAllowed("ROLE_SYS_ADMIN")
+public class PersonGraphQLApiService {
+  @Autowired
+  private ApiLogic<Person> apiLogic;
+
+  @Autowired
+  private DataManager<Person> dataManager;
+
+  @Autowired(
+      required = false
+  )
+  private ApiHooks<Person> apiHooks;
+
+  @Autowired
+  private DataManager<Hobby> hobbiesDataManager;
+
+  @Autowired
+  private NullEmbeddedCollectionApiHooks hobbiesEmbeddedCollectionApiHooks;
+
+  @PostConstruct
+  private void postConstructInit() {
+    apiLogic.setApiHooks(apiHooks);
+    apiLogic.setDataManager(dataManager);
+  }
+
+  @GraphQLQuery
+  @RolesAllowed("ROLE_SECRETARY")
+  public List<Person> persons(int offset,
+      @GraphQLArgument(name = "limit", defaultValue = "50") int limit,
+      @GraphQLArgument(name = "sortBy", defaultValue = "id") String sortBy,
+      @GraphQLArgument(name = "sortDirection", defaultValue = "\"ASC\"") Sort.Direction sortDirection) {
+    return apiLogic.getPaginatedBatch(offset, limit, sortBy, sortDirection);
+  }
+
+  @GraphQLQuery
+  @RolesAllowed("ROLE_SECRETARY")
+  public Person getPersonById(Long input) {
+    return apiLogic.getById(input);
+  }
+
+  @GraphQLMutation
+  @RolesAllowed("ROLE_OFFICE_MANAGER")
+  public Person createPerson(Person input) {
+    return apiLogic.create(input);
+  }
+
+  @GraphQLMutation
+  @RolesAllowed("ROLE_OFFICE_MANAGER")
+  public Person updatePerson(Person input) {
+    return apiLogic.update(input);
+  }
+
+  @Batched
+  @GraphQLQuery
+  @PostAuthorize("hasRole('ROLE_ADMIN')")
+  public List<List<Hobby>> hobbies(@GraphQLContext List<Person> input) {
+    return apiLogic.getEmbeddedCollection(input, "hobbies", hobbiesEmbeddedCollectionApiHooks, hobbiesDataManager);
+  }
+
+  @GraphQLMutation
+  @PreAuthorize("hasRole('ROLE_SUB_ADMIN')")
+  public List<Hobby> associateHobbiesWithPerson(Person owner, List<Hobby> input) {
+    return apiLogic.associateWithEmbeddedCollection(owner, "hobbies", input, hobbiesDataManager, null);
+  }
+
+  @GraphQLMutation
+  public List<Hobby> updateHobbiesInPerson(Person owner, List<Hobby> input) {
+    return apiLogic.updateEmbeddedCollection(owner, hobbiesDataManager, input, null);
+  }
+
+  @GraphQLMutation
+  public List<Hobby> removeHobbiesFromPerson(Person owner, List<Hobby> input) {
+    return apiLogic.removeFromEmbeddedCollection(owner, "hobbies", input, null);
+  }
+
+  @GraphQLQuery
+  @RolesAllowed("ROLE_USER")
+  public List<Person> findPersonsByName(String name) {
+    return apiLogic.apiFindBy("name", name);
+  }
+}
+```
+The above example also happens to be a good summary of Apifi framework. It demonstrates what a real world use case might look like. 
+
 #### That's all for now, happy coding!
 ### License
 Apache 2.0

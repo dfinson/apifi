@@ -3,8 +3,8 @@ package dev.sanda.apifi.generator;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import dev.sanda.apifi.annotations.WithCRUDResolvers;
-import dev.sanda.apifi.generator.entity.CRUDResolvers;
+import dev.sanda.apifi.annotations.WithCRUDEndpoints;
+import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.EntityApiGenerator;
 import dev.sanda.apifi.generator.entity.ServiceAndTest;
 import lombok.val;
@@ -45,7 +45,7 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private void generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap) {
-        List<CRUDResolvers> crudResolvers = getCrudResolversOf(entity);
+        List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
         var apiBuilder = new EntityApiGenerator.GraphQLApiBuilder(entity, entitiesMap);
         apiBuilder.setCrudResolvers(crudResolvers);
         var serviceAndTest = apiBuilder.build(processingEnv);
@@ -67,8 +67,8 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private List<CRUDResolvers> getCrudResolversOf(TypeElement entity) {
-        val withCrudResolversAnnotation = entity.getAnnotation(WithCRUDResolvers.class);
+    private List<CRUDEndpoints> getCrudResolversOf(TypeElement entity) {
+        val withCrudResolversAnnotation = entity.getAnnotation(WithCRUDEndpoints.class);
         if(withCrudResolversAnnotation == null) return new ArrayList<>();
         return Arrays.asList(withCrudResolversAnnotation.value());
     }
