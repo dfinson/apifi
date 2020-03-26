@@ -135,7 +135,7 @@ public class Person{
 Imagine there is a requirement to print a welcome message to the console after every time a new person is added, and a goodbye message after every time a person is deleted. To do so, a custom implementation of `ApiHooks<T>` can be implemented as follows:
 ```
 @Component
-public class PersonApiHooks extends ApiHooks<Person> {
+public class PersonApiHooks implements ApiHooks<Person> {
 
     @Override
     public void postCreate(Person added, DataManager<Person> dataManager) {
