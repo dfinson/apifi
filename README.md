@@ -261,7 +261,7 @@ private String email;
 public class PersonGraphQLService{  
 ...
 @GraphQLQuery
-public List<User> personsFuzzySearch(
+public List<User> personsFreeTextSearch(
 String searchTerm, //in this case can be either (partial or complete) name  or email
 int offset,
 @GraphQLArgument(name = "limit", defaultValue = "50") int limit,
