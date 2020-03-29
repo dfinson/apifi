@@ -19,7 +19,7 @@
 * [License](#license)
 
 ## Introduction
-Apifi is an API auto-generation tool which requires nothing more than a properly annotated Data Model in order to produce a ready-to-go GraphQL API. This library builds on top of [Datafi](https://github.com/sanda-dev/datafi) - a wrapper around spring-data-jpa which abstracts away the need to write any data access layer code manually. It has it's own Readme file but there should be little to no need to get into the details in order to use Apifi.
+Apifi is an API auto-generation tool which requires nothing more than a properly annotated Data Model in order to produce a ready-to-go GraphQL API. This library builds on top of [Datafi](https://github.com/sanda-dev/datafi) - a wrapper around spring-data-jpa which abstracts away the need to write any data access layer code manually. It has it's own Readme file but there should be little to no need to get into its details in order to make full use of this one.
 ### Installation
 
 From its maven central [repository]():
@@ -27,7 +27,7 @@ From its maven central [repository]():
 <dependency>
   <groupId>dev.sanda</groupId>
     <artifactId>apifi</artifactId>
-  <version>0.0.4</version>
+  <version>0.0.3</version>
 </dependency>   
 ```
 
