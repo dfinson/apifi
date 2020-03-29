@@ -1,7 +1,7 @@
 package dev.sanda.apifi.generator.entity;
 
 import com.squareup.javapoet.*;
-import dev.sanda.apifi.ApifiStaticUtils;
+import dev.sanda.apifi.utils.ApifiStaticUtils;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import dev.sanda.apifi.service.ApiHooks;
@@ -29,18 +29,18 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
-import javax.lang.model.type.MirroredTypeException;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static dev.sanda.apifi.ApifiStaticUtils.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.generator.entity.ForeignKeyCollectionResolverType.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static dev.sanda.testifi.TestifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.getIdType;
+import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
+import static dev.sanda.testifi.TestifiStaticUtils.pluralCamelCaseName;
+import static dev.sanda.testifi.TestifiStaticUtils.pluralPascalCaseName;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
@@ -205,6 +205,7 @@ public class EntityApiGenerator {
 
                     val config = fk.getAnnotation(EmbeddedCollectionApi.class);
                     val resolvers = config != null ? Arrays.asList(config.resolvers()) : new ArrayList<>();
+                    addApiHooksIfPresent(fk, serviceBuilder, testBuilder, config);
 
                     //read
                     if(!isGraphQLIgnored(fk)){
@@ -475,7 +476,6 @@ public class EntityApiGenerator {
             String queryName = camelcaseNameOf(embedded);
             ParameterSpec input = asParamList(entity, GraphQLContext.class);
             String embeddedCollectionApiHooksName = embeddedCollectionApiHooksName(embedded);
-            addApiHooksIfPresent(embedded, serviceBuilder, testBuilder, embeddedCollectionApiHooksName);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(suppressDeprecationWarning())
@@ -512,7 +512,7 @@ public class EntityApiGenerator {
             String mutationName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
-            if(config != null && isCustomEmbeddedCollectionApiHooks(config, fk))
+            if(config != null && isCustomEmbeddedCollectionApiHooks(config))
                 apiHooks = config.apiHooks();
             boolean addPreExistingOnly = config != null && config.associatePreExistingOnly();
             String apiLogicBackingMethod = addPreExistingOnly ? "associatePreExistingWithEmbeddedCollection" : "associateWithEmbeddedCollection";
@@ -537,7 +537,7 @@ public class EntityApiGenerator {
             String mutationName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
-            if(config != null && isCustomEmbeddedCollectionApiHooks(config, fk))
+            if(config != null && isCustomEmbeddedCollectionApiHooks(config))
                 apiHooks = config.apiHooks();
             ParameterSpec input = asParamList(collectionTypeName(fk));
             var builder = MethodSpec.methodBuilder(mutationName)
@@ -557,7 +557,7 @@ public class EntityApiGenerator {
             String mutationName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             Class<?> apiHooks = null;
-            if(config != null && isCustomEmbeddedCollectionApiHooks(config, fk))
+            if(isCustomEmbeddedCollectionApiHooks(config))
                 apiHooks = config.apiHooks();
             ParameterSpec input = asParamList(collectionTypeName(fk));
             var builder = MethodSpec.methodBuilder(mutationName)
@@ -841,7 +841,7 @@ public class EntityApiGenerator {
             TypeName apiHooksType = null;
             val embeddedCollectionApi = field.getAnnotation(EmbeddedCollectionApi.class);
             if(embeddedCollectionApi != null){
-                apiHooksType = getApiHooksTypeName(fk, embeddedCollectionApi);
+                apiHooksType = getApiHooksTypeName(embeddedCollectionApi);
             }
             assert apiHooksType != null;
             return
@@ -851,17 +851,6 @@ public class EntityApiGenerator {
                                     Modifier.PRIVATE)
                             .addAnnotation(Autowired.class)
                             .build();
-        }
-
-        private TypeName getApiHooksTypeName(VariableElement fk, EmbeddedCollectionApi embeddedCollectionApi) {
-            TypeName apiHooksType = null;
-            try {
-                embeddedCollectionApi.apiHooks();
-            } catch (MirroredTypeException mte) {
-                val TypeUtils = processingEnv.getTypeUtils();
-                apiHooksType = TypeName.get(mte.getTypeMirror());
-            }
-            return apiHooksType;
         }
 
         //misc util methods
@@ -880,8 +869,8 @@ public class EntityApiGenerator {
             return getter.getAnnotation(GraphQLIgnore.class) != null;
         }
 
-        private void addApiHooksIfPresent(VariableElement embedded, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder, String embeddedCollectionApiHooksName) {
-            if(embeddedCollectionApiHooksName.equals("null")) return;
+        private void addApiHooksIfPresent(VariableElement embedded, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder, EmbeddedCollectionApi embeddedCollectionApi) {
+            if(!isCustomEmbeddedCollectionApiHooks(embeddedCollectionApi)) return;
             final FieldSpec apiHooks = embeddedCollectionApiHooks(embedded, embedded);
             serviceBuilder.addField(apiHooks);
             testBuilder.addField(apiHooks);
@@ -893,8 +882,9 @@ public class EntityApiGenerator {
                     variableElement.getAnnotation(ApiFindAllBy.class) != null ||
                     variableElement.getAnnotation(ApiFindByUnique.class) != null;
         }
-        private boolean isCustomEmbeddedCollectionApiHooks(EmbeddedCollectionApi config, VariableElement fk) {
-            return !getApiHooksTypeName(fk, config)
+        private boolean isCustomEmbeddedCollectionApiHooks(EmbeddedCollectionApi config) {
+            if(config == null) return false;
+            return !getApiHooksTypeName(config)
                     .toString()
                     .equals(NullEmbeddedCollectionApiHooks.class.getCanonicalName());
         }

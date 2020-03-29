@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static dev.sanda.apifi.ApifiStaticUtils.getGraphQLApiEntities;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiEntities;
 import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
 
 

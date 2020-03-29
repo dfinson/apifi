@@ -7,7 +7,6 @@ import dev.sanda.datafi.service.DataManager;
 import lombok.Setter;
 import lombok.val;
 import lombok.var;
-import org.apache.commons.collections4.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +14,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
-import static dev.sanda.apifi.ApifiStaticUtils.isClazzArchivable;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 
@@ -248,12 +247,26 @@ public final class ApiLogic<T> {
             String embeddedFieldName,
             E embeddedCollectionApiHooks,
             DataManager<TEmbedded> tEmbeddedDataManager) {
+        input.forEach(t -> {
+            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
+        });
+
+        val query = dataManager.entityManager().createQuery(String.format(
+                "SELECT t.%s FROM %s t JOIN t.%s WHERE t.%s IN (%s)",
+            embeddedFieldName,
+            dataManager.getClazzSimpleName(),
+            embeddedFieldName,
+            reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName(),
+            dataManager.idList(input).stream().map(Object::toString).collect(Collectors.joining(", "))
+            )
+        );
+        val result = query.getResultList();
         List<List<TEmbedded>> lists = new ArrayList<>();
         input.forEach(t -> {
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
             final List<TEmbedded> embeddedCollection =
                     tEmbeddedDataManager.findAllById(tEmbeddedDataManager
-                            .idList((Iterable<TEmbedded>) getEmbeddedCollectionFrom(t, embeddedFieldName)));
+                            .idList(getEmbeddedCollectionFrom(t, embeddedFieldName)));
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postFetch(embeddedCollection, t, tEmbeddedDataManager, dataManager);
             lists.add(embeddedCollection);
         });
