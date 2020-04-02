@@ -1,4 +1,5 @@
-<img align="center" src="https://github.com/sanda-dev/apifi/blob/master/readme%20images/Apifi%20logo.png"/>
+<img align="center" width="100" height="100" src="https://github.com/sanda-dev/apifi/blob/master/readme%20images/Apifi%20logo.png"/>
+
 # Apifi
 
 - [Introduction](#introduction)
