@@ -1,6 +1,4 @@
-<div align="center">
-	![Apifi logo](https://github.com/sanda-dev/apifi/blob/master/readme%20images/Apifi%20logo.png)
-</div>
+<img align="center" src="https://github.com/sanda-dev/apifi/blob/master/readme%20images/Apifi%20logo.png"/>
 # Apifi
 
 - [Introduction](#introduction)
