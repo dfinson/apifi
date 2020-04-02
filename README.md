@@ -124,7 +124,7 @@ No further configuration is necessary - Apifi leverages spring dependency inject
 For example:
 ```
 @Entity
-
+@WithCRUDEndpoints({CREATE, DELETE})
 public class Person{
     @Id
     private String id = UUID.randomUUID().toString();
