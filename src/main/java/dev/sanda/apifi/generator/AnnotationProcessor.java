@@ -1,25 +1,38 @@
 package dev.sanda.apifi.generator;
 
 import com.google.auto.service.AutoService;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.WithCRUDEndpoints;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.EntityApiGenerator;
 import dev.sanda.apifi.generator.entity.ServiceAndTest;
+import dev.sanda.apifi.service.GraphQLRequestExecutor;
+import graphql.GraphQL;
+import graphql.analysis.MaxQueryDepthInstrumentation;
+import graphql.execution.batched.BatchedExecutionStrategy;
+import io.leangen.graphql.GraphQLSchemaGenerator;
 import lombok.val;
 import lombok.var;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
+import javax.servlet.http.HttpServletRequest;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiEntities;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
+import static dev.sanda.datafi.DatafiStaticUtils.toCamelCase;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 
 /**
@@ -40,16 +53,35 @@ public class AnnotationProcessor extends AbstractProcessor {
                 .collect(
                         Collectors.toMap(type -> type.getQualifiedName().toString(), type -> type)
                 );
-        entities.forEach(entity -> generateApiForEntity(entity, entitiesMap));
+        List<String> services = new ArrayList<>();
+        entities.forEach(entity -> {
+            val service = generateApiForEntity(entity, entitiesMap);
+            services.add(service);
+        });
+        if(!services.isEmpty()){
+            val controller = GraphQLControllerFactory.generate(services);
+            writeControllerToFile(controller);
+        }
         return false;
     }
 
-    private void generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap) {
+    private void writeControllerToFile(TypeSpec controller) {
+        try {
+            val file = JavaFile.builder(basePackage + ".controller", controller).build();
+            file.writeTo(System.out);
+            file.writeTo(processingEnv.getFiler());
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
+        }
+    }
+
+    private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap) {
         List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
         var apiBuilder = new EntityApiGenerator.GraphQLApiBuilder(entity, entitiesMap);
         apiBuilder.setCrudResolvers(crudResolvers);
         var serviceAndTest = apiBuilder.build(processingEnv);
         writeServiceAndTestToJavaFiles(serviceAndTest);
+        return basePackage + ".service." + serviceAndTest.getService().name;
     }
 
     private void writeServiceAndTestToJavaFiles(ServiceAndTest serviceAndTest) {

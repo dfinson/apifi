@@ -19,6 +19,11 @@ import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.persistence.*;
+import javax.tools.FileObject;
+import javax.tools.StandardLocation;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
@@ -257,5 +262,29 @@ public abstract class ApifiStaticUtils {
 
     public static String collectionCanonicalTypeNameString(VariableElement embedded) {
         return embedded.asType().toString().replaceAll("^.+<", "").replaceAll(">", "");
+    }
+
+    public static Properties loadPropertiesFromFile(String resourcePath, ProcessingEnvironment env){
+        try {
+            val configFileInputStream =
+                    env.getFiler()
+                            .getResource( StandardLocation.CLASS_OUTPUT, "", resourcePath )
+                            .openInputStream();
+            val prop = new Properties();
+            prop.load(configFileInputStream);
+            return prop;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String toSimpleCamelcaseName(String service) {
+        int lastDot = service.lastIndexOf(".") + 1;
+        return toCamelCase(service.substring(lastDot));
+    }
+    public static String toSimplePascalCaseName(String service) {
+        int lastDot = service.lastIndexOf(".") + 1;
+        return toPascalCase(service.substring(lastDot));
     }
 }

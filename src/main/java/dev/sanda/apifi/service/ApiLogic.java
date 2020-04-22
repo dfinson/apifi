@@ -10,14 +10,14 @@ import lombok.var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import javax.persistence.Query;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -27,6 +27,7 @@ import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 
 @Service
+@Scope("prototype")
 public final class ApiLogic<T> {
 
     @Setter
@@ -49,6 +50,22 @@ public final class ApiLogic<T> {
         if(apiHooks != null) apiHooks.postGetPaginatedBatch(result, dataManager);
         logInfo("getPaginatedBatch: Got {} {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
         return result;
+    }
+
+    public Long getTotalNonArchivedCount(){
+        if(reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).isArchivable()){
+            return dataManager.count(((Specification<T>) (root, query, cb) -> cb.isFalse(root.get("isArchived"))));
+        }else {
+            return dataManager.count();
+        }
+    }
+
+    public Long getTotalArchivedCount(){
+        if(reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).isArchivable()){
+            return dataManager.count(((Specification<T>) (root, query, cb) -> cb.isTrue(root.get("isArchived"))));
+        }else {
+            throw new RuntimeException("Entity " + dataManager.getClazzSimpleName() + " does not implement Archivable");
+        }
     }
 
     public List<T> getArchivedPaginatedBatch(int offset, int limit, String sortBy, Sort.Direction sortDirection) {
@@ -242,31 +259,17 @@ public final class ApiLogic<T> {
     }
 
     public <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>> List<List<TEmbedded>>
-    getEmbeddedCollection(
+    getEmbeddedCollection(//TODO - optimize
             List<T> input,
             String embeddedFieldName,
             E embeddedCollectionApiHooks,
             DataManager<TEmbedded> tEmbeddedDataManager) {
-        input.forEach(t -> {
-            if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
-        });
-
-        val query = dataManager.entityManager().createQuery(String.format(
-                "SELECT t.%s FROM %s t JOIN t.%s WHERE t.%s IN (%s)",
-            embeddedFieldName,
-            dataManager.getClazzSimpleName(),
-            embeddedFieldName,
-            reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName(),
-            dataManager.idList(input).stream().map(Object::toString).collect(Collectors.joining(", "))
-            )
-        );
-        val result = query.getResultList();
         List<List<TEmbedded>> lists = new ArrayList<>();
         input.forEach(t -> {
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
             final List<TEmbedded> embeddedCollection =
                     tEmbeddedDataManager.findAllById(tEmbeddedDataManager
-                            .idList(getEmbeddedCollectionFrom(t, embeddedFieldName)));
+                            .idList((Iterable<TEmbedded>) getEmbeddedCollectionFrom(t, embeddedFieldName)));
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postFetch(embeddedCollection, t, tEmbeddedDataManager, dataManager);
             lists.add(embeddedCollection);
         });
