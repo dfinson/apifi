@@ -1,6 +1,7 @@
 package dev.sanda.apifi.service;
 
-
+import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
+import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
@@ -15,13 +16,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import javax.persistence.Query;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
 import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
@@ -37,19 +37,23 @@ public final class ApiLogic<T> {
     @Setter
     private DataManager<T> dataManager;
 
-    public List<T> getPaginatedBatch(int offset, int limit, String sortBy, Sort.Direction sortDirection) {
-        validateSortByIfNonNull(dataManager.getClazz(), sortBy, reflectionCache);
+    public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
+        validateSortByIfNonNull(dataManager.getClazz(), request.getSortBy(), reflectionCache);
         if(apiHooks != null) apiHooks.preGetPaginatedBatch(dataManager);
-        List<T> result;
-        final PageRequest pageRequest = generatePageRequest(offset, limit, sortBy, sortDirection);
+        org.springframework.data.domain.Page result;
+        final PageRequest pageRequest = generatePageRequest(request);
         if(isClazzArchivable(dataManager.getClazz(), reflectionCache))
             result = dataManager
-                        .findAll((Specification<T>) (root, query, cb) -> cb.isFalse(root.get("isArchived")), pageRequest)
-                        .getContent();
-        else result = dataManager.findAll(pageRequest).getContent();
-        if(apiHooks != null) apiHooks.postGetPaginatedBatch(result, dataManager);
-        logInfo("getPaginatedBatch: Got {} {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
-        return result;
+                        .findAll((Specification<T>)
+                                (root, query, cb) ->
+                                        cb.isFalse(root.get("isArchived")), pageRequest
+                        );
+        else {
+            result = dataManager.findAll(pageRequest);
+        }
+        if(apiHooks != null) apiHooks.postGetPaginatedBatch(result.getContent(), dataManager);
+        logInfo("getPaginatedBatch: Got {} {}", result.getContent().size(), toPlural(dataManager.getClazzSimpleName()));
+        return new Page<>(result);
     }
 
     public Long getTotalNonArchivedCount(){
@@ -68,27 +72,31 @@ public final class ApiLogic<T> {
         }
     }
 
-    public List<T> getArchivedPaginatedBatch(int offset, int limit, String sortBy, Sort.Direction sortDirection) {
-        validateSortByIfNonNull(dataManager.getClazz(), sortBy, reflectionCache);
+    public Page<T> getArchivedPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
+        validateSortByIfNonNull(dataManager.getClazz(), request.getSortBy(), reflectionCache);
         if(apiHooks != null) apiHooks.preGetArchivedPaginatedBatch(dataManager);
-        List<T> result;
-        final PageRequest pageRequest = generatePageRequest(offset, limit, sortBy, sortDirection);
+        org.springframework.data.domain.Page<T> result;
+        final PageRequest pageRequest = generatePageRequest(request);
         if(isClazzArchivable(dataManager.getClazz(), reflectionCache))
             result = dataManager
-                    .findAll((Specification<T>) (root, query, cb) -> cb.isTrue(root.get("isArchived")), pageRequest)
-                    .getContent();
-        else result = dataManager.findAll(pageRequest).getContent();
-        if(apiHooks != null) apiHooks.postGetArchivedPaginatedBatch(result, dataManager);
-        logInfo("getArchivedPaginatedBatch: Got {} {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
-        return result;
+                    .findAll((Specification<T>)
+                            (root, query, cb) ->
+                                    cb.isTrue(root.get("isArchived")), pageRequest
+                    );
+        else result = dataManager.findAll(pageRequest);
+        if(apiHooks != null) apiHooks.postGetArchivedPaginatedBatch(result.getContent(), dataManager);
+        logInfo("getArchivedPaginatedBatch: Got {} {}", result.getContent().size(), toPlural(dataManager.getClazzSimpleName()));
+        return new Page<>(result);
     }
 
-    public  List<T> freeTextSearch(int offset, int limit, String searchTerm, String sortBy, Sort.Direction sortDirection) {
-        if(apiHooks != null) apiHooks.preFetchEntitiesInFreeTextSearch(searchTerm, dataManager);
-        List<T> result = dataManager
-                .freeTextSearchBy(searchTerm, offset, limit, sortBy, sortDirection);
-        if(apiHooks != null) apiHooks.postFetchEntitiesInFuzzySearch(searchTerm, result, dataManager);
-        logInfo("freeTextSearch: Got {} {} by free text search term \"{}\"", result.size(), toPlural(dataManager.getClazzSimpleName()), searchTerm);
+    public Page<T> freeTextSearch(FreeTextSearchPageRequest request) {
+        if(apiHooks != null) apiHooks.preFetchEntitiesInFreeTextSearch(request.getSearchTerm(), dataManager);
+        val result = dataManager.freeTextSearchBy(request);
+        if(apiHooks != null)
+            apiHooks.postFetchEntitiesInFuzzySearch(request.getSearchTerm(), result.getContent(), dataManager);
+        logInfo("freeTextSearch: Got {} {} by free text search term \"{}\"",
+                result.getTotalRecordsCount(),
+                toPlural(dataManager.getClazzSimpleName()), request.getSearchTerm());
         return result;
     }
 

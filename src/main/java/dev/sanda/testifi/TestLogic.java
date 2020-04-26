@@ -5,6 +5,8 @@ import com.maximeroussy.invitrode.WordGenerator;
 import dev.sanda.apifi.service.ApiHooks;
 import dev.sanda.apifi.service.ApiLogic;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
+import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
+import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.CachedEntityTypeInfo;
 import dev.sanda.datafi.reflection.ReflectionCache;
@@ -53,10 +55,13 @@ public final class TestLogic<T> {
 
     //test methods
     public void getPaginatedBatchTest(){
-        int offset = 0;
-        int limit = totalCount(clazz, dataManager);
+        int pageNumber = 0;
+        int pageSize = totalCount(clazz, dataManager);
+        PageRequest request = new PageRequest();
+        request.setPageNumber(pageNumber);
+        request.setPageSize(pageSize);
         Collection<T> allTs = dataManager.findAll();
-        Collection<T> allApiFetchedTs = apiLogic.getPaginatedBatch(offset, limit, null, null);
+        Collection<T> allApiFetchedTs = apiLogic.getPaginatedBatch(request).getContent();
         assertThat(
             "result of api call to " + pluralCamelCaseName(clazz) +
                    "()' " + " equals original entries in database",
@@ -66,12 +71,15 @@ public final class TestLogic<T> {
     }
 
     public <A extends Archivable> void getArchivedPaginatedBatchTest(){
-        int offset = 0;
-        int limit = totalCount(clazz, dataManager);
+        int pageNumber = 0;
+        int pageSize = totalCount(clazz, dataManager);
+        PageRequest request = new PageRequest();
+        request.setPageNumber(pageNumber);
+        request.setPageSize(pageSize);
         List<T> allTs = dataManager.findAll();
         allTs.forEach(t -> ((A)t).setIsArchived(true));
         dataManager.saveAll(allTs);
-        Collection<A> allApiFetchedTs = (Collection<A>) apiLogic.getArchivedPaginatedBatch(offset, limit, null, null);
+        Collection<A> allApiFetchedTs = (Collection<A>) apiLogic.getArchivedPaginatedBatch(request);
         assertThat(
                 "result of api call to " + toPlural(clazz.getSimpleName()) +
                         "()' " + " equals original entries in database",
@@ -81,8 +89,11 @@ public final class TestLogic<T> {
     }
 
     public void freeTextSearchTest(){
-        int offset = 0;
-        int limit = totalCount(clazz, dataManager);
+        int pageNumber = 0;
+        int pageSize = totalCount(clazz, dataManager);
+        val request = new FreeTextSearchPageRequest();
+        request.setPageNumber(pageNumber);
+        request.setPageSize(pageSize);
         Collection<T> allTs = dataManager.findAll();
         Field toSearchBy = resolveFieldToFuzzySearchBy(clazz, reflectionCache);
         WordGenerator wordGenerator = new WordGenerator();
@@ -91,9 +102,9 @@ public final class TestLogic<T> {
         String suffix = wordGenerator.newWord(ThreadLocalRandom.current().nextInt(3, 5));
         String testValue = prefix + searchTerm + suffix;
         allTs.forEach(t -> setField(t, testValue, toSearchBy.getName()));
+        request.setSearchTerm(searchTerm);
         dataManager.saveAll(allTs);
-        Collection<T> allApiFuzzySearchFetchedTs = apiLogic
-                .freeTextSearch(offset, limit, searchTerm, null, null);
+        Collection<T> allApiFuzzySearchFetchedTs = apiLogic.freeTextSearch(request).getContent();
         assertThat(
                 "result of api call to " + pluralCamelCaseName(clazz) + "FreeTextSearch" +
                         "(...)' " + " equals original entries in database",

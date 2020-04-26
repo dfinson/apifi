@@ -4,6 +4,7 @@ import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
+import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
@@ -88,6 +89,12 @@ public abstract class ApifiStaticUtils {
         int lastDot = typeNameString.lastIndexOf('.');
         return typeNameString.substring(lastDot + 1);
     }*/
+
+    public static ParameterizedTypeName PageType(TypeElement entity) {
+        return ParameterizedTypeName.get(
+                ClassName.get(Page.class),
+                ClassName.get(entity));
+    }
 
     public static String apiHooksName(TypeElement entity) {
         return camelcaseNameOf(entity) + "MetaOperations";

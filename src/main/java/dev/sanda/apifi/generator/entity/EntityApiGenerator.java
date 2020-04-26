@@ -9,6 +9,8 @@ import dev.sanda.apifi.service.ApiLogic;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchBy;
 import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchByFields;
+import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
+import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import dev.sanda.testifi.TestLogic;
 import graphql.execution.batched.Batched;
@@ -333,12 +335,10 @@ public class EntityApiGenerator {
             var builder = MethodSpec.methodBuilder(name)
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation(name))
-                    .addParameter(ParameterSpec.builder(TypeName.INT, "offset").build())
-                    .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
-                    .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", getIdFieldName(entity)))
-                    .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
-                    .addStatement("return apiLogic.getPaginatedBatch(offset, limit, sortBy, sortDirection)")
-                    .returns(listOf(entity));
+                    .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
+                    .addCode(initSortByIfNull())
+                    .addStatement("return apiLogic.getPaginatedBatch(input)")
+                    .returns(PageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_PAGINATED_BATCH))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_PAGINATED_BATCH));
             return builder.build();
@@ -517,12 +517,10 @@ public class EntityApiGenerator {
             var builder = MethodSpec.methodBuilder(name)
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation(name))
-                    .addParameter(ParameterSpec.builder(TypeName.INT, "offset").build())
-                    .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
-                    .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", getIdFieldName(entity)))
-                    .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
-                    .addStatement("return apiLogic.getArchivedPaginatedBatch(offset, limit, sortBy, sortDirection)")
-                    .returns(listOf(entity));
+                    .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
+                    .addCode(initSortByIfNull())
+                    .addStatement("return apiLogic.getArchivedPaginatedBatch(input)")
+                    .returns(PageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_ARCHIVED_PAGINATED_BATCH))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_ARCHIVED_PAGINATED_BATCH));
             return builder.build();
@@ -534,13 +532,10 @@ public class EntityApiGenerator {
                     .methodBuilder(name)
                     .addAnnotation(graphqlQueryAnnotation(name))
                     .addModifiers(PUBLIC)
-                    .addParameter(ParameterSpec.builder(TypeName.INT, "offset").build())
-                    .addParameter(graphQLParameter(TypeName.INT, "limit", "50"))
-                    .addParameter(graphQLParameter(ClassName.get(String.class), "searchTerm", null))
-                    .addParameter(graphQLParameter(ClassName.get(String.class), "sortBy", getIdFieldName(entity)))
-                    .addParameter(graphQLParameter(ClassName.get(Sort.Direction.class), "sortDirection", "\"ASC\""))
-                    .addStatement("return apiLogic.freeTextSearch(offset, limit, searchTerm, sortBy, sortDirection)")
-                    .returns(listOf(entity));
+                    .addParameter(ParameterSpec.builder(ClassName.get(FreeTextSearchPageRequest.class), "input").build())
+                    .addCode(initSortByIfNull())
+                    .addStatement("return apiLogic.freeTextSearch(input)")
+                    .returns(PageType(entity));
             val textSearchBySecurity = entity.getAnnotation(WithFreeTextSearchBySecurity.class);
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(textSearchBySecurity, ""))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(textSearchBySecurity, ""));
@@ -980,6 +975,14 @@ public class EntityApiGenerator {
         private AnnotationSpec graphqlMutationAnnotation(String name){
             return AnnotationSpec.builder(GraphQLMutation.class)
                     .addMember("name", "$S", name)
+                    .build();
+        }
+
+        private CodeBlock initSortByIfNull(){
+            return CodeBlock.builder()
+                    .beginControlFlow("if(input.getSortBy() == null)")
+                    .addStatement("input.setSortBy($S)", getIdFieldName(entity))
+                    .endControlFlow()
                     .build();
         }
     }
