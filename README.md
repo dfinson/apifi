@@ -369,7 +369,7 @@ Annotation based security is especially well suited to GraphQL APIs, given that 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WithServiceLevelSecurity {
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";
@@ -384,7 +384,7 @@ public @interface WithServiceLevelSecurity {
 @Repeatable(WithMethodLevelSecurityAccumulator.class)
 public @interface WithMethodLevelSecurity {
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";

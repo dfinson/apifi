@@ -3,6 +3,7 @@ package dev.sanda.apifi.generator;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.WithCRUDEndpoints;
+import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.EntityApiGenerator;
 import dev.sanda.apifi.generator.entity.ServiceAndTest;
@@ -46,6 +47,7 @@ public class AnnotationProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
         basePackage = getBasePackage(roundEnvironment);
+        val clientFactory = new ApifiClientFactory();
         Set<? extends TypeElement> entities = getGraphQLApiEntities(annotations, roundEnvironment);
         Map<String, TypeElement> entitiesMap =
                 entities
@@ -55,12 +57,13 @@ public class AnnotationProcessor extends AbstractProcessor {
                 );
         List<String> services = new ArrayList<>();
         entities.forEach(entity -> {
-            val service = generateApiForEntity(entity, entitiesMap);
+            val service = generateApiForEntity(entity, entitiesMap, clientFactory);
             services.add(service);
         });
         if(!services.isEmpty()){
             val controller = GraphQLControllerFactory.generate(services);
             writeControllerToFile(controller);
+            clientFactory.generate();
         }
         return false;
     }
@@ -75,11 +78,11 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap) {
+    private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap, ApifiClientFactory clientFactory) {
         List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
         var apiBuilder = new EntityApiGenerator.GraphQLApiBuilder(entity, entitiesMap);
         apiBuilder.setCrudResolvers(crudResolvers);
-        var serviceAndTest = apiBuilder.build(processingEnv);
+        var serviceAndTest = apiBuilder.build(processingEnv, clientFactory);
         writeServiceAndTestToJavaFiles(serviceAndTest);
         return basePackage + ".service." + serviceAndTest.getService().name;
     }

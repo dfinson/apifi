@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @FindAllBy
 public @interface ApiFindAllBy{
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";

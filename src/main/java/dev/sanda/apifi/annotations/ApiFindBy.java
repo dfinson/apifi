@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ApiFindBy {
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";

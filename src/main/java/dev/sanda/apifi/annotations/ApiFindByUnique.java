@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ApiFindByUnique {
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";

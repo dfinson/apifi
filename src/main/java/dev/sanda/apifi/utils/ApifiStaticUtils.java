@@ -5,6 +5,7 @@ import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 import dev.sanda.datafi.dto.Page;
+import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
@@ -27,6 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
@@ -90,10 +94,30 @@ public abstract class ApifiStaticUtils {
         return typeNameString.substring(lastDot + 1);
     }*/
 
-    public static ParameterizedTypeName PageType(TypeElement entity) {
+    public static ParameterizedTypeName pageType(TypeElement entity) {
         return ParameterizedTypeName.get(
                 ClassName.get(Page.class),
                 ClassName.get(entity));
+    }
+
+    public static ParameterizedTypeName pageType(VariableElement collection) {
+        val collectionType = getCollectionType(collection);
+        return ParameterizedTypeName.get(
+                ClassName.get(Page.class),
+                ClassName.bestGuess(collectionType));
+    }
+
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    public static String inBrackets(String str){
+        return String.format("[%s]", str);
+    }
+
+    public static String inQuotes(String str){
+        return '\"' + str + '\"';
     }
 
     public static String apiHooksName(TypeElement entity) {

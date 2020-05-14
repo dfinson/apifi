@@ -20,8 +20,8 @@ public interface ApiHooks<T> {
     default void postApiFindAllBy(String fieldName, List<T> result, DataManager<T> dataManager) {}
     default void preGetPaginatedBatch(DataManager<T> dataManager) {}
     default void postGetPaginatedBatch(List<T> result, DataManager<T> dataManager){}
-    default void preFetchEntitiesInFreeTextSearch(String searchTerm, DataManager<T> dataManager){}
-    default void postFetchEntitiesInFuzzySearch(String searchTerm, List<T> fetched, DataManager<T> dataManager){}
+    default void preFreeTextSearch(String searchTerm, DataManager<T> dataManager){}
+    default void postFreeTextSearch(String searchTerm, List<T> fetched, DataManager<T> dataManager){}
     default void postGetById(T fetched, DataManager<T> dataManager){}
     default void preGetArchivedPaginatedBatch(DataManager<T> dataManager){}
     default void postGetArchivedPaginatedBatch(List<T> result, DataManager<T> dataManager) {}

@@ -1,6 +1,8 @@
 package dev.sanda.apifi.generator.entity;
 
 import com.squareup.javapoet.*;
+import dev.sanda.apifi.generator.client.ApifiClientFactory;
+import dev.sanda.apifi.generator.client.GraphQLQueryBuilder;
 import dev.sanda.apifi.utils.ApifiStaticUtils;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
@@ -25,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -37,6 +38,8 @@ import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static dev.sanda.apifi.generator.client.GraphQLQueryType.MUTATION;
+import static dev.sanda.apifi.generator.client.GraphQLQueryType.QUERY;
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.generator.entity.ForeignKeyCollectionResolverType.*;
@@ -56,6 +59,7 @@ public class EntityApiGenerator {
         private ProcessingEnvironment processingEnv;
         private Map<String, TypeElement> entitiesMap;
         private Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap;
+        private ApifiClientFactory clientFactory;
 
         public GraphQLApiBuilder(TypeElement entity, Map<String, TypeElement> entitiesMap){
             this.entity = entity;
@@ -73,7 +77,8 @@ public class EntityApiGenerator {
             return this;
         }
 
-        public ServiceAndTest build(ProcessingEnvironment processingEnv){
+        public ServiceAndTest build(ProcessingEnvironment processingEnv, ApifiClientFactory clientFactory){
+            this.clientFactory = clientFactory;
             this.processingEnv = processingEnv;
             SecurityAnnotationsFactory.setProcessingEnv(processingEnv);
             //init builders
@@ -132,85 +137,117 @@ public class EntityApiGenerator {
 
             //GET_PAGINATED_BATCH
             if(crudResolvers.containsKey(GET_PAGINATED_BATCH)) {
-                serviceBuilder.addMethod(genGetPaginatedBatch());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genGetPaginatedBatchTest());
             }
 
             //GET_TOTAL_NON_ARCHIVED_COUNT
             if(crudResolvers.containsKey(GET_TOTAL_NON_ARCHIVED_COUNT)){
-                serviceBuilder.addMethod(genGetTotalNonArchivedCount());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 //TODO test method
             }
 
             //GET_TOTAL_ARCHIVED_COUNT
             if(crudResolvers.containsKey(GET_TOTAL_ARCHIVED_COUNT)){
-                serviceBuilder.addMethod(genGetTotalArchivedCount());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 //TODO test method
             }
 
             //GET_BY_ID
             if(crudResolvers.containsKey(GET_BY_ID)) {
-                serviceBuilder.addMethod(genGetById(processingEnv));
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genGetByIdTest());
             }
             //GET_BATCH_BY_IDS
             if(crudResolvers.containsKey(GET_BATCH_BY_IDS)) {
-                serviceBuilder.addMethod(genGetBatchByIds(processingEnv));
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genGetBatchByIdsTest());
             }
             //CREATE
             if(crudResolvers.containsKey(CREATE)) {
-                serviceBuilder.addMethod(genCreate());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genCreate(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genCreateTest());
             }
             //BATCH_CREATE
             if(crudResolvers.containsKey(BATCH_CREATE)) {
-                serviceBuilder.addMethod(genBatchCreate());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genBatchCreateTest());
             }
             //UPDATE
             if(crudResolvers.containsKey(UPDATE)) {
-                serviceBuilder.addMethod(genUpdate());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genUpdate(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genUpdateTest());
             }
             //BATCH_UPDATE
             if(crudResolvers.containsKey(BATCH_UPDATE)) {
-                serviceBuilder.addMethod(genBatchUpdate());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genBatchUpdateTest());
             }
             //DELETE
             if(crudResolvers.containsKey(DELETE)) {
-                serviceBuilder.addMethod(genDelete());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genDelete(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genDeleteTest());
             }
             //BATCH_DELETE
             if(crudResolvers.containsKey(BATCH_DELETE)) {
-                serviceBuilder.addMethod(genBatchDelete());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genBatchDeleteTest());
             }
             //ARCHIVE
             if(crudResolvers.containsKey(ARCHIVE)) {
-                serviceBuilder.addMethod(genArchive());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genArchive(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genArchiveTest());
             }
             //BATCH_ARCHIVE
             if(crudResolvers.containsKey(BATCH_ARCHIVE)) {
-                serviceBuilder.addMethod(genBatchArchive());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genBatchArchiveTest());
             }
             //DE_ARCHIVE
             if(crudResolvers.containsKey(DE_ARCHIVE)) {
-                serviceBuilder.addMethod(genDeArchive());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genDeArchive(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genDeArchiveTest());
             }
             //BATCH_DE_ARCHIVE
             if(crudResolvers.containsKey(BATCH_DE_ARCHIVE)) {
-                serviceBuilder.addMethod(genBatchDeArchive());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genBatchDeArchiveTest());
             }
             //GET_ARCHIVED_PAGINATED_BATCH
             if(crudResolvers.containsKey(GET_ARCHIVED_PAGINATED_BATCH)) {
-                serviceBuilder.addMethod(genGetArchivedPaginatedBatch());
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
                 testBuilder.addMethod(genGetArchivedPaginatedBatchTest());
             }
 
@@ -229,22 +266,36 @@ public class EntityApiGenerator {
                         testBuilder.addMethod(genGetEmbeddedCollectionTest(fk));
                     }
                     //associate
-                    if(resolvers.contains(ASSOCIATE_WITH) || resolvers.contains(ALL)){
-                        serviceBuilder.addMethod(genAssociateWithEmbeddedCollection(fk));
+                    if(resolvers.contains(ASSOCIATE_WITH)){
+                        val clientQueryBuilder = new GraphQLQueryBuilder();
+                        serviceBuilder.addMethod(genAssociateWithEmbeddedCollection(fk, clientQueryBuilder));
+                        clientFactory.addQuery(clientQueryBuilder);
                         testBuilder.addMethod(genAssociateWithEmbeddedCollectionTest(fk));
                     }
                     //update
-                    if(resolvers.contains(ForeignKeyCollectionResolverType.UPDATE_IN) || resolvers.contains(ALL)){
-                        serviceBuilder.addMethod(genUpdateInEmbeddedCollection(fk));
+                    if(resolvers.contains(ForeignKeyCollectionResolverType.UPDATE_IN)){
+                        val clientQueryBuilder = new GraphQLQueryBuilder();
+                        serviceBuilder.addMethod(genUpdateInEmbeddedCollection(fk, clientQueryBuilder));
+                        clientFactory.addQuery(clientQueryBuilder);
                         testBuilder.addMethod(genUpdateInEmbeddedCollectionTest(fk));
                     }
                     //remove
-                    if(resolvers.contains(REMOVE_FROM) || resolvers.contains(ALL)){
-                        serviceBuilder.addMethod(genRemoveFromEmbeddedCollection(fk));
+                    if(resolvers.contains(REMOVE_FROM)){
+                        val clientQueryBuilder = new GraphQLQueryBuilder();
+                        serviceBuilder.addMethod(genRemoveFromEmbeddedCollection(fk, clientQueryBuilder));
+                        clientFactory.addQuery(clientQueryBuilder);
                         testBuilder.addMethod(genRemoveFromEmbeddedCollectionTest(fk));
                     }
+                    if(resolvers.contains(PAGINATED_BATCH)){
+                        val clientQueryBuilder = new GraphQLQueryBuilder();
+                        serviceBuilder.addMethod(genGetPaginatedBatchInEmbeddedCollection(fk, clientQueryBuilder));
+                        clientFactory.addQuery(clientQueryBuilder);
+                        /*testBuilder.addMethod(genGetPaginatedBatchInEmbeddedCollectionTest(fk));TODO*/
+                    }
                 }else {
+                    val clientQueryBuilder = new GraphQLQueryBuilder();
                     serviceBuilder.addMethod(genGetEmbedded(fk));
+                    clientFactory.addQuery(clientQueryBuilder);
                     testBuilder.addMethod(genGetEmbeddedTest(fk));
                 }
             });
@@ -253,14 +304,17 @@ public class EntityApiGenerator {
             val hasFreeTextSearchFields = fields
                     .stream()
                     .anyMatch(this::isFreeTextSearchAnnotated);
-            if(hasFreeTextSearchFields)
-                serviceBuilder.addMethod(genFreeTextSearchBy());
+            if(hasFreeTextSearchFields) {
+                val clientQueryBuilder = new GraphQLQueryBuilder();
+                serviceBuilder.addMethod(genFreeTextSearchBy(clientQueryBuilder));
+                clientFactory.addQuery(clientQueryBuilder);
+            }
 
             // generate api find by endpoints
             fields
                     .stream()
                     .filter(this::isApiFindByAnnotated)
-                    .map(this::toApiFindByEndpoints)
+                    .map(field -> toApiFindByEndpoints(field, clientFactory))
                     .forEach(serviceBuilder::addMethods);
 
             //return result
@@ -330,215 +384,299 @@ public class EntityApiGenerator {
 
         //method specs
 
-        private MethodSpec genGetPaginatedBatch() {
+        private MethodSpec genGetPaginatedBatch(GraphQLQueryBuilder clientQueryBuilder) {
             final String name = pluralCamelCaseName(entity);
             var builder = MethodSpec.methodBuilder(name)
                     .addModifiers(PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(name))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
                     .addCode(initSortByIfNull())
                     .addStatement("return apiLogic.getPaginatedBatch(input)")
-                    .returns(PageType(entity));
+                    .returns(pageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_PAGINATED_BATCH))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_PAGINATED_BATCH));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(name);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", "PageRequestInput");
+            }});
             return builder.build();
         }
 
-        private MethodSpec genGetTotalNonArchivedCount() {
+        private MethodSpec genGetTotalNonArchivedCount(GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "countTotal" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addStatement("return apiLogic.getTotalNonArchivedCount()")
                     .returns(TypeName.LONG);
             if(methodLevelSecuritiesMap.containsKey(GET_TOTAL_NON_ARCHIVED_COUNT))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_TOTAL_NON_ARCHIVED_COUNT));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setPrimitiveReturnType(true);
             return builder.build();
         }
 
-        private MethodSpec genGetTotalArchivedCount() {
+        private MethodSpec genGetTotalArchivedCount(GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "countTotalArchived" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addStatement("return apiLogic.getTotalArchivedCount()")
                     .returns(TypeName.LONG);
             if(methodLevelSecuritiesMap.containsKey(GET_TOTAL_ARCHIVED_COUNT))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_TOTAL_ARCHIVED_COUNT));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setPrimitiveReturnType(true);
             return builder.build();
         }
 
-        private MethodSpec genGetById(ProcessingEnvironment processingEnv) {
+        private MethodSpec genGetById(ProcessingEnvironment processingEnv, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "get" + pascalCaseNameOf(entity) + "ById";
+            final ClassName idType = getIdType(entity, processingEnv);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
-                    .addParameter(getIdType(entity, processingEnv), "input")
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(idType, "input")
                     .addStatement("return apiLogic.getById(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(GET_BY_ID))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_BY_ID));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", getInputTypeSimpleName(idType));
+            }});
             return builder.build();
         }
-        private MethodSpec genGetBatchByIds(ProcessingEnvironment processingEnv) {
+
+        private MethodSpec genGetBatchByIds(ProcessingEnvironment processingEnv, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "get" + toPlural(pascalCaseNameOf(entity)) + "ById";
+            final ClassName idType = getIdType(entity, processingEnv);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
-                    .addParameter(ParameterSpec.builder(listOf(getIdType(entity, processingEnv)), "input").build())
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(listOf(idType), "input").build())
                     .addStatement("return apiLogic.getCollectionById(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_BATCH_BY_IDS))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_BATCH_BY_IDS));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(idType.simpleName() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genCreate() {
+        private MethodSpec genCreate(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "create" + pascalCaseNameOf(entity);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ApifiStaticUtils.parameterizeType(entity))
                     .addStatement("return apiLogic.create(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(CREATE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(CREATE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", entity.getSimpleName().toString() + "Input");
+            }});
             return builder.build();
         }
-        private MethodSpec genBatchCreate() {
+        private MethodSpec genBatchCreate(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "create" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(asParamList(entity))
                     .addStatement("return apiLogic.batchCreate(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(BATCH_CREATE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_CREATE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(entity.getSimpleName().toString() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genUpdate() {
+        private MethodSpec genUpdate(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "update" + pascalCaseNameOf(entity);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(parameterizeType(entity))
                     .addStatement("return apiLogic.update(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(UPDATE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(UPDATE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", entity.getSimpleName().toString() + "Input");
+            }});
             return builder.build();
         }
-        private MethodSpec genBatchUpdate() {
+        private MethodSpec genBatchUpdate(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "update" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(asParamList(entity))
                     .addStatement("return apiLogic.batchUpdate(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(BATCH_UPDATE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_UPDATE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(entity.getSimpleName().toString() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genDelete() {
+        private MethodSpec genDelete(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "delete" + pascalCaseNameOf(entity);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(parameterizeType(entity))
                     .addStatement("return apiLogic.delete(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(DELETE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(DELETE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", entity.getSimpleName().toString() + "Input");
+            }});
             return builder.build();
         }
-        private MethodSpec genBatchDelete() {
+        private MethodSpec genBatchDelete(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "delete" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(asParamList(entity))
                     .addStatement("return apiLogic.batchDelete(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(BATCH_DELETE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_DELETE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(entity.getSimpleName().toString() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genArchive() {
+        private MethodSpec genArchive(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "archive" + pascalCaseNameOf(entity);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(parameterizeType(entity))
                     .addStatement("return apiLogic.archive(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(ARCHIVE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(ARCHIVE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", entity.getSimpleName().toString() + "Input");
+            }});
             return builder.build();
         }
-        private MethodSpec genBatchArchive() {
+        private MethodSpec genBatchArchive(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "archive" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(asParamList(entity))
                     .addStatement("return apiLogic.batchArchive(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(BATCH_ARCHIVE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_ARCHIVE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(entity.getSimpleName().toString() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genDeArchive() {
+        private MethodSpec genDeArchive(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "deArchive" + pascalCaseNameOf(entity);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(parameterizeType(entity))
                     .addStatement("return apiLogic.deArchive(input)")
                     .returns(TypeName.get(entity.asType()));
             if(methodLevelSecuritiesMap.containsKey(DE_ARCHIVE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(DE_ARCHIVE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", entity.getSimpleName().toString() + "Input");
+            }});
             return builder.build();
         }
-        private MethodSpec genBatchDeArchive() {
+        private MethodSpec genBatchDeArchive(GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "deArchive" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(asParamList(entity))
                     .addStatement("return apiLogic.batchDeArchive(input)")
                     .returns(listOf(entity));
             if(methodLevelSecuritiesMap.containsKey(BATCH_DE_ARCHIVE))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_DE_ARCHIVE));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", inBrackets(entity.getSimpleName().toString() + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genGetArchivedPaginatedBatch() {
+        private MethodSpec genGetArchivedPaginatedBatch(GraphQLQueryBuilder clientQueryBuilder) {
             final String name = "archived" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(name)
                     .addModifiers(PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation(name))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
                     .addCode(initSortByIfNull())
                     .addStatement("return apiLogic.getArchivedPaginatedBatch(input)")
-                    .returns(PageType(entity));
+                    .returns(pageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_ARCHIVED_PAGINATED_BATCH))
                 builder.addAnnotations(methodLevelSecuritiesMap.get(GET_ARCHIVED_PAGINATED_BATCH));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(name);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", "PageRequestInput");
+            }});
             return builder.build();
         }
 
-        private MethodSpec genFreeTextSearchBy() {
+        private MethodSpec genFreeTextSearchBy(GraphQLQueryBuilder clientQueryBuilder) {
             final String name = camelcaseNameOf(entity) + "FreeTextSearch";
             var builder = MethodSpec
                     .methodBuilder(name)
-                    .addAnnotation(graphqlQueryAnnotation(name))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addModifiers(PUBLIC)
                     .addParameter(ParameterSpec.builder(ClassName.get(FreeTextSearchPageRequest.class), "input").build())
                     .addCode(initSortByIfNull())
                     .addStatement("return apiLogic.freeTextSearch(input)")
-                    .returns(PageType(entity));
+                    .returns(pageType(entity));
             val textSearchBySecurity = entity.getAnnotation(WithFreeTextSearchBySecurity.class);
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(textSearchBySecurity, ""))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(textSearchBySecurity, ""));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(name);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", "FreeTextSearchPageRequestInput");
+            }});
             return builder.build();
         }
 
@@ -551,7 +689,7 @@ public class EntityApiGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(suppressDeprecationWarning())
                     .addAnnotation(Batched.class)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(input)
                     .addStatement("return apiLogic.getEmbeddedCollection(input, $S, $L, $L)",
                             camelcaseNameOf(embedded),//$S
@@ -571,7 +709,7 @@ public class EntityApiGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(suppressDeprecationWarning())
                     .addAnnotation(Batched.class)
-                    .addAnnotation(graphqlQueryAnnotation(queryName))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(input)
                     .addStatement("return apiLogic.getEmbedded(input, $S, $L)",
                             camelcaseNameOf(embedded),
@@ -579,15 +717,16 @@ public class EntityApiGenerator {
                     .returns(listOf(embedded));
             return builder.build();
         }
-        private MethodSpec genAssociateWithEmbeddedCollection(VariableElement fk) {
+        private MethodSpec genAssociateWithEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             boolean addPreExistingOnly = config != null && config.associatePreExistingOnly();
             String apiLogicBackingMethod = addPreExistingOnly ? "associatePreExistingWithEmbeddedCollection" : "associateWithEmbeddedCollection";
-            ParameterSpec input = asParamList(collectionTypeName(fk));
+            final TypeName collectionTypeName = collectionTypeName(fk);
+            ParameterSpec input = asParamList(collectionTypeName);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
                     .addParameter(input)
                     .addStatement("return apiLogic.$L(owner, $S, input, $L, $L)",
@@ -596,50 +735,104 @@ public class EntityApiGenerator {
                             dataManagerName(fk),
                             isCustomEmbeddedCollectionApiHooks(config) ?
                                     embeddedCollectionApiHooksName(fk) : "null")
-                    .returns(listOf(collectionTypeName(fk)));
+                    .returns(listOf(collectionTypeName));
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "AssociateWith"))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "AssociateWith"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
             return builder.build();
         }
 
-        private MethodSpec genRemoveFromEmbeddedCollection(VariableElement fk) {
+        private String collectionTypeSimpleName(TypeName collectionTypeName) {
+            final String name = collectionTypeName.toString();
+            return name.substring(name.lastIndexOf(".") + 1);
+        }
+
+        private MethodSpec genRemoveFromEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
-            ParameterSpec input = asParamList(collectionTypeName(fk));
+            final TypeName collectionTypeName = collectionTypeName(fk);
+            ParameterSpec input = asParamList(collectionTypeName);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
                     .addParameter(input)
                     .addStatement("return apiLogic.removeFromEmbeddedCollection(owner, $S, input, $L)",
                             camelcaseNameOf(fk),
                             isCustomEmbeddedCollectionApiHooks(config) ?
                                     embeddedCollectionApiHooksName(fk) : "null")
-                    .returns(listOf(collectionTypeName(fk)));
+                    .returns(listOf(collectionTypeName));
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "RemoveFrom"))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "RemoveFrom"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
             return builder.build();
         }
-        private MethodSpec genUpdateInEmbeddedCollection(VariableElement fk) {
+
+        private MethodSpec genGetPaginatedBatchInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
+            String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
+            val config = fk.getAnnotation(EmbeddedCollectionApi.class);
+            final TypeName collectionTypeName = collectionTypeName(fk);
+            ParameterSpec input = ParameterSpec.builder(TypeName.get(PageRequest.class), "input").build();
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(input)
+                    .addStatement("return apiLogic.getPaginatedBatchInEmbeddedCollection(owner, input, $S, $L, $L)",
+                            camelcaseNameOf(fk),
+                            dataManagerName(fk),
+                            isCustomEmbeddedCollectionApiHooks(config) ?
+                                    embeddedCollectionApiHooksName(fk) : "null")
+                    .returns(pageType(fk));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "GetPaginated"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "GetPaginated"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
+            return builder.build();
+        }
+
+
+        private MethodSpec genUpdateInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             val mutationName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
             val hasApiHooks = isCustomEmbeddedCollectionApiHooks(config);
-            val input = asParamList(collectionTypeName(fk));
+            final TypeName collectionTypeName = collectionTypeName(fk);
+            val input = asParamList(collectionTypeName);
             var builder = MethodSpec.methodBuilder(mutationName)
                     .addModifiers(PUBLIC)
-                    .addAnnotation(graphqlMutationAnnotation(mutationName))
+                    .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
                     .addParameter(input)
                     .addStatement("return apiLogic.updateEmbeddedCollection(owner, $L, input, $L)",
                             dataManagerName(fk),
                             hasApiHooks ? embeddedCollectionApiHooksName(fk) : "null")
-                    .returns(listOf(collectionTypeName(fk)));
+                    .returns(listOf(collectionTypeName));
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "UpdateIn"))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "UpdateIn"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
             return builder.build();
         }
 
-        private List<MethodSpec> toApiFindByEndpoints(VariableElement field) {
+        private List<MethodSpec> toApiFindByEndpoints(VariableElement field, ApifiClientFactory clientFactory) {
 
             var methodsToAdd = new ArrayList<MethodSpec>();
             val fieldName = camelcaseNameOf(field);
@@ -649,45 +842,77 @@ public class EntityApiGenerator {
             val apiFindByAnnotation = field.getAnnotation(ApiFindBy.class);
             val apiFindByUniqueAnnotation = field.getAnnotation(ApiFindByUnique.class);
             val apiFindAllByAnnotation = field.getAnnotation(ApiFindAllBy.class);
+            final String inputTypeSimpleName = getInputTypeSimpleName(field);
 
             if(apiFindByAnnotation != null) {
+                val clientBuilder = new GraphQLQueryBuilder();
                 final String name = "find" + toPlural(pascalCaseNameOf(entity)) + "By" + fieldPascalCaseName;
                 val apiFindBy = MethodSpec
                         .methodBuilder(name)
                         .returns(listOf(entity))
-                        .addAnnotation(graphqlQueryAnnotation(name))
+                        .addAnnotation(graphqlQueryAnnotation())
                         .addAnnotations(SecurityAnnotationsFactory.of(apiFindByAnnotation))
                         .addModifiers(PUBLIC)
                         .addParameter(ParameterSpec.builder(fieldType, fieldName).build())
                         .addStatement("return apiLogic.apiFindBy($S, $L)", fieldName, fieldName);
                 methodsToAdd.add(apiFindBy
                     .build());
+                clientBuilder.setQueryType(QUERY);
+                clientBuilder.setQueryName(name);
+                clientBuilder.setVars(new LinkedHashMap<String, String>(){{
+                    put(fieldName, inputTypeSimpleName);
+                }});
+                clientFactory.addQuery(clientBuilder);
             } else if(apiFindByUniqueAnnotation != null) {
+                val clientBuilder = new GraphQLQueryBuilder();
                 final String name = "find" + pascalCaseNameOf(entity) + "ByUnique" + fieldPascalCaseName;
                 methodsToAdd.add(MethodSpec
                     .methodBuilder(name)
                     .returns(ClassName.get(entity))
-                    .addAnnotation(graphqlQueryAnnotation(name))
+                    .addAnnotation(graphqlQueryAnnotation())
                     .addAnnotations(SecurityAnnotationsFactory.of(apiFindByUniqueAnnotation))
                     .addModifiers(PUBLIC)
                     .addParameter(fieldType, fieldName)
                     .addStatement("return apiLogic.apiFindByUnique($S, $L)", fieldName, fieldName)
                     .build());
+                clientBuilder.setQueryType(QUERY);
+                clientBuilder.setQueryName(name);
+                clientBuilder.setVars(new LinkedHashMap<String, String>(){{
+                    put(fieldName, inputTypeSimpleName);
+                }});
+                clientFactory.addQuery(clientBuilder);
             }
 
             if(apiFindAllByAnnotation != null) {
+                val clientBuilder = new GraphQLQueryBuilder();
                 final String name = "find" + toPlural(pascalCaseNameOf(entity)) + "By" + toPlural(fieldPascalCaseName);
                 methodsToAdd.add(MethodSpec
                         .methodBuilder(name)
                         .returns(listOf(entity))
-                        .addAnnotation(graphqlQueryAnnotation(name))
+                        .addAnnotation(graphqlQueryAnnotation())
                         .addAnnotations(SecurityAnnotationsFactory.of(apiFindAllByAnnotation))
                         .addModifiers(PUBLIC)
                         .addParameter(listOf(fieldType), toPlural(fieldName))
                         .addStatement("return apiLogic.apiFindAllBy($S, $L)", fieldName, toPlural(fieldName))
                         .build());
+                clientBuilder.setQueryType(QUERY);
+                clientBuilder.setQueryName(name);
+                clientBuilder.setVars(new LinkedHashMap<String, String>(){{
+                    put(fieldName, inputTypeSimpleName);
+                }});
+                clientFactory.addQuery(clientBuilder);
             }
             return methodsToAdd;
+        }
+
+        private String getInputTypeSimpleName(ClassName idType) {
+            return idType.isPrimitive() ? idType.simpleName() + "!" : idType.simpleName() + "Input";
+        }
+        
+        private String getInputTypeSimpleName(VariableElement element) {
+            return element.asType().getKind().isPrimitive() ?
+            element.asType().toString() + "!" :
+            element.asType() + "Input";
         }
 
         //test method specs
@@ -871,7 +1096,6 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
-
         //field spec helpers
         private FieldSpec dataManager(TypeElement entity, String namePrefix) {
             String suffix = namePrefix.endsWith("DataManager") ? "" : "DataManager";
@@ -966,16 +1190,12 @@ public class EntityApiGenerator {
             return false;
         }
 
-        private AnnotationSpec graphqlQueryAnnotation(String name){
-            return AnnotationSpec.builder(GraphQLQuery.class)
-                    .addMember("name", "$S", name)
-                    .build();
+        private AnnotationSpec graphqlQueryAnnotation(){
+            return AnnotationSpec.builder(GraphQLQuery.class).build();
         }
 
-        private AnnotationSpec graphqlMutationAnnotation(String name){
-            return AnnotationSpec.builder(GraphQLMutation.class)
-                    .addMember("name", "$S", name)
-                    .build();
+        private AnnotationSpec graphqlMutationAnnotation(){
+            return AnnotationSpec.builder(GraphQLMutation.class).build();
         }
 
         private CodeBlock initSortByIfNull(){

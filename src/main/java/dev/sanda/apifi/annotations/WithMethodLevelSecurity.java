@@ -10,7 +10,7 @@ import java.lang.annotation.*;
 public @interface WithMethodLevelSecurity {
 
     String secured() default "";
-    String rolesAllowed() default "";
+    String[] rolesAllowed() default "";
     String preAuthorize() default "";
     String postAuthorize() default "";
     String preFilter() default "";

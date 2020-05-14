@@ -40,8 +40,8 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
         var secured = factoryInstance.getValue("secured");
         if(!secured.equals("")) result.add(factoryInstance.secured());
 
-        var rolesAllowed = factoryInstance.getValue("rolesAllowed");
-        if(!rolesAllowed.equals("")) result.add(factoryInstance.rolesAllowed());
+        var rolesAllowed = factoryInstance.getRolesAllowedValue();
+        if(!(rolesAllowed.length == 1 && rolesAllowed[0].equals(""))) result.add(factoryInstance.rolesAllowed());
 
         var preAuthorize = factoryInstance.getValue("preAuthorize");
         if(!preAuthorize.equals("")) result.add(factoryInstance.preAuthorize());
@@ -111,6 +111,19 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
         try {
             Method method = clazz.getMethod(methodName + methodNameSuffix);
             return (String) method.invoke(commonSecurityAnnotationsInstance);
+        }catch (Exception e){
+            processingEnv
+                    .getMessager()
+                    .printMessage(Diagnostic.Kind.ERROR,
+                            "Error parsing security annotations: " + e.toString());
+        }
+        return null;
+    }
+
+    private String[] getRolesAllowedValue(){
+        try {
+            Method method = clazz.getMethod("rolesAllowed" + methodNameSuffix);
+            return (String[]) method.invoke(commonSecurityAnnotationsInstance);
         }catch (Exception e){
             processingEnv
                     .getMessager()
