@@ -176,7 +176,7 @@ Note the `User` entity is annotated with `@WithCRUDEndpoints({CREATE, UPDATE, GE
 	
 	Same as previous, pluralized.
 	
-10.  ARCHIVE:
+10.  ARCHIVE:  
 	*Overview:*  
 	Sometimes there is a requirement whereby instances should be archived rather than permanently deleted. In order to enable this for a given entity type, the entity should implement the [`Archivable`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/persistence/Archivable.java) interface. In such a case, the archivability endpoints can be utilized. This particular endpoint archives a single entity instance.  
 	*Input:*   
