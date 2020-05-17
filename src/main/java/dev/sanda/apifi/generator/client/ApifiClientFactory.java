@@ -27,7 +27,7 @@ public class ApifiClientFactory {
 
     public void generate(){//TODO custom headers
         StringBuilder builder = new StringBuilder();
-        builder.append("let apiUrl = ").append(apiUrl()).append(";\n");
+        builder.append("let apiUrl = location.origin;\n");
         builder.append("let bearerToken = undefined;\n\n");
         builder.append("export default{\n");
         builder.append("\n\tsetBearerToken(token){\n\t\tbearerToken = token;\n\t},\n");
@@ -59,10 +59,5 @@ public class ApifiClientFactory {
                 "\n\t\t\t};\n" +
                 "\t\t\treturn await (await fetch(apiUrl, opts)).json();" +
                 "\n\t},\n";
-    }
-
-    private String apiUrl(){
-        val url = System.getenv("API_URL");
-        return url != null ? inQuotes(url) : "undefined";
     }
 }

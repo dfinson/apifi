@@ -441,7 +441,7 @@ public class EntityApiGenerator {
             clientQueryBuilder.setQueryType(QUERY);
             clientQueryBuilder.setQueryName(queryName);
             clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
-                put("input", getInputTypeSimpleName(idType));
+                put("input", getInputTypeSimpleName(idType.simpleName(), idType.packageName()));
             }});
             return builder.build();
         }
@@ -837,7 +837,7 @@ public class EntityApiGenerator {
             val apiFindByAnnotation = field.getAnnotation(ApiFindBy.class);
             val apiFindByUniqueAnnotation = field.getAnnotation(ApiFindByUnique.class);
             val apiFindAllByAnnotation = field.getAnnotation(ApiFindAllBy.class);
-            final String inputTypeSimpleName = getInputTypeSimpleName(field);
+            final String inputTypeSimpleName = getInputTypeSimpleName(field.getSimpleName().toString(), field.asType().toString());
 
             if(apiFindByAnnotation != null) {
                 val clientBuilder = new GraphQLQueryBuilder();
@@ -900,14 +900,18 @@ public class EntityApiGenerator {
             return methodsToAdd;
         }
 
-        private String getInputTypeSimpleName(ClassName idType) {
-            return idType.isPrimitive() ? idType.simpleName() + "!" : idType.simpleName() + "Input";
+        private String getInputTypeSimpleName(String simpleName, String packageName) {
+            return isPrimitive(packageName) ? resolveSimpleTypeName(simpleName) + "!" : simpleName + "Input";
         }
-        
-        private String getInputTypeSimpleName(VariableElement element) {
-            return element.asType().getKind().isPrimitive() ?
-            element.asType().toString() + "!" :
-            element.asType() + "Input";
+
+        private String resolveSimpleTypeName(String simpleName) {
+            val n = simpleName.toLowerCase();
+            if(n.equals("long") || n.equals("integer") || n.equals("int") || n.equals("short") || n.equals("byte"))
+                return "Int";
+            else if(n.equals("float") || n.equals("double"))
+                return "Float";
+            else
+                return "String";
         }
 
         //test method specs
@@ -1200,6 +1204,9 @@ public class EntityApiGenerator {
                     .endControlFlow()
                     .build();
         }
-    }
+        private static boolean isPrimitive(String packageName) {
+            return packageName.contains("java.lang");
+        }
 
+    }
 }
