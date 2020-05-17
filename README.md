@@ -4,7 +4,7 @@
 - [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [WithCRUDEndpoints(...)](#-withcrudendpoints--)
+ * [WithCRUDEndpoints(...)](#withcrudendpoints)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
@@ -177,17 +177,12 @@ Note the `User` entity is annotated with `@WithCRUDEndpoints({CREATE, UPDATE, GE
 	Same as previous, pluralized.
 	
 10.  ARCHIVE:
-	*Overview:*
-	
-	Sometimes there is a requirement whereby instances should be archived rather than permanently deleted. In order to enable this for a given entity type, the entity should implement the [`Archivable`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/persistence/Archivable.java) interface. In such a case, the archivability endpoints can be utilized. This particular endpoint archives a single entity instance.
-	
-	*Input:* 
-	
-	A single entity instance. This must include the ID.
-	
-	*Output:*
-	
-	The newly archived instance.
+	*Overview:*  
+	Sometimes there is a requirement whereby instances should be archived rather than permanently deleted. In order to enable this for a given entity type, the entity should implement the [`Archivable`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/persistence/Archivable.java) interface. In such a case, the archivability endpoints can be utilized. This particular endpoint archives a single entity instance.  
+	*Input:*   
+	A single entity instance. This must include the ID.  
+	*Output:*  
+	The newly archived instance.  
 	
 11. BATCH_ARCHIVE:
 
