@@ -1,6 +1,6 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.generator.entity.ForeignKeyCollectionResolverType;
+import dev.sanda.apifi.generator.entity.CollectionEndpointType;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 
@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 public @interface EmbeddedCollectionApi {
     Class<? extends EmbeddedCollectionApiHooks> apiHooks() default NullEmbeddedCollectionApiHooks.class;
     boolean associatePreExistingOnly() default false;
-    ForeignKeyCollectionResolverType[] resolvers();
+    CollectionEndpointType[] endpoints();
 
     String secured() default "";
     String[] rolesAllowed() default "";

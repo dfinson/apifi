@@ -2,16 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_atteo_evo_inflector_1_2_2.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiFreeTextSearchByImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithFreeTextSearchBySecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithApiFreeTextSearchByFields.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -158,7 +149,7 @@
       <workItem from="1589273561025" duration="45000" />
       <workItem from="1589459283790" duration="18000" />
       <workItem from="1589459759148" duration="1173000" />
-      <workItem from="1589539375958" duration="10208000" />
+      <workItem from="1589539375958" duration="12103000" />
     </task>
     <servers />
   </component>

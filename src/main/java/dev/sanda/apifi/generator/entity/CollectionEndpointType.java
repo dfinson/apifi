@@ -1,5 +1,5 @@
 package dev.sanda.apifi.generator.entity;
 
-public enum ForeignKeyCollectionResolverType {
+public enum CollectionEndpointType {
     ASSOCIATE_WITH, REMOVE_FROM, UPDATE_IN, PAGINATED_BATCH
 }

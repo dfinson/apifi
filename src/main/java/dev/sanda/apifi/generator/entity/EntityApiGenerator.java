@@ -40,7 +40,7 @@ import static dev.sanda.apifi.generator.client.GraphQLQueryType.MUTATION;
 import static dev.sanda.apifi.generator.client.GraphQLQueryType.QUERY;
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.generator.entity.ForeignKeyCollectionResolverType.*;
+import static dev.sanda.apifi.generator.entity.CollectionEndpointType.*;
 import static dev.sanda.datafi.DatafiStaticUtils.getIdType;
 import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
 import static dev.sanda.testifi.TestifiStaticUtils.pluralCamelCaseName;
@@ -255,7 +255,7 @@ public class EntityApiGenerator {
                 if(isIterable(fk.asType(), processingEnv)){
 
                     val config = fk.getAnnotation(EmbeddedCollectionApi.class);
-                    val resolvers = config != null ? Arrays.asList(config.resolvers()) : new ArrayList<ForeignKeyCollectionResolverType>();
+                    val resolvers = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<CollectionEndpointType>();
                     addApiHooksIfPresent(fk, serviceBuilder, testBuilder, config);
 
                     //read
@@ -271,7 +271,7 @@ public class EntityApiGenerator {
                         testBuilder.addMethod(genAssociateWithEmbeddedCollectionTest(fk));
                     }
                     //update
-                    if(resolvers.contains(ForeignKeyCollectionResolverType.UPDATE_IN)){
+                    if(resolvers.contains(CollectionEndpointType.UPDATE_IN)){
                         val clientQueryBuilder = new GraphQLQueryBuilder();
                         serviceBuilder.addMethod(genUpdateInEmbeddedCollection(fk, clientQueryBuilder));
                         clientFactory.addQuery(clientQueryBuilder);
