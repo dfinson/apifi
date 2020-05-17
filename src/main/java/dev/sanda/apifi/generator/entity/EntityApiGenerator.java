@@ -126,7 +126,7 @@ public class EntityApiGenerator {
             // prepare the groundwork for method level security annotations
             methodLevelSecuritiesMap = new HashMap<>();
             val methodLevelSecurities = entity.getAnnotationsByType(WithMethodLevelSecurity.class);
-            if(methodLevelSecurities != null){
+            if(methodLevelSecurities.length > 0){
                 for (var security : methodLevelSecurities)
                     handleTargetMethodsMapping(security, methodLevelSecuritiesMap);
             }
@@ -291,9 +291,7 @@ public class EntityApiGenerator {
                         /*testBuilder.addMethod(genGetPaginatedBatchInEmbeddedCollectionTest(fk));TODO*/
                     }
                 }else {
-                    val clientQueryBuilder = new GraphQLQueryBuilder();
                     serviceBuilder.addMethod(genGetEmbedded(fk));
-                    clientFactory.addQuery(clientQueryBuilder);
                     testBuilder.addMethod(genGetEmbeddedTest(fk));
                 }
             });

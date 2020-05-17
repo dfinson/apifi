@@ -80,7 +80,10 @@ public class SecurityAnnotationsFactory<T extends Annotation> {
         return getAnnotation(Secured.class, "secured");
     }
     private AnnotationSpec rolesAllowed() {
-        return getAnnotation(RolesAllowed.class, "rolesAllowed");
+        return AnnotationSpec
+                .builder(RolesAllowed.class)
+                .addMember("value", "$S", getRolesAllowedValue())
+                .build();
     }
     private AnnotationSpec preAuthorize() {
         return getAnnotation(PreAuthorize.class, "preAuthorize");

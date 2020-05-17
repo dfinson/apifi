@@ -17,7 +17,7 @@ import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 @Data
 public class ApifiClientFactory {
 
-    private List<GraphQLQueryBuilder> queries;
+    private List<GraphQLQueryBuilder> queries = new ArrayList<>();
     private String fileName = "apifiClient";
 
     public void addQuery(GraphQLQueryBuilder graphQLQueryBuilder){
