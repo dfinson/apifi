@@ -4,7 +4,7 @@
 - [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [@WithCRUDEndpoints(...)](#-withcrudendpoints--)
+ * [WithCRUDEndpoints(...)](#-withcrudendpoints--)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
@@ -94,12 +94,12 @@ Note the `User` entity is annotated with `@WithCRUDEndpoints({CREATE, UPDATE, GE
     
     *Input:*
     
-	A [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java) consisting of:
-		- `pageNumber` delineating which page to fetch 
-		- `pageSize` delineating the amount of items said page should contain  
-		- `sortBy` parameter delineating which field the items should be ordered by - defaults to the ID if not set 
-		- `sortDirection` parameter delineating whether said order by should be in ascending (ASC) order or descending (DESC) order - defaults to ASC if not set 
-		- `fetchAll` Boolean parameter which can override all of the above and fetch all of the instances within a single page - defaults to `false` if not set.
+	A [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java) consisting of:  
+		- `pageNumber` delineating which page to fetch   
+		- `pageSize` delineating the amount of items said page should contain    
+		- `sortBy` parameter delineating which field the items should be ordered by - defaults to the ID if not set   
+		- `sortDirection` parameter delineating whether said order by should be in ascending (ASC) order or descending (DESC) order - defaults to ASC if not set   
+		- `fetchAll` Boolean parameter which can override all of the above and fetch all of the instances within a single page - defaults to `false` if not set.  
 		
 	*Output:*
 	
