@@ -2,31 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/dave01.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/dave01.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_atteo_evo_inflector_1_2_2.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiFreeTextSearchByImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Maven__dev_sanda_datafi_0_0_4.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindAllBy.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindAllBy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindBy.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindBy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindByUnique.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ApiFindByUnique.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithFreeTextSearchBySecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithFreeTextSearchBySecurity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithMethodLevelSecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithMethodLevelSecurity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithServiceLevelSecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithServiceLevelSecurity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/ApifiClientFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/ApifiClientFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/GraphQLQueryBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/GraphQLQueryBuilder.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/GraphQLQueryType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/GraphQLQueryType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithFreeTextSearchBySecurity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithApiFreeTextSearchByFields.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/ForeignKeyCollectionResolverType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/ForeignKeyCollectionResolverType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/security/SecurityAnnotationsFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/security/SecurityAnnotationsFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiHooks.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiHooks.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,8 +26,8 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Enum" />
-        <option value="AnnotationType" />
         <option value="Interface" />
+        <option value="AnnotationType" />
         <option value="Class" />
       </list>
     </option>
@@ -172,6 +157,8 @@
       <workItem from="1589273389184" duration="68000" />
       <workItem from="1589273561025" duration="45000" />
       <workItem from="1589459283790" duration="18000" />
+      <workItem from="1589459759148" duration="1173000" />
+      <workItem from="1589539375958" duration="10208000" />
     </task>
     <servers />
   </component>
@@ -198,14 +185,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="174" y="54" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1299.741@67.27.1299.741" timestamp="1587297663364" />
-    <state x="524" y="108" width="374" height="577" key="#com.intellij.ide.util.MemberChooser" timestamp="1585736624905">
+    <state x="524" y="108" width="374" height="577" key="#com.intellij.ide.util.MemberChooser" timestamp="1589659501720">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="524" y="108" width="374" height="577" key="#com.intellij.ide.util.MemberChooser/67.27.1299.741@67.27.1299.741" timestamp="1585736624905" />
-    <state x="557" y="288" width="308" height="216" key="#com.intellij.ide.util.projectWizard.JdkChooserPanel.MyDialog" timestamp="1580242774304">
-      <screen x="67" y="27" width="1299" height="741" />
-    </state>
-    <state x="557" y="288" width="308" height="216" key="#com.intellij.ide.util.projectWizard.JdkChooserPanel.MyDialog/67.27.1299.741@67.27.1299.741" timestamp="1580242774304" />
+    <state x="524" y="108" width="374" height="577" key="#com.intellij.ide.util.MemberChooser/67.27.1299.741@67.27.1299.741" timestamp="1589659501720" />
     <state x="399" y="124" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1585219133518">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -214,50 +197,50 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1588699579180" />
-    <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate" timestamp="1588709895827">
+    <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate" timestamp="1589542919158">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate/67.27.1299.741@67.27.1299.741" timestamp="1588709895827" />
-    <state width="499" height="478" key="DebuggerActiveHint" timestamp="1588708855938">
+    <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate/67.27.1299.741@67.27.1299.741" timestamp="1589542919158" />
+    <state width="499" height="478" key="DebuggerActiveHint" timestamp="1589542864911">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="499" height="478" key="DebuggerActiveHint/67.27.1299.741@67.27.1299.741" timestamp="1588708855938" />
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1588709699493">
+    <state width="499" height="478" key="DebuggerActiveHint/67.27.1299.741@67.27.1299.741" timestamp="1589542864911" />
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1589539524715">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1588709699493" />
-    <state width="1253" height="238" key="GridCell.Tab.0.bottom" timestamp="1588709916185">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1589539524715" />
+    <state width="1253" height="238" key="GridCell.Tab.0.bottom" timestamp="1589543557994">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.0.bottom/67.27.1299.741@67.27.1299.741" timestamp="1588709916184" />
-    <state width="1253" height="238" key="GridCell.Tab.0.center" timestamp="1588709916184">
+    <state width="1253" height="238" key="GridCell.Tab.0.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589543557994" />
+    <state width="1253" height="238" key="GridCell.Tab.0.center" timestamp="1589543557988">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.0.center/67.27.1299.741@67.27.1299.741" timestamp="1588709916184" />
-    <state width="1253" height="238" key="GridCell.Tab.0.left" timestamp="1588709916183">
+    <state width="1253" height="238" key="GridCell.Tab.0.center/67.27.1299.741@67.27.1299.741" timestamp="1589543557988" />
+    <state width="1253" height="238" key="GridCell.Tab.0.left" timestamp="1589543557988">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.0.left/67.27.1299.741@67.27.1299.741" timestamp="1588709916183" />
-    <state width="1253" height="238" key="GridCell.Tab.0.right" timestamp="1588709916184">
+    <state width="1253" height="238" key="GridCell.Tab.0.left/67.27.1299.741@67.27.1299.741" timestamp="1589543557988" />
+    <state width="1253" height="238" key="GridCell.Tab.0.right" timestamp="1589543557994">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.0.right/67.27.1299.741@67.27.1299.741" timestamp="1588709916184" />
-    <state width="1253" height="238" key="GridCell.Tab.1.bottom" timestamp="1588709916186">
+    <state width="1253" height="238" key="GridCell.Tab.0.right/67.27.1299.741@67.27.1299.741" timestamp="1589543557994" />
+    <state width="1253" height="238" key="GridCell.Tab.1.bottom" timestamp="1589543557996">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.1.bottom/67.27.1299.741@67.27.1299.741" timestamp="1588709916186" />
-    <state width="1253" height="238" key="GridCell.Tab.1.center" timestamp="1588709916185">
+    <state width="1253" height="238" key="GridCell.Tab.1.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589543557996" />
+    <state width="1253" height="238" key="GridCell.Tab.1.center" timestamp="1589543557995">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.1.center/67.27.1299.741@67.27.1299.741" timestamp="1588709916185" />
-    <state width="1253" height="238" key="GridCell.Tab.1.left" timestamp="1588709916185">
+    <state width="1253" height="238" key="GridCell.Tab.1.center/67.27.1299.741@67.27.1299.741" timestamp="1589543557995" />
+    <state width="1253" height="238" key="GridCell.Tab.1.left" timestamp="1589543557995">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.1.left/67.27.1299.741@67.27.1299.741" timestamp="1588709916185" />
-    <state width="1253" height="238" key="GridCell.Tab.1.right" timestamp="1588709916185">
+    <state width="1253" height="238" key="GridCell.Tab.1.left/67.27.1299.741@67.27.1299.741" timestamp="1589543557995" />
+    <state width="1253" height="238" key="GridCell.Tab.1.right" timestamp="1589543557995">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="238" key="GridCell.Tab.1.right/67.27.1299.741@67.27.1299.741" timestamp="1588709916185" />
+    <state width="1253" height="238" key="GridCell.Tab.1.right/67.27.1299.741@67.27.1299.741" timestamp="1589543557995" />
     <state width="1253" height="238" key="GridCell.Tab.2.bottom" timestamp="1588600657229">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -290,10 +273,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state width="649" height="371" key="XDebugger.FullValuePopup/67.27.1299.741@67.27.1299.741" timestamp="1587553901153" />
-    <state x="67" y="127" width="1289" height="538" key="caller.chooser.dialog" timestamp="1585721828366">
+    <state x="67" y="127" width="1289" height="538" key="caller.chooser.dialog" timestamp="1589662120717">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="67" y="127" width="1289" height="538" key="caller.chooser.dialog/67.27.1299.741@67.27.1299.741" timestamp="1585721828366" />
+    <state x="67" y="127" width="1289" height="538" key="caller.chooser.dialog/67.27.1299.741@67.27.1299.741" timestamp="1589662120717" />
     <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1585252964188">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -306,14 +289,14 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1588186697309" />
-    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1588709978624">
+    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1589662491618">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1588709978624" />
-    <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1585824770372">
+    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1589662491618" />
+    <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1589460794330">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1585824770372" />
+    <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1589460794330" />
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1585230188216">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -322,9 +305,9 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="380" y="175" key="run.anything.popup/67.27.1299.741@67.27.1299.741" timestamp="1585219512878" />
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1583610958209">
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1589699523806">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1583610958209" />
+    <state x="379" y="89" width="672" height="678" key="search.everywhere.popup/67.27.1299.741@67.27.1299.741" timestamp="1589699523806" />
   </component>
 </project>

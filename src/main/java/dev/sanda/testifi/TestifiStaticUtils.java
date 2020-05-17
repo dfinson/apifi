@@ -1,7 +1,6 @@
 package dev.sanda.testifi;
 
-import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchBy;
-import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchByFields;
+import dev.sanda.apifi.annotations.WithApiFreeTextSearchByFields;
 import dev.sanda.datafi.reflection.CachedEntityField;
 import dev.sanda.datafi.reflection.CachedEntityTypeInfo;
 import dev.sanda.datafi.reflection.ReflectionCache;
@@ -136,19 +135,6 @@ public abstract class TestifiStaticUtils {
         return getEntitiesSet(roundEnvironment);
     }
 
-    public static boolean isFuzzySearchable(TypeElement entity) {
-        List<String> classLevelFuzzySearchByFields = new ArrayList<>();
-        if(entity.getAnnotation(FreeTextSearchByFields.class) != null)
-           classLevelFuzzySearchByFields = new ArrayList<String>(Arrays.asList(entity.getAnnotation(FreeTextSearchByFields.class).fields()));
-        for (Map.Entry<String, VariableElement> entry : getFieldsOfTypeElement(entity).entrySet()) {
-            String key = entry.getKey();
-            VariableElement val = entry.getValue();
-            if (val.getAnnotation(FreeTextSearchBy.class) != null || classLevelFuzzySearchByFields.contains(val.getSimpleName().toString()))
-                return true;
-        }
-        return false;
-    }
-
     public static String collectionTypeString(VariableElement embedded) {
         String typeNameString = embedded.asType().toString();
         typeNameString = typeNameString.replaceAll("^.+<", "");
@@ -211,9 +197,9 @@ public abstract class TestifiStaticUtils {
                 .get(clazz.getSimpleName());
 
         List<String> classLevelFuzzySearchByFields = new ArrayList<>();
-        if(clazz.isAnnotationPresent(FreeTextSearchByFields.class))
+        if(clazz.isAnnotationPresent(WithApiFreeTextSearchByFields.class))
             classLevelFuzzySearchByFields =
-                    new ArrayList<>(Arrays.asList(clazz.getAnnotation(FreeTextSearchByFields.class).fields()));
+                    new ArrayList<>(Arrays.asList(clazz.getAnnotation(WithApiFreeTextSearchByFields.class).value()));
 
         List<String> finalClassLevelFuzzySearchByFields = classLevelFuzzySearchByFields;
         return
@@ -221,10 +207,7 @@ public abstract class TestifiStaticUtils {
                 .getFields()
                 .values()
                 .stream()
-                .filter(
-                        field -> field.getField().isAnnotationPresent(FreeTextSearchBy.class) ||
-                        finalClassLevelFuzzySearchByFields.contains(field.getField().getName())
-                )
+                .filter(field -> finalClassLevelFuzzySearchByFields.contains(field.getField().getName()))
                 .map(CachedEntityField::getField)
                 .collect(Collectors.toList())
                 .get(0);

@@ -1,5 +1,6 @@
 package dev.sanda.apifi.service;
 
+import dev.sanda.datafi.DatafiStaticUtils;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
@@ -13,8 +14,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -90,15 +94,23 @@ public final class ApiLogic<T> {
         return new Page<>(result);
     }
 
-    public Page<T> freeTextSearch(FreeTextSearchPageRequest request) {
-        if(apiHooks != null) apiHooks.preFreeTextSearch(request.getSearchTerm(), dataManager);
-        val result = dataManager.freeTextSearchBy(request, getTotalNonArchivedCount());
-        if(apiHooks != null)
-            apiHooks.postFreeTextSearch(request.getSearchTerm(), result.getContent(), dataManager);
-        logInfo("freeTextSearch: Got {} {} by free text search term \"{}\"",
-                result.getTotalRecordsCount(),
-                toPlural(dataManager.getClazzSimpleName()), request.getSearchTerm());
-        return result;
+    public Page<T> freeTextSearch(FreeTextSearchPageRequest request){
+        try{
+            String clazzSimpleNamePlural = toPlural(dataManager.getClazzSimpleName());
+            if(request.getSearchTerm() == null || request.getSearchTerm().equals("")) {
+                throw new IllegalArgumentException(
+                        "Illegal attempt to search for " + clazzSimpleNamePlural + " with null or blank string"
+                );
+            }
+            validateSortByIfNonNull(dataManager.getClazz(), request.getSortBy(), reflectionCache);
+            val result = ApiFreeTextSearchByImpl.freeTextSearch(dataManager, request, apiHooks, reflectionCache);
+            logInfo("freeTextSearchBy(String searchTerm)", "found {} {} by searchTerm '{}'",
+                    result.getTotalItemsCount(), toPlural(dataManager.getClazzSimpleName()), request.getSearchTerm());
+            return result;
+        }catch (Exception e){
+            logError("freeTextSearchBy(String searchTerm, int offset, int limit, String sortBy, Sort.Direction sortDirection)", e.toString());
+            throw new RuntimeException(e);
+        }
     }
 
     public T getById(Object id) {
@@ -390,10 +402,10 @@ public final class ApiLogic<T> {
                 fieldName,
                 isNonArchivedClause);
         val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString).getSingleResult();
-        val totalPages = totalRecords / input.getPageSize();
+        val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
         returnValue.setContent(content);
-        returnValue.setTotalPagesCount(totalPages);
-        returnValue.setTotalRecordsCount(totalRecords);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalRecords);
         if(embeddedCollectionApiHooks != null)
             embeddedCollectionApiHooks.postGetPagintedBatch(returnValue, owner, tEmbeddedDataManager, dataManager);
         return returnValue;

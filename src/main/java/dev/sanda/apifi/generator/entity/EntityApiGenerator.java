@@ -9,8 +9,6 @@ import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import dev.sanda.apifi.service.ApiHooks;
 import dev.sanda.apifi.service.ApiLogic;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
-import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchBy;
-import dev.sanda.datafi.annotations.free_text_search.FreeTextSearchByFields;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
@@ -144,7 +142,7 @@ public class EntityApiGenerator {
             }
 
             //GET_TOTAL_NON_ARCHIVED_COUNT
-            if(crudResolvers.containsKey(GET_TOTAL_NON_ARCHIVED_COUNT)){
+            if(crudResolvers.containsKey(GET_TOTAL_COUNT)){
                 val clientQueryBuilder = new GraphQLQueryBuilder();
                 serviceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -322,10 +320,8 @@ public class EntityApiGenerator {
         }
 
         private boolean isFreeTextSearchAnnotated(VariableElement variableElement) {
-            val freeTextSearchBy = variableElement.getAnnotation(FreeTextSearchBy.class);
-            val freeTextSearchByFields = variableElement.getEnclosingElement().getAnnotation(FreeTextSearchByFields.class);
-            return freeTextSearchBy != null ||
-                   (freeTextSearchByFields != null && containsFieldName(freeTextSearchByFields, variableElement));
+            val freeTextSearchByFields = variableElement.getEnclosingElement().getAnnotation(WithApiFreeTextSearchByFields.class);
+            return freeTextSearchByFields != null && containsFieldName(freeTextSearchByFields, variableElement);
         }
 
         private FieldSpec defaultDataManager() {
@@ -410,8 +406,8 @@ public class EntityApiGenerator {
                     .addAnnotation(graphqlQueryAnnotation())
                     .addStatement("return apiLogic.getTotalNonArchivedCount()")
                     .returns(TypeName.LONG);
-            if(methodLevelSecuritiesMap.containsKey(GET_TOTAL_NON_ARCHIVED_COUNT))
-                builder.addAnnotations(methodLevelSecuritiesMap.get(GET_TOTAL_NON_ARCHIVED_COUNT));
+            if(methodLevelSecuritiesMap.containsKey(GET_TOTAL_COUNT))
+                builder.addAnnotations(methodLevelSecuritiesMap.get(GET_TOTAL_COUNT));
             clientQueryBuilder.setQueryType(QUERY);
             clientQueryBuilder.setQueryName(queryName);
             clientQueryBuilder.setPrimitiveReturnType(true);
@@ -669,7 +665,8 @@ public class EntityApiGenerator {
                     .addCode(initSortByIfNull())
                     .addStatement("return apiLogic.freeTextSearch(input)")
                     .returns(pageType(entity));
-            val textSearchBySecurity = entity.getAnnotation(WithFreeTextSearchBySecurity.class);
+            val textSearchBySecurity = entity.getAnnotation(WithApiFreeTextSearchByFields.class);
+
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(textSearchBySecurity, ""))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(textSearchBySecurity, ""));
             clientQueryBuilder.setQueryType(QUERY);
@@ -1182,9 +1179,9 @@ public class EntityApiGenerator {
                     .equals(NullEmbeddedCollectionApiHooks.class.getCanonicalName());
         }
 
-        private boolean containsFieldName(FreeTextSearchByFields freeTextSearchByFields, VariableElement variableElement) {
-            for (int i = 0; i < freeTextSearchByFields.fields().length; i++) {
-                if(freeTextSearchByFields.fields()[i].equals(variableElement.getSimpleName().toString()))
+        private boolean containsFieldName(WithApiFreeTextSearchByFields freeTextSearchByFields, VariableElement variableElement) {
+            for (int i = 0; i < freeTextSearchByFields.value().length; i++) {
+                if(freeTextSearchByFields.value()[i].equals(variableElement.getSimpleName().toString()))
                     return true;
             }
             return false;
