@@ -251,7 +251,7 @@ public final class TestLogic<T> {
 
     public void getBatchByIdsTest(){
         Collection<T> present = dataManager.findAll();
-        List<?> ids = dataManager.idList(present);
+        List<?> ids = getIdList(present, reflectionCache);
         Collection<T> fetched = apiLogic.getBatchByIds(ids);
         assertThat( "successfully fetched " + present.size() + " " + toPlural(clazzSimpleName) + " by id",
                 present, isEqualTo(fetched));
@@ -281,7 +281,7 @@ public final class TestLogic<T> {
         List<T> toDelete = firstRandomN(clazz, dataManager);
         int amountToDelete = toDelete.size();
         apiLogic.batchDelete(toDelete);
-        Collection<?> ids = dataManager.idList(toDelete);
+        Collection<?> ids = getIdList(toDelete, reflectionCache);
         Collection<T> shouldBeEmpty = dataManager.findAllById(ids);
         assertTrue(amountToDelete + " " + toPlural(clazzSimpleName) + " successfully deleted",
                 shouldBeEmpty.isEmpty());
@@ -372,7 +372,7 @@ public final class TestLogic<T> {
         setCollectionField(owner, originalEmbeddedCollection, fieldName, entityMocker);
         owner = dataManager.saveAndFlush(owner);
 
-        Iterable<TEmbedded> updatedEmbeddedCollection = Lists.newArrayList(originalEmbeddedCollection);
+        Collection<TEmbedded> updatedEmbeddedCollection = Lists.newArrayList(originalEmbeddedCollection);
         updatedEmbeddedCollection.forEach(entityMocker::mockUpdate);
 
         Collection<TEmbedded> fetchedEmbeddedCollection = apiLogic

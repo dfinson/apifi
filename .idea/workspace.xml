@@ -2,9 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/ApifiClientFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/client/ApifiClientFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithApiFreeTextSearchByFields.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/WithApiFreeTextSearchByFields.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,10 +58,12 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="TERMINAL_CUSTOM_COMMANDS_GOT_IT" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="extract.method.default.visibility" value="private" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../datafi" />
+    <property name="nodejs_package_manager_path" value="npm" />
     <property name="project.structure.last.edited" value="SDKs" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -152,7 +160,18 @@
       <workItem from="1589459283790" duration="18000" />
       <workItem from="1589459759148" duration="1173000" />
       <workItem from="1589539375958" duration="18445000" />
-      <workItem from="1589718954094" duration="2986000" />
+      <workItem from="1589718954094" duration="4268000" />
+      <workItem from="1589743143721" duration="418000" />
+      <workItem from="1589743595182" duration="65000" />
+      <workItem from="1589743739745" duration="25000" />
+      <workItem from="1589790167460" duration="750000" />
+      <workItem from="1589807143712" duration="143000" />
+      <workItem from="1589807613832" duration="6272000" />
+      <workItem from="1589892679159" duration="3276000" />
+      <workItem from="1589906189712" duration="1010000" />
+      <workItem from="1589909010971" duration="694000" />
+      <workItem from="1589915625579" duration="682000" />
+      <workItem from="1589983512795" duration="1529000" />
     </task>
     <servers />
   </component>
@@ -199,42 +218,42 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state width="741" height="478" key="DebuggerActiveHint/67.27.1299.741@67.27.1299.741" timestamp="1589708373848" />
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1589539524715">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1589898434004">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1589539524715" />
-    <state width="1253" height="116" key="GridCell.Tab.0.bottom" timestamp="1589721364196">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1589898434004" />
+    <state width="1253" height="116" key="GridCell.Tab.0.bottom" timestamp="1589737136364">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.0.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589721364196" />
-    <state width="1253" height="116" key="GridCell.Tab.0.center" timestamp="1589721364195">
+    <state width="1253" height="116" key="GridCell.Tab.0.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589737136364" />
+    <state width="1253" height="116" key="GridCell.Tab.0.center" timestamp="1589737136363">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.0.center/67.27.1299.741@67.27.1299.741" timestamp="1589721364195" />
-    <state width="1253" height="116" key="GridCell.Tab.0.left" timestamp="1589721364195">
+    <state width="1253" height="116" key="GridCell.Tab.0.center/67.27.1299.741@67.27.1299.741" timestamp="1589737136363" />
+    <state width="1253" height="116" key="GridCell.Tab.0.left" timestamp="1589737136362">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.0.left/67.27.1299.741@67.27.1299.741" timestamp="1589721364195" />
-    <state width="1253" height="116" key="GridCell.Tab.0.right" timestamp="1589721364196">
+    <state width="1253" height="116" key="GridCell.Tab.0.left/67.27.1299.741@67.27.1299.741" timestamp="1589737136362" />
+    <state width="1253" height="116" key="GridCell.Tab.0.right" timestamp="1589737136363">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.0.right/67.27.1299.741@67.27.1299.741" timestamp="1589721364196" />
-    <state width="1253" height="116" key="GridCell.Tab.1.bottom" timestamp="1589721364198">
+    <state width="1253" height="116" key="GridCell.Tab.0.right/67.27.1299.741@67.27.1299.741" timestamp="1589737136363" />
+    <state width="1253" height="116" key="GridCell.Tab.1.bottom" timestamp="1589737136366">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.1.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589721364198" />
-    <state width="1253" height="116" key="GridCell.Tab.1.center" timestamp="1589721364197">
+    <state width="1253" height="116" key="GridCell.Tab.1.bottom/67.27.1299.741@67.27.1299.741" timestamp="1589737136366" />
+    <state width="1253" height="116" key="GridCell.Tab.1.center" timestamp="1589737136365">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.1.center/67.27.1299.741@67.27.1299.741" timestamp="1589721364197" />
-    <state width="1253" height="116" key="GridCell.Tab.1.left" timestamp="1589721364197">
+    <state width="1253" height="116" key="GridCell.Tab.1.center/67.27.1299.741@67.27.1299.741" timestamp="1589737136365" />
+    <state width="1253" height="116" key="GridCell.Tab.1.left" timestamp="1589737136364">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.1.left/67.27.1299.741@67.27.1299.741" timestamp="1589721364197" />
-    <state width="1253" height="116" key="GridCell.Tab.1.right" timestamp="1589721364197">
+    <state width="1253" height="116" key="GridCell.Tab.1.left/67.27.1299.741@67.27.1299.741" timestamp="1589737136364" />
+    <state width="1253" height="116" key="GridCell.Tab.1.right" timestamp="1589737136366">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state width="1253" height="116" key="GridCell.Tab.1.right/67.27.1299.741@67.27.1299.741" timestamp="1589721364197" />
+    <state width="1253" height="116" key="GridCell.Tab.1.right/67.27.1299.741@67.27.1299.741" timestamp="1589737136366" />
     <state width="1253" height="238" key="GridCell.Tab.2.bottom" timestamp="1588600657229">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -287,10 +306,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1589720296033" />
-    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1589717906237">
+    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1589812348474">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1589717906237" />
+    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1589812348474" />
     <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1589460794330">
       <screen x="67" y="27" width="1299" height="741" />
     </state>

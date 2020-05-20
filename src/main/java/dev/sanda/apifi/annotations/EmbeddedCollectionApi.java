@@ -16,6 +16,8 @@ public @interface EmbeddedCollectionApi {
     boolean associatePreExistingOnly() default false;
     CollectionEndpointType[] endpoints();
 
+    String[] freeTextSearchFields() default "";
+
     String secured() default "";
     String[] rolesAllowed() default "";
     String preAuthorize() default "";
@@ -31,6 +33,14 @@ public @interface EmbeddedCollectionApi {
     String preFilterGetPaginated() default "";
     String preFilterTargetGetPaginated() default "";
     String postFilterGetPaginated() default "";
+
+    String securedPaginatedFreeTextSearch() default "";
+    String[] rolesAllowedPaginatedFreeTextSearch() default "";
+    String preAuthorizePaginatedFreeTextSearch() default "";
+    String postAuthorizePaginatedFreeTextSearch() default "";
+    String preFilterPaginatedFreeTextSearch() default "";
+    String preFilterTargetPaginatedFreeTextSearch() default "";
+    String postFilterPaginatedFreeTextSearch() default "";
 
     String securedGet() default "";
     String[] rolesAllowedGet() default "";

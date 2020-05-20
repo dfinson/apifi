@@ -11,9 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WithApiFreeTextSearchByFields {
     String[] value();
-    @AliasFor("value")
-    String[] fields() default "";
-
     String secured() default "";
     String[] rolesAllowed() default "";
     String preAuthorize() default "";

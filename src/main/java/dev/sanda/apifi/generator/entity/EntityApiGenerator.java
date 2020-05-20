@@ -290,6 +290,12 @@ public class EntityApiGenerator {
                         clientFactory.addQuery(clientQueryBuilder);
                         /*testBuilder.addMethod(genGetPaginatedBatchInEmbeddedCollectionTest(fk));TODO*/
                     }
+                    if(resolvers.contains(PAGINATED_FREE_TEXT_SEARCH)){
+                        val clientQueryBuilder = new GraphQLQueryBuilder();
+                        serviceBuilder.addMethod(genGetPaginatedFreeTextSearchInEmbeddedCollection(fk, clientQueryBuilder));
+                        clientFactory.addQuery(clientQueryBuilder);
+                        /*testBuilder.addMethod(genGetPaginatedFreeTextSearchInEmbeddedCollectionTest(fk));TODO*/
+                    }
                 }else {
                     serviceBuilder.addMethod(genGetEmbedded(fk));
                     testBuilder.addMethod(genGetEmbeddedTest(fk));
@@ -384,7 +390,7 @@ public class EntityApiGenerator {
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
-                    .addCode(initSortByIfNull())
+                    .addCode(initSortByIfNull(entity))
                     .addStatement("return apiLogic.getPaginatedBatch(input)")
                     .returns(pageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_PAGINATED_BATCH))
@@ -640,7 +646,7 @@ public class EntityApiGenerator {
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
-                    .addCode(initSortByIfNull())
+                    .addCode(initSortByIfNull(entity))
                     .addStatement("return apiLogic.getArchivedPaginatedBatch(input)")
                     .returns(pageType(entity));
             if(methodLevelSecuritiesMap.containsKey(GET_ARCHIVED_PAGINATED_BATCH))
@@ -660,7 +666,7 @@ public class EntityApiGenerator {
                     .addAnnotation(graphqlQueryAnnotation())
                     .addModifiers(PUBLIC)
                     .addParameter(ParameterSpec.builder(ClassName.get(FreeTextSearchPageRequest.class), "input").build())
-                    .addCode(initSortByIfNull())
+                    .addCode(initSortByIfNull(entity))
                     .addStatement("return apiLogic.freeTextSearch(input)")
                     .returns(pageType(entity));
             val textSearchBySecurity = entity.getAnnotation(WithApiFreeTextSearchByFields.class);
@@ -773,16 +779,43 @@ public class EntityApiGenerator {
             return builder.build();
         }
 
+        private MethodSpec genGetPaginatedFreeTextSearchInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
+            String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "FreeTextSearch";
+            val config = fk.getAnnotation(EmbeddedCollectionApi.class);
+            ParameterSpec input = ParameterSpec.builder(TypeName.get(FreeTextSearchPageRequest.class), "input").build();
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(input)
+                    .addCode(initSortByIfNull(entitiesMap.get(getCollectionType(fk))))
+                    .addStatement("return apiLogic.paginatedFreeTextSearchInEmbeddedCollection(owner, input, $S, $L, $L)",
+                            camelcaseNameOf(fk),
+                            dataManagerName(fk),
+                            isCustomEmbeddedCollectionApiHooks(config) ?
+                                    embeddedCollectionApiHooksName(fk) : "null")
+                    .returns(pageType(fk));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "PaginatedFreeTextSearch"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "PaginatedFreeTextSearch"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", "FreeTextSearchPageRequestInput");
+            }});
+            return builder.build();
+        }
+
         private MethodSpec genGetPaginatedBatchInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
-            final TypeName collectionTypeName = collectionTypeName(fk);
             ParameterSpec input = ParameterSpec.builder(TypeName.get(PageRequest.class), "input").build();
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
                     .addParameter(input)
+                    .addCode(initSortByIfNull(entitiesMap.get(getCollectionType(fk))))
                     .addStatement("return apiLogic.getPaginatedBatchInEmbeddedCollection(owner, input, $S, $L, $L)",
                             camelcaseNameOf(fk),
                             dataManagerName(fk),
@@ -795,7 +828,7 @@ public class EntityApiGenerator {
             clientQueryBuilder.setQueryName(queryName);
             clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
                 put("owner", entity.getSimpleName() + "Input");
-                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+                put("input", "PageRequestInput");
             }});
             return builder.build();
         }
@@ -1197,10 +1230,10 @@ public class EntityApiGenerator {
             return AnnotationSpec.builder(GraphQLMutation.class).build();
         }
 
-        private CodeBlock initSortByIfNull(){
+        private CodeBlock initSortByIfNull(TypeElement entityType){
             return CodeBlock.builder()
                     .beginControlFlow("if(input.getSortBy() == null)")
-                    .addStatement("input.setSortBy($S)", getIdFieldName(entity))
+                    .addStatement("input.setSortBy($S)", getIdFieldName(entityType))
                     .endControlFlow()
                     .build();
         }

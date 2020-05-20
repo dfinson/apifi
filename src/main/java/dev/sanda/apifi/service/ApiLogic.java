@@ -1,6 +1,7 @@
 package dev.sanda.apifi.service;
 
-import dev.sanda.datafi.DatafiStaticUtils;
+import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
+import dev.sanda.datafi.code_generator.FreeTextSearchMethodsFactory;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
@@ -14,14 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -38,8 +35,12 @@ public final class ApiLogic<T> {
     private ApiHooks<T> apiHooks;
     @Autowired
     private ReflectionCache reflectionCache;
-    @Setter
     private DataManager<T> dataManager;
+    public void setDataManager(DataManager<T> dataManager){
+        this.dataManager = dataManager;
+        this.idFieldName = reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName();
+    }
+    private String idFieldName;
 
     public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
         validateSortByIfNonNull(dataManager.getClazz(), request.getSortBy(), reflectionCache);
@@ -172,7 +173,7 @@ public final class ApiLogic<T> {
         final Object id = getId(input, reflectionCache);
         T toUpdate = getById(id);
         if (toUpdate == null) throw_entityNotFound(input, reflectionCache);
-        if(apiHooks != null) apiHooks.preUpdate(input, dataManager);
+        if(apiHooks != null) apiHooks.preUpdate(toUpdate, dataManager);
         dataManager.cascadeUpdate(toUpdate, input);
         val result = dataManager.save(toUpdate);
         if(apiHooks != null) apiHooks.postUpdate(result, dataManager);
@@ -183,7 +184,7 @@ public final class ApiLogic<T> {
     public T delete(T input) {
         final Object id = getId(input, reflectionCache);
         T toDelete = getById(id);
-        if(apiHooks != null) apiHooks.preDelete(input, dataManager);
+        if(apiHooks != null) apiHooks.preDelete(toDelete, dataManager);
         dataManager.deleteById(id);
         if(apiHooks != null) apiHooks.postDelete(toDelete, dataManager);
         logInfo("delete: deleted {} with id #{}", dataManager.getClazzSimpleName(), id);
@@ -194,7 +195,7 @@ public final class ApiLogic<T> {
         final Object id = getId(input, reflectionCache);
         T toArchive = getById(id);
         if (toArchive == null) throw_entityNotFound(input, reflectionCache);
-        if(apiHooks != null) apiHooks.preArchive((T) input, dataManager);
+        if(apiHooks != null) apiHooks.preArchive(toArchive, dataManager);
         input.setIsArchived(true);
         val result = dataManager.save(toArchive);
         if(apiHooks != null) apiHooks.postArchive(result, dataManager);
@@ -215,9 +216,9 @@ public final class ApiLogic<T> {
     }
 
     public <A extends Archivable> List<T> batchArchive(List<A> input) {
-        final List<Object> ids = dataManager.idList((Iterable<T>) input);
+        final List<Object> ids = getIdList(input, reflectionCache);
         List<A> entitiesToArchive = (List<A>) getBatchByIds(ids);
-        if(apiHooks != null) apiHooks.preBatchArchive((Collection<T>) input, dataManager);
+        if(apiHooks != null) apiHooks.preBatchArchive((Collection<T>) entitiesToArchive, dataManager);
         entitiesToArchive.forEach(entity -> entity.setIsArchived(true));
         List<T> result = dataManager.saveAll((List<T>)entitiesToArchive);
         if(apiHooks != null) apiHooks.postBatchArchive(result, dataManager);
@@ -228,9 +229,9 @@ public final class ApiLogic<T> {
     }
 
     public <A extends Archivable> List<T> batchDeArchive(List<A> input) {
-        final List<Object> ids = dataManager.idList((Iterable<T>) input);
+        final List<Object> ids = getIdList(input, reflectionCache);
         List<A> entitiesToDeArchive = (List<A>) getBatchByIds(ids);
-        if(apiHooks != null) apiHooks.preBatchDeArchive((List<T>) input, dataManager);
+        if(apiHooks != null) apiHooks.preBatchDeArchive((List<T>) entitiesToDeArchive, dataManager);
         entitiesToDeArchive.forEach(entity -> entity.setIsArchived(false));
         List<T> result = dataManager.saveAll((List<T>)entitiesToDeArchive);
         if(apiHooks != null) apiHooks.postBatchDeArchive(result, dataManager);
@@ -256,8 +257,8 @@ public final class ApiLogic<T> {
     }
 
     public List<T> batchUpdate(List<T> input) {
-        List<T> toUpdate = getBatchByIds(dataManager.idList(input));
-        if(apiHooks != null) apiHooks.preBatchUpdate(input, dataManager);
+        List<T> toUpdate = getBatchByIds(getIdList(input, reflectionCache));
+        if(apiHooks != null) apiHooks.preBatchUpdate(toUpdate, dataManager);
         List<T> result = dataManager.cascadeUpdateCollection(toUpdate, input);
         if(apiHooks != null) apiHooks.postBatchUpdate(result, dataManager);
         logInfo("batchUpdate: Updated {} {} with ids [{}]",
@@ -268,8 +269,8 @@ public final class ApiLogic<T> {
     }
 
     public List<T> batchDelete(List<T> input) {
-        List<T> toDelete = getBatchByIds(dataManager.idList(input));
-        if(apiHooks != null) apiHooks.preDeleteEntities(input, dataManager);
+        List<T> toDelete = getBatchByIds(getIdList(input, reflectionCache));
+        if(apiHooks != null) apiHooks.preDeleteEntities(toDelete, dataManager);
         dataManager.deleteInBatch(input);
         if(apiHooks != null) apiHooks.postDeleteEntities(toDelete, dataManager);
         logInfo("batchDelete: Deleted {} {} with ids [{}]",
@@ -289,8 +290,7 @@ public final class ApiLogic<T> {
         input.forEach(t -> {
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preFetch(t, dataManager);
             final List<TEmbedded> embeddedCollection =
-                    tEmbeddedDataManager.findAllById(tEmbeddedDataManager
-                            .idList((Iterable<TEmbedded>) getEmbeddedCollectionFrom(t, embeddedFieldName)));
+                    tEmbeddedDataManager.findAllById(getIdList(getEmbeddedCollectionFrom(t, embeddedFieldName), reflectionCache));
             if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postFetch(embeddedCollection, t, tEmbeddedDataManager, dataManager);
             lists.add(embeddedCollection);
         });
@@ -315,7 +315,7 @@ public final class ApiLogic<T> {
     List<TEmbedded> updateEmbeddedCollection(
             T owner,
             DataManager<TEmbedded> tEmbeddedDataManager,
-            Iterable<TEmbedded> toUpdate,
+            Collection<TEmbedded> toUpdate,
             E embeddedCollectionApiHooks) {
         var temp = dataManager
                 .findById(getId(owner, reflectionCache)).orElse(null);
@@ -327,13 +327,15 @@ public final class ApiLogic<T> {
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
     List<TEmbedded> updateCollectionAsEmbedded(
             T input,
-            Iterable<TEmbedded> toUpdate,
+            Collection<TEmbedded> toUpdate,
             E embeddedCollectionApiHooks,
             DataManager<TEmbedded> tEmbeddedDataManager) {
-        List<TEmbedded> entitiesToUpdate = (List<TEmbedded>) getBatchByIds(tEmbeddedDataManager.idList(toUpdate));
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preUpdate(entitiesToUpdate, input, tEmbeddedDataManager, dataManager);
+        if(embeddedCollectionApiHooks != null)
+            embeddedCollectionApiHooks.preUpdate(toUpdate, input, tEmbeddedDataManager, dataManager);
+        List<TEmbedded> entitiesToUpdate = tEmbeddedDataManager.findAllById(getIdList(toUpdate, reflectionCache));
         var result = tEmbeddedDataManager.cascadeUpdateCollection(entitiesToUpdate, toUpdate);
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.postUpdate(result, input, tEmbeddedDataManager, dataManager);
+        if(embeddedCollectionApiHooks != null)
+            embeddedCollectionApiHooks.postUpdate(result, toUpdate, input, tEmbeddedDataManager, dataManager);
         return result;
     }
 
@@ -370,6 +372,107 @@ public final class ApiLogic<T> {
     }
 
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
+    Page<TEmbedded> paginatedFreeTextSearchInEmbeddedCollection(
+            T owner,
+            dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
+            String fieldName,
+            DataManager<TEmbedded> tEmbeddedDataManager,
+            E embeddedCollectionApiHooks) {
+        //get collection owner
+        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        owner = temp;
+        if(embeddedCollectionApiHooks != null)
+            embeddedCollectionApiHooks.preFreeTextSearch(owner, input.getSearchTerm(), dataManager, tEmbeddedDataManager);
+
+        Page<TEmbedded> returnValue = new Page<>();
+        validateSortByIfNonNull(tEmbeddedDataManager.getClazz(), input.getSortBy(), reflectionCache);
+
+        String clazzSimpleNamePlural = toPlural(tEmbeddedDataManager.getClazzSimpleName());
+        val searchTerm = input.getSearchTerm();
+        if(searchTerm == null || searchTerm.equals(""))
+            throw new IllegalArgumentException("Illegal attempt to search for " + clazzSimpleNamePlural + " with null or blank string");
+
+        boolean isArchivable = isClazzArchivable(tEmbeddedDataManager.getClazz(), reflectionCache);
+        val isNonArchivedClause = isArchivable ? "AND embedded.isArchived = false " : "";
+        val searchTermClause = buildSearchTermQuery(fieldName);
+        val contentQueryString = String.format(
+                "SELECT embedded FROM %s owner JOIN owner.%s embedded " +
+                    "WHERE owner.%s = :ownerId " +
+                    "%s" +
+                    "%s " +
+                    "ORDER BY embedded.%s",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                isNonArchivedClause,
+                searchTermClause,
+                input.getSortBy()
+        );
+        val countQueryString = String.format(
+                "SELECT COUNT(embedded) FROM %s owner JOIN owner.%s embedded " +
+                        "WHERE owner.%s = :ownerId " +
+                        "%s" +
+                        "%s ",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                isNonArchivedClause,
+                searchTermClause
+        );
+        val ownerId = getId(owner, reflectionCache);
+        val content = dataManager
+                .entityManager()
+                .createQuery(contentQueryString)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .setParameter("ownerId", ownerId)
+                .setFirstResult(input.getPageNumber() * input.getPageSize())
+                .setMaxResults(input.getPageSize())
+                .getResultList();
+        val totalItems =
+                (long)dataManager
+                .entityManager()
+                .createQuery(countQueryString)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        val totalPages = Math.ceil((double) totalItems / input.getPageSize());
+        returnValue.setContent(content);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalItems);
+        if(embeddedCollectionApiHooks != null)
+            embeddedCollectionApiHooks.postFreeTextSearch(returnValue, owner, searchTerm, tEmbeddedDataManager, dataManager);
+        return returnValue;
+    }
+    private final Map<String, String> searchTermQueryCache = new HashMap<>();
+    private String buildSearchTermQuery(String collectionFieldName) {
+        val key = collectionFieldName + "In" + dataManager.getClazzSimpleName() + "FreeTextSearch";
+        if(searchTermQueryCache.containsKey(key)) return searchTermQueryCache.get(key);
+        val searchFieldNames =
+                Arrays.asList(
+                 reflectionCache
+                .getEntitiesCache()
+                .get(dataManager.getClazzSimpleName())
+                .getFields()
+                .get(collectionFieldName)
+                .getField()
+                .getAnnotation(EmbeddedCollectionApi.class)
+                .freeTextSearchFields());
+        if(searchFieldNames.isEmpty()) return "";
+        val result = new StringBuilder();
+        for (int i = 0; i < searchFieldNames.size(); i++) {
+            val fieldName = searchFieldNames.get(i);
+            val prefix = i == 0 ? "AND " : "OR ";
+            val condition = "lower(embedded." + fieldName + ") LIKE lower(concat('%', :searchTerm, '%')) ";
+            result.append(prefix);
+            result.append(condition);
+        }
+        val resultString = result.toString();
+        searchTermQueryCache.put(key, resultString);
+        return resultString;
+    }
+
+    public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
     Page<TEmbedded> getPaginatedBatchInEmbeddedCollection(
             T owner,
             dev.sanda.datafi.dto.PageRequest input,
@@ -385,29 +488,42 @@ public final class ApiLogic<T> {
         Page<TEmbedded> returnValue = new Page<>();
         validateSortByIfNonNull(tEmbeddedDataManager.getClazz(), input.getSortBy(), reflectionCache);
         val isNonArchivedClause = isClazzArchivable(tEmbeddedDataManager.getClazz(), reflectionCache) ?
-                "WHERE embedded.isArchived = false" : "";
-        val contentQueryString = String.format("SELECT embedded FROM %s owner JOIN owner.%s embedded %s ORDER BY %s",
+                "AND embedded.isArchived = false " : " ";
+        val contentQueryString = String.format(
+                "SELECT embedded FROM %s owner " +
+                        "JOIN owner.%s embedded " +
+                        "WHERE owner.%s = :ownerId %s" +
+                        "ORDER BY %s",
                 dataManager.getClazzSimpleName(),
                 fieldName,
+                idFieldName,
                 isNonArchivedClause,
                 input.getSortBy());
+        val countQueryString = String.format(
+                "SELECT COUNT(embedded) FROM %s owner " +
+                        "JOIN owner.%s embedded " +
+                        "WHERE owner.%s = :ownerId %s",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                isNonArchivedClause);
+        Object ownerId = getId(temp, reflectionCache);
         val content = dataManager
                 .entityManager()
                 .createQuery(contentQueryString)
+                .setParameter("ownerId", ownerId)
                 .setFirstResult(input.getPageNumber() * input.getPageSize())
                 .setMaxResults(input.getPageSize())
                 .getResultList();
-        val countQueryString = String.format("SELECT COUNT(embedded) FROM %s owner JOIN owner.%s embedded %s",
-                dataManager.getClazzSimpleName(),
-                fieldName,
-                isNonArchivedClause);
-        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString).getSingleResult();
+        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
         val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
         if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postGetPagintedBatch(returnValue, owner, tEmbeddedDataManager, dataManager);
+            embeddedCollectionApiHooks.postGetPaginatedBatch(returnValue, owner, tEmbeddedDataManager, dataManager);
         return returnValue;
     }
 
@@ -425,7 +541,7 @@ public final class ApiLogic<T> {
         input = temp;
         if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input, tEmbeddedDataManager, dataManager);
         //validate all candidates are pre-existing
-        List<TEmbedded> toAssociateReloaded = tEmbeddedDataManager.findAllById(tEmbeddedDataManager.idList(toAssociate));
+        List<TEmbedded> toAssociateReloaded = tEmbeddedDataManager.findAllById(getIdList(toAssociate, reflectionCache));
         if (toAssociateReloaded.isEmpty() || toAssociateReloaded.size() != toAssociate.size())
             throw new IllegalArgumentException("illegal attempt made to indirectly add new strong entities");
         Collection<TEmbedded> existingCollection = getEmbeddedCollectionFrom(input, toCamelCase(embeddedFieldName));
