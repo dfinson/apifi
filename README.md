@@ -19,6 +19,7 @@
  * [GraphQL Client](#graphql-client)
    + [Overview](#overview-1)
    + [What it looks like](#what-it-looks-like)
+ * [logs](#logs)
  * [Upcoming](#upcoming)
  * [Known issues](#known-issues)
   * [Credit](#credit)
@@ -718,6 +719,9 @@ export default{
 }
 ```
 The file starts off with the `apiUrl` (defaults to `window.location.origin`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.
+
+### Logs
+Virtually everything is logged in real time (not on main thread) using *SL4J*. It's not perfect but it is fairly comprehensive.
 
 ### Upcoming
 1. GraphQL subscriptions.
