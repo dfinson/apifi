@@ -717,7 +717,7 @@ export default{
 
 }
 ```
-The file starts off with the `apiUrl` (defaults to `window.location.origin`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.
+The file starts off with the `apiUrl` (defaults to `${window.location.origin}/graphql`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.
 
 ### Upcoming
 1. GraphQL subscriptions.
