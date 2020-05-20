@@ -1,11 +1,10 @@
-<img align="center" width="100" height="100" src="https://github.com/sanda-dev/apifi/blob/master/readme%20images/Apifi%20logo.png"/>  
-  
+
 # Apifi  
 
 * [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [@WithCRUDEndpoints(...)](-withcrudendpoints--)
+ * [WithCRUDEndpoints(...)](#withcrudendpoints)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
@@ -26,7 +25,7 @@
   * [License](#license)
 
 ## Introduction  
-Apifi is a Java 8+ annotation processing framework which auto generates a GraphQL API for PA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate, *without* compromising on control and customizability.
+Apifi is a Java 8+ annotation processing framework which auto generates a GraphQL API for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.
 
 ### Installation
 ```
@@ -89,79 +88,139 @@ As its name suggests, [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/ma
 Note the `User` entity is annotated with `@WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})`. This is how Apifi can be directed to generate GraphQL API endpoints for an entity. There are 16 types of [CRUDEndpoints](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CRUDEndpoints.java):
 
 1. GET_PAGINATED_BATCH:
+	
 	*Overview:*
+	
 	Fetches a list of instances, one page at a time.
+    
     *Input:*
-	A [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java) consisting of:
-		- `pageNumber` delineating which page to fetch 
-		- `pageSize` delineating the amount of items said page should contain  
-		- `sortBy` parameter delineating which field the items should be ordered by - defaults to the ID if not set 
-		- `sortDirection` parameter delineating whether said order by should be in ascending (ASC) order or descending (DESC) order - defaults to ASC if not set 
-		- `fetchAll` Boolean parameter which can override all of the above and fetch all of the instances within a single page - defaults to `false` if not set.
+    
+	A [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java) consisting of:  
+		- `pageNumber` delineating which page to fetch   
+		- `pageSize` delineating the amount of items said page should contain    
+		- `sortBy` parameter delineating which field the items should be ordered by - defaults to the ID if not set   
+		- `sortDirection` parameter delineating whether said order by should be in ascending (ASC) order or descending (DESC) order - defaults to ASC if not set   
+		- `fetchAll` Boolean parameter which can override all of the above and fetch all of the instances within a single page - defaults to `false` if not set.  
+		
 	*Output:*
+	
 	[`Page<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/Page.java)  consisting of a `List<T>` payload called `content`, as well as a `totalPagesCount` and a `totalItemsCount`.
 
 2. GET_BY_ID: 
+
 	*Overview, input and output:* 
+	
 	What its name implies.
+	
 3. GET_BATCH_BY_IDS:
+
 	*Overview, input and output:* 
+	
 	Same as the previous, pluralized.
+	
 4. CREATE:
+
 	*Overview:* 
+	
 	Creates a single instance and save it to the database
+	
 	*Input:* 
+	
 	A single entity instance.
+	
 	*Output:* 
+	
 	The new instance after having been saved to the database. 
+	
 5. BATCH_CREATE:
+
 	*Overview, input and output:* 
+	
 	Same as previous, pluralized.
 6. UPDATE:
+
 	*Overview:* 
+	
 	Updates a single entity instance. This does not include collections, which can have their own set of endpoints as will be explained.
+	
 	*Input:*
+	
 	 A single, pre-existing entity instance. This instance must include an id, as well as any fields which are to be updated. This method checks for non-null fields in the input, and then overwrites any existing values of the corresponding fields within the existing instance.
+	 
 	*Output:* 
+	
 	The updated instance
+	
 7. BATCH_UPDATE: 
+
 	*Overview, input and output:* 
+	
 	Same as previous, pluralized.
+	
 8. DELETE:
+
 	*Overview:*
+	
 	Deletes a single entity instance.
+	
 	*Input:* 
+	
 	A single entity instance. This must include the ID.
+	
 	*Output:*
+	
 	The deleted instance.
+	
 9. BATCH_DELETE:
+
 	*Overview, input and output:* 
+	
 	Same as previous, pluralized.
-10.  ARCHIVE:
-	*Overview:*
-	Sometimes there is a requirement whereby instances should be archived rather than permanently deleted. In order to enable this for a given entity type, the entity should implement the [`Archivable`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/persistence/Archivable.java) interface. In such a case, the archivability endpoints can be utilized. This particular endpoint archives a single entity instance.
-	*Input:* 
-	A single entity instance. This must include the ID.
-	*Output:*
-	The newly archived instance.
+	
+10.  ARCHIVE:  
+	*Overview:*  
+	Sometimes there is a requirement whereby instances should be archived rather than permanently deleted. In order to enable this for a given entity type, the entity should implement the [`Archivable`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/persistence/Archivable.java) interface. In such a case, the archivability endpoints can be utilized. This particular endpoint archives a single entity instance.  
+	*Input:*   
+	A single entity instance. This must include the ID.  
+	*Output:*  
+	The newly archived instance.  
+	
 11. BATCH_ARCHIVE:
+
 	*Overview, input and output:* 
+	
 	Same as previous, pluralized.
+	
 12. DE_ARCHIVE:
+
 	*Overview, input and output:* 
+	
 	The opposite of ARCHIVE.
+	
 13. BATCH_DE_ARCHIVE: 
+
 	*Overview, input and output:* 
+	
 	Same as previous, pluralized.
+	
 14. GET_ARCHIVED_PAGINATED_BATCH:
+
 	*Overview, input and output:*
+	
 	This endpoint functions in precisely the same way as GET_PAGINATED_BATCH, the difference being that this endpoint will only return archived instances.
+	
 15. GET_TOTAL_COUNT:
+
 	*Overview, input and output:* 
+	
 	Gets the total count of all existing instances. Requires no input.
+	
 16. GET_TOTAL_ARCHIVED_COUNT:
+
 	*Overview, input and output:* 
+	
 	Same as previous, for archived instances.
+	
 
 ### Customization
 Oftentimes there is a need for additional business logic on CRUD endpoints. This is where the [`ApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) interface comes into play. It contains methods which are "hooked" or called at the appropriate times during the API endpoint request handling life cycle. For example; the `preCreate(...)` method is called prior to a new entity instance having been passed to the CREATE endpoint being saved to the database, and the `postCreate(...)` method is called immediately after the instance has been saved.  The same goes for any and all other phases of all the other options. As a rule, the hooked methods get passed the state which is relevant to the life cycle phase in which they are called, as well as a [`DataManager<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java) bean instance for the entity.
