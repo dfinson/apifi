@@ -25,7 +25,7 @@
   * [License](#license)
 
 ## Introduction  
-Apifi is a Java 8+ annotation processing framework which auto generates a GraphQL API for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.
+Apifi is a Java 8+ annotation processing framework which auto generates a GraphQL APIs for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.
 
 ### Installation
 ```
