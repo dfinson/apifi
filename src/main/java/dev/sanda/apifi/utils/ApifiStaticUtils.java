@@ -1,8 +1,12 @@
 package dev.sanda.apifi.utils;
 
 import com.squareup.javapoet.*;
+import dev.sanda.apifi.annotations.ElementCollectionApi;
 import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
+import dev.sanda.apifi.annotations.MapElementCollectionApi;
+import dev.sanda.apifi.service.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.NullElementCollectionApiHooks;
 import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.dto.PageRequest;
@@ -170,6 +174,19 @@ public abstract class ApifiStaticUtils {
         return builder.build();
     }
 
+    @SafeVarargs
+    public static <A extends Annotation> ParameterSpec keySetAsParamList(VariableElement map, Class<A>... annotations) {
+        ClassName list = ClassName.get("java.util", "List");
+        val mapKeyType = ClassName.bestGuess(getMapKeyType(map));//TODO - validate
+        var builder = ParameterSpec.builder(ParameterizedTypeName.get(list, mapKeyType), "input");
+        if (annotations.length > 0) {
+            for (Class<A> annotation : annotations) {
+                builder.addAnnotation(annotation);
+            }
+        }
+        return builder.build();
+    }
+
     public static boolean isAssignableFrom(ProcessingEnvironment processingEnv, TypeElement typeElement, String targetTypeName){ Elements elementUtil;
         TypeMirror targetType = getTargetType(processingEnv, targetTypeName);
         return processingEnv.getTypeUtils().isAssignable(typeElement.asType(), targetType);
@@ -210,7 +227,41 @@ public abstract class ApifiStaticUtils {
         return !apiHooks.toString().equals(NullEmbeddedCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + EmbeddedCollectionApiHooks.class.getSimpleName() : "null";
     }
 
+    public static String elementCollectionApiHooksName(VariableElement embedded) {
+        val config = embedded.getAnnotation(ElementCollectionApi.class);
+        if(config == null) return "null";
+        val apiHooks = getApiHooksTypeName(config);
+        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + ElementCollectionApiHooks.class.getSimpleName() : "null";
+    }
+
+    public static String mapElementCollectionApiHooksName(VariableElement embedded) {
+        val config = embedded.getAnnotation(MapElementCollectionApi.class);
+        if(config == null) return "null";
+        val apiHooks = getApiHooksTypeName(config);
+        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + ElementCollectionApiHooks.class.getSimpleName() : "null";
+    }
+
     public static TypeName getApiHooksTypeName(EmbeddedCollectionApi embeddedCollectionApi) {
+        TypeName apiHooksType = null;
+        try {
+            embeddedCollectionApi.apiHooks();
+        } catch (MirroredTypeException mte) {
+            apiHooksType = TypeName.get(mte.getTypeMirror());
+        }
+        return apiHooksType;
+    }
+
+    public static TypeName getApiHooksTypeName(ElementCollectionApi embeddedCollectionApi) {
+        TypeName apiHooksType = null;
+        try {
+            embeddedCollectionApi.apiHooks();
+        } catch (MirroredTypeException mte) {
+            apiHooksType = TypeName.get(mte.getTypeMirror());
+        }
+        return apiHooksType;
+    }
+
+    public static TypeName getApiHooksTypeName(MapElementCollectionApi embeddedCollectionApi) {
         TypeName apiHooksType = null;
         try {
             embeddedCollectionApi.apiHooks();
@@ -239,6 +290,14 @@ public abstract class ApifiStaticUtils {
                 .toString()
                 .replaceAll("^.+<", "")
                 .replaceAll(">", "");
+    }
+
+    public static String getMapKeyType(VariableElement element){
+        return element
+                .asType()
+                .toString()
+                .replaceAll("^.+<", "")
+                .replaceAll(",.+", "");
     }
 
     public static boolean isIterable(TypeMirror typeMirror, ProcessingEnvironment processingEnv){

@@ -3,6 +3,7 @@ package dev.sanda.apifi.generator.entity;
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.client.GraphQLQueryBuilder;
+import dev.sanda.apifi.service.NullElementCollectionApiHooks;
 import dev.sanda.apifi.utils.ApifiStaticUtils;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
@@ -31,6 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
+import javax.persistence.ElementCollection;
 import javax.tools.Diagnostic;
 import javax.transaction.Transactional;
 import java.util.*;
@@ -38,6 +40,8 @@ import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.generator.client.GraphQLQueryType.MUTATION;
 import static dev.sanda.apifi.generator.client.GraphQLQueryType.QUERY;
+import static dev.sanda.apifi.generator.entity.ElementCollectionEndpointType.ADD;
+import static dev.sanda.apifi.generator.entity.ElementCollectionEndpointType.REMOVE;
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.generator.entity.CollectionEndpointType.*;
@@ -58,7 +62,6 @@ public class EntityApiGenerator {
         private Map<String, TypeElement> entitiesMap;
         private Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap;
         private ApifiClientFactory clientFactory;
-
         public GraphQLApiBuilder(TypeElement entity, Map<String, TypeElement> entitiesMap){
             this.entity = entity;
             this.entitiesMap = entitiesMap;
@@ -69,7 +72,6 @@ public class EntityApiGenerator {
                     .map(elem -> (VariableElement)elem)
                     .collect(Collectors.toList());
         }
-
         public GraphQLApiBuilder setCrudResolvers(List<CRUDEndpoints> crudResolvers) {
             this.crudResolvers = crudResolvers.stream().collect(Collectors.toMap(cr -> cr, cr -> true));
             return this;
@@ -302,6 +304,33 @@ public class EntityApiGenerator {
                 }
             });
 
+            //generate element collection endpoints
+            fields.stream().filter(f -> f.getAnnotation(ElementCollection.class) != null).collect(Collectors.toList())
+            .forEach(elemCollection -> {
+                val config = elemCollection.getAnnotation(ElementCollectionApi.class);
+                val endpoints = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<ElementCollectionEndpointType>();
+                if(endpoints.contains(ADD)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder();
+                    serviceBuilder.addMethod(genAddToElementCollection(elemCollection, clientQueryBuilder));
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                if(endpoints.contains(REMOVE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder();
+                    serviceBuilder.addMethod(genRemoveFromElementCollection(elemCollection, clientQueryBuilder));
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                if(endpoints.contains(ElementCollectionEndpointType.PAGINATED_BATCH)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder();
+                    serviceBuilder.addMethod(genGetPaginatedBatchInElementCollection(elemCollection, clientQueryBuilder));
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                if(endpoints.contains(ElementCollectionEndpointType.PAGINATED_FREE_TEXT_SEARCH)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder();
+                    serviceBuilder.addMethod(genFreeTextSearchInElementCollection(elemCollection, clientQueryBuilder));
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+            });
+
             //generate api free text search endpoints
             val hasFreeTextSearchFields = fields
                     .stream()
@@ -327,7 +356,6 @@ public class EntityApiGenerator {
             val freeTextSearchByFields = variableElement.getEnclosingElement().getAnnotation(WithApiFreeTextSearchByFields.class);
             return freeTextSearchByFields != null && containsFieldName(freeTextSearchByFields, variableElement);
         }
-
         private FieldSpec defaultDataManager() {
             return FieldSpec
                     .builder(ParameterizedTypeName.get(ClassName.get(DataManager.class), ClassName.get(entity)), "dataManager")
@@ -335,7 +363,6 @@ public class EntityApiGenerator {
                     .addModifiers(PRIVATE)
                     .build();
         }
-
         private MethodSpec postConstructInitTestLogic() {
             return MethodSpec.methodBuilder("postConstructInit")
                     .addAnnotation(PostConstruct.class)
@@ -350,7 +377,6 @@ public class EntityApiGenerator {
                     .addStatement("testLogic.setClazzSimpleName($T.class.getSimpleName())", ClassName.get(entity))
                     .build();
         }
-
         private MethodSpec postConstructInitApiLogic() {
             return MethodSpec.methodBuilder("postConstructInit")
                     .addAnnotation(PostConstruct.class)
@@ -360,7 +386,6 @@ public class EntityApiGenerator {
                     .addStatement("apiLogic.setDataManager(dataManager)")
                     .build();
         }
-
         private void handleTargetMethodsMapping(WithMethodLevelSecurity security, Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap) {
             val targetMethods = security.targets();
             val securityAnnotations = SecurityAnnotationsFactory.of(security);
@@ -383,7 +408,6 @@ public class EntityApiGenerator {
         }
 
         //method specs
-
         private MethodSpec genGetPaginatedBatch(GraphQLQueryBuilder clientQueryBuilder) {
             final String name = pluralCamelCaseName(entity);
             var builder = MethodSpec.methodBuilder(name)
@@ -402,7 +426,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private MethodSpec genGetTotalNonArchivedCount(GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "countTotal" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(queryName)
@@ -417,7 +440,6 @@ public class EntityApiGenerator {
             clientQueryBuilder.setPrimitiveReturnType(true);
             return builder.build();
         }
-
         private MethodSpec genGetTotalArchivedCount(GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "countTotalArchived" + toPlural(pascalCaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(queryName)
@@ -432,7 +454,6 @@ public class EntityApiGenerator {
             clientQueryBuilder.setPrimitiveReturnType(true);
             return builder.build();
         }
-
         private MethodSpec genGetById(ProcessingEnvironment processingEnv, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "get" + pascalCaseNameOf(entity) + "ById";
             final ClassName idType = getIdType(entity, processingEnv);
@@ -451,7 +472,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private MethodSpec genGetBatchByIds(ProcessingEnvironment processingEnv, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = "get" + toPlural(pascalCaseNameOf(entity)) + "ById";
             final ClassName idType = getIdType(entity, processingEnv);
@@ -658,7 +678,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private MethodSpec genFreeTextSearchBy(GraphQLQueryBuilder clientQueryBuilder) {
             final String name = camelcaseNameOf(entity) + "FreeTextSearch";
             var builder = MethodSpec
@@ -677,6 +696,218 @@ public class EntityApiGenerator {
             clientQueryBuilder.setQueryName(name);
             clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
                 put("input", "FreeTextSearchPageRequestInput");
+            }});
+            return builder.build();
+        }
+        private MethodSpec genFreeTextSearchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(ElementCollectionApi.class);
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(ParameterSpec.builder(ClassName.get(FreeTextSearchPageRequest.class), "input").build())
+                    .addStatement(
+                            "return apiLogic.getFreeTextSearchPaginatedBatchInElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    elementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(pageType(elemCollection));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "FreeTextSearch"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "FreeTextSearch"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", "FreeTextSearchPageRequestInput");
+            }});
+            return builder.build();
+        }
+        private MethodSpec genGetPaginatedBatchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val queryName = pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(ElementCollectionApi.class);
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
+                    .addStatement(
+                            "return apiLogic.getPaginatedBatchInElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    elementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(pageType(elemCollection));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "GetPaginated"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "GetPaginated"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", "PageRequestInput");
+            }});
+            return builder.build();
+        }
+        private MethodSpec genRemoveFromElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val mutationName = "remove" + pascalCaseNameOf(elemCollection) + "From" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(ElementCollectionApi.class);
+            val collectionTypeName = collectionTypeName(elemCollection);
+            var builder = MethodSpec.methodBuilder(mutationName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlMutationAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(asParamList(collectionTypeName))
+                    .addStatement(
+                            "return apiLogic.removeFromElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    elementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(listOf(collectionTypeName));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "Remove"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "Remove"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
+            return builder.build();
+        }
+        private MethodSpec genAddToElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val mutationName = "add" + pascalCaseNameOf(elemCollection) + "To" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(ElementCollectionApi.class);
+            val collectionTypeName = collectionTypeName(elemCollection);
+            var builder = MethodSpec.methodBuilder(mutationName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlMutationAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(asParamList(collectionTypeName))
+                    .addStatement(
+                            "return apiLogic.addToElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    elementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(listOf(collectionTypeName));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "Add"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "Add"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
+            return builder.build();
+        }
+        private MethodSpec genFreeTextSearchInMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(ParameterSpec.builder(ClassName.get(FreeTextSearchPageRequest.class), "input").build())
+                    .addStatement(
+                            "return apiLogic.getFreeTextSearchPaginatedBatchInMapElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    mapElementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(pageType(elemCollection));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "FreeTextSearch"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "FreeTextSearch"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", "FreeTextSearchPageRequestInput");
+            }});
+            return builder.build();
+        }
+        private MethodSpec genGetPaginatedBatchInMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val queryName = pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
+            var builder = MethodSpec.methodBuilder(queryName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlQueryAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(ParameterSpec.builder(ClassName.get(PageRequest.class), "input").build())
+                    .addStatement(
+                            "return apiLogic.getPaginatedBatchInMapElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    mapElementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(pageType(elemCollection));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "GetPaginated"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "GetPaginated"));
+            clientQueryBuilder.setQueryType(QUERY);
+            clientQueryBuilder.setQueryName(queryName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", "PageRequestInput");
+            }});
+            return builder.build();
+        }
+        private MethodSpec genRemoveFromMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val mutationName = "remove" + pascalCaseNameOf(elemCollection) + "From" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
+            val collectionTypeName = collectionTypeName(elemCollection);
+            var builder = MethodSpec.methodBuilder(mutationName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlMutationAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(asParamList(collectionTypeName))//TODO - validate
+                    .addStatement(
+                            "return apiLogic.removeFromMapElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    mapElementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(listOf(collectionTypeName));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "Remove"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "Remove"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
+            }});
+            return builder.build();
+        }
+        private MethodSpec genAddToMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+            val mutationName = "add" + pascalCaseNameOf(elemCollection) + "To" + pascalCaseNameOf(entity);
+            val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
+            val collectionTypeName = collectionTypeName(elemCollection);
+            var builder = MethodSpec.methodBuilder(mutationName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(graphqlMutationAnnotation())
+                    .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
+                    .addParameter(asParamList(collectionTypeName))
+                    .addStatement(
+                            "return apiLogic.addToMapElementCollection(" +
+                                    "owner, $S, input, $L" +
+                                    ")",
+                            camelcaseNameOf(elemCollection),
+                            isCustomElementCollectionApiHooks(config) ?
+                                    elementCollectionApiHooksName(elemCollection) : "null")
+                    .returns(listOf(collectionTypeName));
+            if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "Put"))
+                builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "Put"));
+            clientQueryBuilder.setQueryType(MUTATION);
+            clientQueryBuilder.setQueryName(mutationName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("owner", entity.getSimpleName() + "Input");
+                put("input", inBrackets(collectionTypeSimpleName(collectionTypeName) + "Input"));
             }});
             return builder.build();
         }
@@ -747,12 +978,10 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private String collectionTypeSimpleName(TypeName collectionTypeName) {
             final String name = collectionTypeName.toString();
             return name.substring(name.lastIndexOf(".") + 1);
         }
-
         private MethodSpec genRemoveFromEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String mutationName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
@@ -778,7 +1007,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private MethodSpec genGetPaginatedFreeTextSearchInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "FreeTextSearch";
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
@@ -805,7 +1033,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private MethodSpec genGetPaginatedBatchInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
@@ -832,8 +1059,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
-
         private MethodSpec genUpdateInEmbeddedCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
             val mutationName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EmbeddedCollectionApi.class);
@@ -859,7 +1084,6 @@ public class EntityApiGenerator {
             }});
             return builder.build();
         }
-
         private List<MethodSpec> toApiFindByEndpoints(VariableElement field, ApifiClientFactory clientFactory) {
 
             var methodsToAdd = new ArrayList<MethodSpec>();
@@ -932,11 +1156,9 @@ public class EntityApiGenerator {
             }
             return methodsToAdd;
         }
-
         private String getInputTypeSimpleName(String simpleName, String packageName) {
             return isPrimitive(packageName) ? resolveSimpleTypeName(simpleName) + "!" : simpleName + "Input";
         }
-
         private String resolveSimpleTypeName(String simpleName) {
             val n = simpleName.toLowerCase();
             if(n.equals("long") || n.equals("integer") || n.equals("int") || n.equals("short") || n.equals("byte"))
@@ -948,7 +1170,6 @@ public class EntityApiGenerator {
         }
 
         //test method specs
-
         private MethodSpec genGetEmbeddedTest(VariableElement embedded) {
             String testName = "get" + pascalCaseNameOf(embedded) + "From" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
@@ -1128,6 +1349,7 @@ public class EntityApiGenerator {
                     .returns(void.class)
                     .build();
         }
+
         //field spec helpers
         private FieldSpec dataManager(TypeElement entity, String namePrefix) {
             String suffix = namePrefix.endsWith("DataManager") ? "" : "DataManager";
@@ -1137,7 +1359,6 @@ public class EntityApiGenerator {
                     .addAnnotation(Autowired.class)
                     .build();
         }
-
         private FieldSpec defaultApiHooks(){
             return FieldSpec
                     .builder(ParameterizedTypeName.get(ClassName.get(ApiHooks.class), ClassName.get(entity)), "apiHooks")
@@ -1147,21 +1368,18 @@ public class EntityApiGenerator {
                     .addModifiers(PRIVATE)
                     .build();
         }
-
         private FieldSpec apiLogic() {
             return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(ApiLogic.class), ClassName.get(entity)), "apiLogic")
                     .addAnnotation(Autowired.class)
                     .addModifiers(PRIVATE)
                     .build();
         }
-
         private FieldSpec testLogic() {
             return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(TestLogic.class), ClassName.get(entity)), "testLogic")
                     .addAnnotation(Autowired.class)
                     .addModifiers(PRIVATE)
                     .build();
         }
-
         public FieldSpec embeddedCollectionApiHooks(VariableElement fk) {
             TypeName apiHooksType = null;
             val embeddedCollectionApi = fk.getAnnotation(EmbeddedCollectionApi.class);
@@ -1179,7 +1397,6 @@ public class EntityApiGenerator {
         }
 
         //misc util methods
-
         private boolean isGraphQLIgnored(VariableElement fk) {
             val getter =
                     entity
@@ -1193,14 +1410,12 @@ public class EntityApiGenerator {
             if(getter == null) return fk.getAnnotation(GraphQLIgnore.class) != null;
             return getter.getAnnotation(GraphQLIgnore.class) != null;
         }
-
         private void addApiHooksIfPresent(VariableElement embedded, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder, EmbeddedCollectionApi embeddedCollectionApi) {
             if(!isCustomEmbeddedCollectionApiHooks(embeddedCollectionApi)) return;
             final FieldSpec apiHooks = embeddedCollectionApiHooks(embedded);
             serviceBuilder.addField(apiHooks);
             testBuilder.addField(apiHooks);
         }
-
         private boolean isApiFindByAnnotated(VariableElement variableElement) {
             return
                     variableElement.getAnnotation(ApiFindBy.class) != null ||
@@ -1213,7 +1428,18 @@ public class EntityApiGenerator {
                     .toString()
                     .equals(NullEmbeddedCollectionApiHooks.class.getCanonicalName());
         }
-
+        private boolean isCustomElementCollectionApiHooks(ElementCollectionApi config) {
+            if(config == null) return false;
+            return !getApiHooksTypeName(config)
+                    .toString()
+                    .equals(NullElementCollectionApiHooks.class.getCanonicalName());
+        }
+        private boolean isCustomElementCollectionApiHooks(MapElementCollectionApi config) {
+            if(config == null) return false;
+            return !getApiHooksTypeName(config)
+                    .toString()
+                    .equals(NullElementCollectionApiHooks.class.getCanonicalName());
+        }
         private boolean containsFieldName(WithApiFreeTextSearchByFields freeTextSearchByFields, VariableElement variableElement) {
             for (int i = 0; i < freeTextSearchByFields.value().length; i++) {
                 if(freeTextSearchByFields.value()[i].equals(variableElement.getSimpleName().toString()))
@@ -1221,15 +1447,12 @@ public class EntityApiGenerator {
             }
             return false;
         }
-
         private AnnotationSpec graphqlQueryAnnotation(){
             return AnnotationSpec.builder(GraphQLQuery.class).build();
         }
-
         private AnnotationSpec graphqlMutationAnnotation(){
             return AnnotationSpec.builder(GraphQLMutation.class).build();
         }
-
         private CodeBlock initSortByIfNull(TypeElement entityType){
             return CodeBlock.builder()
                     .beginControlFlow("if(input.getSortBy() == null)")

@@ -62,7 +62,10 @@ public class ApiFreeTextSearchByImpl {
                 .getResultList();
 
         val countQueryString = countQueryOf(dataManager.getClazz(), dataManager.getClazzSimpleName(), isClazzArchivable);
-        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString).getSingleResult();
+        val totalRecords = (long)dataManager.entityManager()
+                .createQuery(countQueryString)
+                .setParameter("searchTerm", request.getSearchTerm())
+                .getSingleResult();
         val totalPages = Math.ceil((double) totalRecords / request.getPageSize());
         val returnValue = new dev.sanda.datafi.dto.Page<T>();
 

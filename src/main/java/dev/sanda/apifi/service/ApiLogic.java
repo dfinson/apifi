@@ -7,6 +7,7 @@ import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.val;
 import lombok.var;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.ElementCollection;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -303,12 +306,26 @@ public final class ApiLogic<T> {
             DataManager<TEmbedded> tEmbeddedDataManager) {
         List<Object> ids = new ArrayList<>();
         input.forEach(t -> {
-            final TEmbedded embeddedReference = (TEmbedded) reflectionCache
-                    .getEntitiesCache().get(t.getClass().getSimpleName())
-                    .invokeGetter(t, fieldName);
-            ids.add(getId(embeddedReference, reflectionCache));
+            final TEmbedded embeddedReference;
+            try {
+                embeddedReference = (TEmbedded) getField(fieldName, t)
+                        .get(t);
+                ids.add(getId(embeddedReference, reflectionCache));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
         });
         return tEmbeddedDataManager.findAllById(ids);
+    }
+
+    @NonNull
+    private Field getField(String fieldName, T t) {
+        return reflectionCache
+                .getEntitiesCache()
+                .get(t.getClass().getSimpleName())
+                .getFields()
+                .get(fieldName)
+                .getField();
     }
 
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
@@ -339,6 +356,306 @@ public final class ApiLogic<T> {
         return result;
     }
 
+    public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection>
+    addToElementCollection(T input, String fieldName, List<TCollection> toAdd, E elementCollectionApiHooks){
+        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        input = temp;
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.preAdd(toAdd, input, dataManager);
+
+        val cachedElementCollectionField = reflectionCache
+                .getEntitiesCache()
+                .get(dataManager.getClazzSimpleName())
+                .getElementCollections()
+                .get(fieldName);
+
+        if(cachedElementCollectionField == null)
+            throw new RuntimeException(String.format("No element collection \"%s\" found in type \"%s\"",
+                    fieldName, dataManager.getClazzSimpleName()));
+
+        cachedElementCollectionField.addAll(input, toAdd);
+
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.postAdd(toAdd, input, dataManager);
+        return toAdd;
+    }
+
+    public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection>
+    removeFromElementCollection(T input, String fieldName, List<TCollection> toRemove, E elementCollectionApiHooks){
+        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        input = temp;
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.preRemove(toRemove, input, dataManager);
+
+        val cachedElementCollectionField = reflectionCache
+                .getEntitiesCache()
+                .get(dataManager.getClazzSimpleName())
+                .getElementCollections()
+                .get(fieldName);
+
+        if(cachedElementCollectionField == null)
+            throw new RuntimeException(String.format("No element collection \"%s\" found in type \"%s\"",
+                    fieldName, dataManager.getClazzSimpleName()));
+
+        cachedElementCollectionField.removeAll(input, toRemove);
+
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.postRemove(toRemove, input, dataManager);
+        return toRemove;
+    }
+
+    public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>>
+    Page<TCollection> getPaginatedBatchInElementCollection(
+            T owner,
+            dev.sanda.datafi.dto.PageRequest input,
+            String fieldName,
+            E elementCollectionApiHooks) {
+        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        owner = temp;
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.preGetPaginatedBatch(owner, dataManager);
+        Page<TCollection> returnValue = new Page<>();
+        val contentQueryString = String.format(
+                "SELECT collection FROM %s owner " +
+                        "JOIN owner.%s collection " +
+                        "WHERE owner.%s = :ownerId",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName);
+        val countQueryString = String.format(
+                "SELECT COUNT(collection) FROM %s owner " +
+                        "JOIN owner.%s collection " +
+                        "WHERE owner.%s = :ownerId",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName);
+        Object ownerId = getId(temp, reflectionCache);
+        val content = dataManager
+                .entityManager()
+                .createQuery(contentQueryString)
+                .setParameter("ownerId", ownerId)
+                .setFirstResult(input.getPageNumber() * input.getPageSize())
+                .setMaxResults(input.getPageSize())
+                .getResultList();
+        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
+        returnValue.setContent(content);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalRecords);
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.postGetPaginatedBatch(returnValue, owner, dataManager);
+        return returnValue;
+    }
+
+    public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>>
+    Page<TCollection> getFreeTextSearchPaginatedBatchInElementCollection(
+            T owner,
+            dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
+            String fieldName,
+            E elementCollectionApiHooks) {
+        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        owner = temp;
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.preFreeTextSearch(owner, dataManager);
+        Page<TCollection> returnValue = new Page<>();
+        val contentQueryString = String.format(
+                "SELECT collection FROM %s owner " +
+                        "JOIN owner.%s collection " +
+                        "WHERE owner.%s = :ownerId AND " +
+                        "LOWER(collection) LIKE LOWER(CONCAT('%%', :searchTerm, '%%')) " +
+                        "ORDER BY collection %s",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                input.getSortDirection());
+        val countQueryString = String.format(
+                "SELECT COUNT(collection) FROM %s owner " +
+                        "JOIN owner.%s collection " +
+                        "WHERE owner.%s = :ownerId AND " +
+                        "LOWER(collection) LIKE LOWER(CONCAT('%%', :searchTerm, '%%'))",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName);
+        Object ownerId = getId(temp, reflectionCache);
+        val content = dataManager
+                .entityManager()
+                .createQuery(contentQueryString)
+                .setParameter("ownerId", ownerId)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .setFirstResult(input.getPageNumber() * input.getPageSize())
+                .setMaxResults(input.getPageSize())
+                .getResultList();
+        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
+                .setParameter("ownerId", ownerId)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .getSingleResult();
+        val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
+        returnValue.setContent(content);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalRecords);
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.postFreeTextSearch(returnValue, owner, dataManager);
+        return returnValue;
+    }
+
+    public  <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>>
+    Map<TMapKey, TMapValue>
+    addToMapElementCollection(T input, String fieldName, Map<TMapKey, TMapValue> toPut, E apiHooks){
+        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        input = temp;
+        if(apiHooks != null)
+            apiHooks.prePut(toPut, input, dataManager);
+
+        val cachedElementCollectionField = reflectionCache
+                .getEntitiesCache()
+                .get(dataManager.getClazzSimpleName())
+                .getMapElementCollections()
+                .get(fieldName);
+
+        if(cachedElementCollectionField == null)
+            throw new RuntimeException(String.format("No map element collection \"%s\" found in type \"%s\"",
+                    fieldName, dataManager.getClazzSimpleName()));
+
+        cachedElementCollectionField.putAll(input, toPut);
+
+        if(apiHooks != null)
+            apiHooks.postAdd(toPut, input, dataManager);
+        dataManager.save(input);
+        return toPut;
+    }
+
+    public  <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>>
+    Map<TMapKey, TMapValue>
+    removeFromMapElementCollection(T input, String fieldName, List<TMapKey> toRemove, E elementCollectionApiHooks){
+        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        input = temp;
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.preRemove(toRemove, input, dataManager);
+
+        val cachedElementCollectionField = reflectionCache
+                .getEntitiesCache()
+                .get(dataManager.getClazzSimpleName())
+                .getMapElementCollections()
+                .get(fieldName);
+
+        if(cachedElementCollectionField == null)
+            throw new RuntimeException(String.format("No map element collection \"%s\" found in type \"%s\"",
+                    fieldName, dataManager.getClazzSimpleName()));
+        Map<TMapKey, TMapValue> removed = cachedElementCollectionField.getAllByKey(input, toRemove);
+        cachedElementCollectionField.removeAll(input, toRemove);
+        if(elementCollectionApiHooks != null)
+            elementCollectionApiHooks.postRemove(removed, input, dataManager);
+        dataManager.save(input);
+        return removed;
+    }
+
+    public  <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>>
+    Page<Map.Entry<TMapKey, TMapValue>> getPaginatedBatchInMapElementCollection(
+            T owner,
+            dev.sanda.datafi.dto.PageRequest input,
+            String fieldName,
+            E apiHooks) {
+        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        owner = temp;
+        if(apiHooks != null)
+            apiHooks.preGetPaginatedBatch(owner, dataManager);
+        Page<Map.Entry<TMapKey, TMapValue>> returnValue = new Page<>();
+        val contentQueryString = String.format(
+                "SELECT map FROM %s owner " +
+                    "JOIN owner.%s map " +
+                    "WHERE owner.%s = :ownerId " +
+                    "ORDER BY VALUE(map) %s",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                input.getSortDirection());
+        val countQueryString = String.format(
+                "SELECT COUNT(map) FROM %s owner " +
+                    "JOIN owner.%s map " +
+                    "WHERE owner.%s = :ownerId",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName);
+        Object ownerId = getId(temp, reflectionCache);
+        val content = dataManager
+                .entityManager()
+                .createQuery(contentQueryString)
+                .setParameter("ownerId", ownerId)
+                .setFirstResult(input.getPageNumber() * input.getPageSize())
+                .setMaxResults(input.getPageSize())
+                .getResultList();
+        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
+        returnValue.setContent(content);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalRecords);
+        if(apiHooks != null)
+            apiHooks.postGetPaginatedBatch(returnValue, owner, dataManager);
+        return returnValue;
+    }
+
+    public  <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>>
+    Page<Map.Entry<TMapKey, TMapValue>> getFreeTextSearchPaginatedBatchInMapElementCollection(
+            T owner,
+            dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
+            String fieldName,
+            E apiHooks) {
+        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (temp == null) throw_entityNotFound(input, reflectionCache);
+        owner = temp;
+        if(apiHooks != null)
+            apiHooks.preFreeTextSearch(owner, dataManager);
+        Page<Map.Entry<TMapKey, TMapValue>> returnValue = new Page<>();
+        val contentQueryString = String.format(
+                "SELECT map FROM %s owner " +
+                        "JOIN owner.%s map " +
+                        "WHERE owner.%s = :ownerId AND " +
+                        "LOWER(KEY(map)) LIKE LOWER(CONCAT('%%', :searchTerm, '%%')) " +
+                        "ORDER BY VALUE(map) %s",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName,
+                input.getSortDirection());
+        val countQueryString = String.format(
+                "SELECT COUNT(map) FROM %s owner " +
+                        "JOIN owner.%s map " +
+                        "WHERE owner.%s = :ownerId AND " +
+                        "LOWER(KEY(map)) LIKE LOWER(CONCAT('%%', :searchTerm, '%%'))",
+                dataManager.getClazzSimpleName(),
+                fieldName,
+                idFieldName);
+        Object ownerId = getId(temp, reflectionCache);
+        val content = dataManager
+                .entityManager()
+                .createQuery(contentQueryString)
+                .setParameter("ownerId", ownerId)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .setFirstResult(input.getPageNumber() * input.getPageSize())
+                .setMaxResults(input.getPageSize())
+                .getResultList();
+        val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
+                .setParameter("ownerId", ownerId)
+                .setParameter("searchTerm", input.getSearchTerm())
+                .getSingleResult();
+        val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
+        returnValue.setContent(content);
+        returnValue.setTotalPagesCount((long) totalPages);
+        returnValue.setTotalItemsCount(totalRecords);
+        if(apiHooks != null)
+            apiHooks.postFreeTextSearch(returnValue, owner, dataManager);
+        return returnValue;
+    }
 
     public  <TEmbedded, E extends EmbeddedCollectionApiHooks<TEmbedded, T>>
     List<TEmbedded> associateWithEmbeddedCollection(
@@ -357,8 +674,17 @@ public final class ApiLogic<T> {
         existingCollection.addAll(toAssociate);
 
         //save owner
-        reflectionCache.getEntitiesCache().get(input.getClass().getSimpleName())
-                .invokeSetter(input, fieldName, existingCollection);
+        try {
+            reflectionCache
+                    .getEntitiesCache()
+                    .get(input.getClass().getSimpleName())
+                    .getFields()
+                    .get(fieldName)
+                    .getField()
+                    .set(input, existingCollection);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         final T t = input;
 
         Collection<TEmbedded> added =
@@ -547,8 +873,18 @@ public final class ApiLogic<T> {
         Collection<TEmbedded> existingCollection = getEmbeddedCollectionFrom(input, toCamelCase(embeddedFieldName));
         existingCollection.addAll(toAssociate);
         //update & save owner
-        reflectionCache.getEntitiesCache().get(input.getClass().getSimpleName())
-                .invokeSetter(input, toCamelCase(embeddedFieldName), existingCollection);
+        try {
+            reflectionCache
+                    .getEntitiesCache()
+                    .get(input.getClass().getSimpleName())
+                    .getFields()
+                    .get(embeddedFieldName)
+                    .getField()
+                    .set(input, existingCollection);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
         final T hasTs = input;
         T updatedInputEntity = dataManager.saveAndFlush(hasTs);
         Collection<TEmbedded> newlyAssociated = getEmbeddedCollectionFrom(
@@ -603,12 +939,19 @@ public final class ApiLogic<T> {
     }
 
     public <TEmbedded> Collection<TEmbedded> getEmbeddedCollectionFrom(T input, String fieldName) {
-        return (Collection<TEmbedded>)
-                reflectionCache
-                        .getEntitiesCache()
-                        .get(input.getClass()
-                                .getSimpleName())
-                        .invokeGetter(input, fieldName);
+        try {
+            return (Collection<TEmbedded>)
+                    reflectionCache
+                            .getEntitiesCache()
+                            .get(input.getClass().getSimpleName())
+                            .getFields()
+                            .get(fieldName)
+                            .getField()
+                            .get(input);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private final static Logger log = LoggerFactory.getLogger(ApiLogic.class);

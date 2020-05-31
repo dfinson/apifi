@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="" />
+    <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/MapElementCollectionApi.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/MapElementCollectionEndpointType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ElementCollectionApiHooks.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/MapElementCollectionApiHooks.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/NullElementCollectionApiHooks.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/NullMapElementCollectionApiHooks.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiFreeTextSearchByImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiFreeTextSearchByImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,9 +31,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Enum" />
         <option value="Interface" />
         <option value="AnnotationType" />
+        <option value="Enum" />
         <option value="Class" />
       </list>
     </option>
@@ -65,6 +82,7 @@
       <recent name="org.sindaryn.apifi.annotations" />
     </key>
     <key name="CreateClassDialog.RecentsKey">
+      <recent name="dev.sanda.apifi.service" />
       <recent name="dev.sanda.apifi.annotations" />
       <recent name="dev.sanda.apifi.generator.api_builder" />
     </key>
@@ -162,6 +180,14 @@
       <workItem from="1589909010971" duration="694000" />
       <workItem from="1589915625579" duration="682000" />
       <workItem from="1589983512795" duration="2889000" />
+      <workItem from="1590046740938" duration="3588000" />
+      <workItem from="1590307321369" duration="10231000" />
+      <workItem from="1590344457199" duration="1927000" />
+      <workItem from="1590404597283" duration="1181000" />
+      <workItem from="1590409705343" duration="942000" />
+      <workItem from="1590426345052" duration="214000" />
+      <workItem from="1590565747034" duration="2522000" />
+      <workItem from="1590918153785" duration="1371000" />
     </task>
     <servers />
   </component>
@@ -192,6 +218,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="524" y="108" width="374" height="577" key="#com.intellij.ide.util.MemberChooser/67.27.1299.741@67.27.1299.741" timestamp="1589659501720" />
+    <state x="444" y="174" width="524" height="444" key="#com.intellij.ide.util.PackageChooserDialog" timestamp="1590318187165">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="444" y="174" width="524" height="444" key="#com.intellij.ide.util.PackageChooserDialog/67.27.1299.741@67.27.1299.741" timestamp="1590318187165" />
     <state x="399" y="124" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1585219133518">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -208,10 +238,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state width="741" height="478" key="DebuggerActiveHint/67.27.1299.741@67.27.1299.741" timestamp="1589708373848" />
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1589898434004">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1590426514710">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1589898434004" />
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1590426514710" />
     <state width="1253" height="116" key="GridCell.Tab.0.bottom" timestamp="1589737136364">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -260,14 +290,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state width="1253" height="238" key="GridCell.Tab.2.right/67.27.1299.741@67.27.1299.741" timestamp="1588600657226" />
-    <state x="249" y="54" width="924" height="684" key="Maven.ArtifactSearchDialog" timestamp="1581798432323">
+    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt" timestamp="1590141467104">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="249" y="54" width="924" height="684" key="Maven.ArtifactSearchDialog/67.27.1299.741@67.27.1299.741" timestamp="1581798432323" />
-    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt" timestamp="1587995200705">
-      <screen x="67" y="27" width="1299" height="741" />
-    </state>
-    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt/67.27.1299.741@67.27.1299.741" timestamp="1587995200705" />
+    <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt/67.27.1299.741@67.27.1299.741" timestamp="1590141467104" />
     <state x="205" y="27" width="1024" height="741" key="SettingsEditor" timestamp="1585824968258">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -292,14 +318,14 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="67" y="27" width="1253" height="699" maximized="true" key="dock-window-1/67.27.1299.741@67.27.1299.741" timestamp="1582138546075" />
-    <state x="449" y="149" width="568" height="501" key="extract.method.dialog" timestamp="1589720296033">
+    <state x="449" y="149" width="568" height="501" key="extract.method.dialog" timestamp="1590141457801">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1589720296033" />
-    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1589812348474">
+    <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1590141457801" />
+    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1590565867722">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1589812348474" />
+    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1590565867722" />
     <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1589460794330">
       <screen x="67" y="27" width="1299" height="741" />
     </state>

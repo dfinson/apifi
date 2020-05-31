@@ -6,6 +6,7 @@ import dev.sanda.datafi.reflection.CachedEntityTypeInfo;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import dev.sanda.mockeri.generator.EntityMocker;
+import lombok.val;
 import lombok.var;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -105,11 +106,19 @@ public abstract class TestifiStaticUtils {
     }
 
     public static <T, HasTs> List<T> firstRandomEmbeddedN(HasTs owner, String fieldName, ReflectionCache reflectionCache) {
-        var collection =
-                (Collection<T>)reflectionCache
-                .getEntitiesCache()
-                .get(owner.getClass().getSimpleName())
-                .invokeGetter(owner, fieldName);
+        Collection<T> collection =
+                null;
+        try {
+            collection = (Collection<T>)reflectionCache
+            .getEntitiesCache()
+            .get(owner.getClass().getSimpleName())
+            .getFields()
+            .get(fieldName)
+            .getField()
+            .get(owner);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         long limit = ThreadLocalRandom.current().nextLong(1, collection.size());
         return collection.stream().limit(limit).collect(Collectors.toList());
     }
@@ -182,7 +191,19 @@ public abstract class TestifiStaticUtils {
 
     public static <T> List<Object> fieldValues(String fieldName, List<T> collection, CachedEntityTypeInfo entityType) {
         List<Object> result = new ArrayList<>();
-        for(T item : collection) result.add(entityType.invokeGetter(item, fieldName));
+        for(T item : collection) {
+            try {
+                val vals =
+                         entityType
+                        .getFields()
+                        .get(fieldName)
+                        .getField()
+                        .get(item);
+                result.add(vals);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
         return result;
     }
 

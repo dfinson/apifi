@@ -124,8 +124,18 @@ public final class TestLogic<T> {
 
     public void apiFindByUniqueTest(String fieldName){
         T toGet = randomFrom(dataManager.findAll());
-        clazzSimpleName = clazzSimpleName;
-        Object uniqueValue = reflectionCache.getEntitiesCache().get(clazzSimpleName).invokeGetter(toGet, fieldName);
+        Object uniqueValue = null;
+        try {
+            uniqueValue = reflectionCache
+            .getEntitiesCache()
+            .get(clazzSimpleName)
+            .getFields()
+            .get(fieldName)
+            .getField()
+            .get(toGet);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         T fetched = apiLogic.apiFindByUnique(fieldName, uniqueValue);
         assertThat(
                 "Successfully fetched a " + toPascalCase(clazzSimpleName) +
@@ -137,15 +147,24 @@ public final class TestLogic<T> {
     apiFindByTest(String fieldName){
         T toGet = randomFrom(dataManager.findAll());
         final CachedEntityTypeInfo entityType = reflectionCache.getEntitiesCache().get(clazzSimpleName);
-        Object value = entityType.invokeGetter(toGet, fieldName);
+        Object value = null;
+        try {
+            value = entityType.getFields().get(fieldName).getField().get(toGet);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         Collection<T> fetched = apiLogic.apiFindBy(fieldName, value);
         for(T instance : fetched){
-            assertThat(
-                    "successfully fetched instance of " + clazzSimpleName +
-                    " by value of " + fieldName + " = " + value.toString(),
-                    entityType.invokeGetter(instance, fieldName),
-                    isEqualTo(value)
-            );
+            try {
+                assertThat(
+                        "successfully fetched instance of " + clazzSimpleName +
+                        " by value of " + fieldName + " = " + value.toString(),
+                        entityType.getFields().get(fieldName).getField().get(instance),
+                        isEqualTo(value)
+                );
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -399,11 +418,14 @@ public final class TestLogic<T> {
         Collection<TEmbedded> removedFromEmbeddedCollection = apiLogic
                 .removeFromEmbeddedCollection(owner, fieldName, toRemoveFromCollection, embeddedCollectionApiHooks);
         int expectedCollectionSize = originalEmbeddedCollection.size() - toRemoveFromCollection.size();
-        int actualCollectionSize =
-                ((Collection<T>)reflectionCache.getEntitiesCache()
-                .get(owner.getClass().getSimpleName())
-                .invokeGetter(owner, fieldName)).size();
-
+        int actualCollectionSize = 0;
+        try {
+            actualCollectionSize = ((Collection<T>)reflectionCache.getEntitiesCache()
+            .get(owner.getClass().getSimpleName())
+            .getFields().get(fieldName).getField().get(owner)).size();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
         assertEquals(
                 "successfully removed " + removedFromEmbeddedCollection.size() + " " +
                         fieldName + " from " + clazzSimpleName,
