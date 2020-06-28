@@ -1,17 +1,19 @@
 
 # Apifi  
 
-* [Introduction](#introduction)
+ * [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [WithCRUDEndpoints(...)](#withcrudendpoints)
+ * [@WithCRUDEndpoints(...)](#-withcrudendpoints--)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
    + [Overview](#overview)
    + [Input](#input)
    + [Output](#output)
- * [Collections](#collections)
+ * [Entity Collections](#entity-collections)
+ * [Element Collections](#element-collections)
+ * [Element collection maps](#element-collection-maps)
  * [Spring security integration](#spring-security-integration)
    + [Class level security](#class-level-security)
    + [Method level security](#method-level-security)
@@ -19,26 +21,26 @@
  * [GraphQL Client](#graphql-client)
    + [Overview](#overview-1)
    + [What it looks like](#what-it-looks-like)
- * [logs](#logs)
+ * [Logs](#logs)
  * [Upcoming](#upcoming)
  * [Known issues](#known-issues)
-  * [Credit](#credit)
-  * [License](#license)
+ * [Credit](#credit)
+ * [License](#license)
 
 ## Introduction  
 Apifi is a Java 8+ annotation processing framework which auto generates GraphQL APIs for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.
 
 ### Installation
-```
+```xml
 <dependency>
   <groupId>dev.sanda</groupId>
     <artifactId>apifi</artifactId>
   <version>0.0.4</version>
-</dependency>   
+</dependency>
 ```
 
 ### Hello World
-```
+```java
 @Entity
 @WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})
 public class User {
@@ -52,8 +54,8 @@ public class User {
 }
 ```
 
-After compiling the project and taking a peek in the "target" folder, the following is the auto generated GraphQL service bean:
-```
+After compiling the project and taking a peek in the *target* folder, the following is the auto generated GraphQL service bean:
+```java
 @...
 public class UserGraphQLApiService {
 
@@ -228,7 +230,7 @@ Oftentimes there is a need for additional business logic on CRUD endpoints. This
 
 To gain a better understanding as to how this works, see the following code snippet from the `ApiLogic<T>` class where the CRUD operational logic is generically implemented.  More specifically, this is the `batchCreate(List<T> input)` method: 
 
-```
+```java
 public List<T> batchCreate(List<T> input) {  
 	if(apiHooks != null) // <--- note this
 		apiHooks.preBatchCreate(input, dataManager);  
@@ -246,7 +248,7 @@ This pattern repeats itself in the same manner in all of the other [`ApiLogic<T>
 No further configuration is necessary - Apifi leverages spring dependency injection to determine whether such a class has been created for a given entity. If such a service bean has indeed been created - it will be picked up and used by `ApiLogic<T>`. 
 
 Using the previous example:
-```
+```java
 @Entity
 @WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})
 public class User {
@@ -260,7 +262,7 @@ public class User {
 }
 ```
 Imagine there is a requirement to print a welcome message to the console after every time a new user is added, and a goodbye message after every time a user is deleted. To do so, a custom implementation of `ApiHooks<T>` could be implemented as follows:
-```
+```java
 @Service
 public class UserApiHooks implements ApiHooks<User> {
     @Override
@@ -281,7 +283,7 @@ The same workflow applies to less trivial use cases such as third party API call
 In addition to the above CRUD endpoints, additional endpoints can be added by making use of the following annotations:
 -  `@ApiFindBy`: To fetch a `List<T>` of instances of type `T`, with the search criteria being the value of a specific field of type `TField`, the field in question can be annotated with the `@ApiFindBy` annotation. 
 *Example*: 
-    ```
+    ```java
 	@Entity
 	public class User {
 	    @Id
@@ -295,7 +297,7 @@ In addition to the above CRUD endpoints, additional endpoints can be added by ma
 	}
     ```
     The above `@ApiFindBy` annotation generates the following GraphQL endpoint:
-    ```
+    ```java
     @...
     UserGraphQLService{
     ...
@@ -308,7 +310,7 @@ In addition to the above CRUD endpoints, additional endpoints can be added by ma
     ```
 -  `@ApiFindAllBy`: Fetch a list of instances with a field value matching at least one of the inputted values. 
 *Example:*
-    ```
+    ```java
     @Entity
 	public class User {
 	    @Id
@@ -322,7 +324,7 @@ In addition to the above CRUD endpoints, additional endpoints can be added by ma
 	}
     ```
     The above `@ApiFindAllBy` would generate the following endpoint:
-    ```
+    ```java
     @...
     UserGraphQLService{
     ...
@@ -335,7 +337,7 @@ In addition to the above CRUD endpoints, additional endpoints can be added by ma
     ```
 -  `@ApiFindByUnique`: To fetch a single instance by the value of a unique field, the field can be annotated with the `@ApiFindByUnique` annotation.
 *Example*:
-    ```
+    ```java
 	@Entity
 	public class User {
 	    @Id
@@ -350,7 +352,7 @@ In addition to the above CRUD endpoints, additional endpoints can be added by ma
 	}
     ```
     The above `@ApiFindByUnique` would generate the following endpoint:
-    ```
+    ```java
 	@...
 	UserGraphQLService{
       ...
@@ -375,7 +377,7 @@ A single [FreeTextSearchPageRequest](https://github.com/sanda-dev/datafi/blob/ma
 A [Page](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/Page.java) object containing `List<T> content`, `long totalPageCount`, and `long totalItemsCount` (same output type as GET_PAGINATED_BATCH).
 
 *Example:*
-```  
+```java  
 @Entity
 @WithApiFreeTextSearchByFields({"name", "email", "phoneNumber"})
 public class User {
@@ -389,7 +391,7 @@ public class User {
 }
 ```  
 Which would generate the following endpoint:
-```  
+```java  
 @...  
 public class UserGraphQLService{ 
  
@@ -407,8 +409,8 @@ public class UserGraphQLService{
 
 ```
 
-### Collections
-`Iterable<T>` collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with the `@EmbeddedCollectionApi` annotation. This annotation takes in several arguments, as follows:
+### Entity Collections
+`Collection<T>` collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with the `@EmbeddedCollectionApi` annotation. This annotation takes in several arguments, as follows:
 1. `CollectionEndpointType[] endpoints()` - `CollectionEndpointType` is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `UPDATE_IN`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument delineates which CRUD endpoints should be generated for the embedded collection.
 2. `String[] freeTextSearchFields()` - If `PAGINATED_FREE_TEXT_SEARCH` was specified as an endpoint, this argument delineates which fields the entity should be searchable by.
 3. `Class<? extends EmbeddedCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` bean described above. It enables custom business logic to be hooked before and / or after CRUD operations. To use, create a public class which implements the `EmbeddedCollectionApiHooks<T>` interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`, etc.).
@@ -421,7 +423,7 @@ As of the current version, this feature does not support non entity collections 
 *Example:*
 In order to demonstrate this feature, a new Entity type `Post` with a `@ManyToOne` relationship to `User` will be created as follows:
 
-```
+```java
 @Entity
 public class Post {
     @Id
@@ -433,7 +435,7 @@ public class Post {
 }
 ```
 `User` will be modified as follows:
-```
+```java
 @Entity
 public class User {
     @Id
@@ -481,11 +483,11 @@ As mentioned above, [`@EmbeddedCollectionApi(...)`](https://github.com/sanda-dev
 	 *Overview and output:* 
 	Same as the above `@WithApiFreeTextSearchByFields(...)` endpoint, but for the fact that the instances are all accessed *within the context of* the entity which has the collection.
 	*Input:*
-	- `owner`: The instance containing the collection to be added to. Must include ID. 
-	- `PageRequest`: See GET_PAGINATED_BATCH
+	- `owner`: The instance containing the collection. Must include ID. 
+	- [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.
 
 *Example:*
-```
+```java
 @Entity
 public class User {
     @Id
@@ -506,7 +508,7 @@ public class User {
 }
 ```
 Which generates the following endpoints:
-```
+```java
 @...
 public class UserGraphQLApiService {
   
@@ -536,6 +538,72 @@ public class UserGraphQLApiService {
 *Note:* 
 The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EmbeddedCollectionApiHooks<Post, User>` implementation has been specified.
 
+### Element Collections
+In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints:
+1. ADD_TO: 
+*Overview:*
+	Adds a list of inputted values to a collection.
+	*Input:*
+	- `owner`: The instance containing the collection to be added to. Must include ID. 
+	- `input`: The list of items to be added.
+
+	*Output:*
+	The newly added items.
+2. REMOVE__FROM
+*Overview:*
+	Remove a list of items from a collection.
+	*Input:*
+	- `owner`: The instance containing the collection to be removed from. Must include ID. 
+	- `input`: The list of items to be removed.
+
+	*Output:*
+	The deleted items.
+3. PAGINATED__BATCH_
+*Overview and output:* 
+	Get a paginated batch of items within the collection.
+	*Input:*
+	- `owner`: The instance containing the collection. Must include ID. 
+	- `PageRequest`: See GET_PAGINATED_BATCH
+4. PAGINATED__FREE__TEXT_SEARCH
+*Overview and output:* 
+	Get a paginated batch of items within the collection using free text search.
+	*Input:*
+	- `owner`: The instance containing the collection. Must include ID. 
+	-  [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.
+	
+### Element collection maps
+Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`, the [`@MapElementCollectionApi`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/MapElementCollectionApi.java) annotation can be utilized to generate the following [`MapElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/MapElementCollectionEndpointType.java) endpoints:
+1. PUT_ALL
+*Overview:*
+	Adds a list of inputted key-value pairs to a map.
+	*Input:*
+	- `owner`: The instance containing the map to be added to. Must include ID. 
+	- `input`: The list of key-value items to be added.
+
+	*Output:*
+	The newly added key-value items.
+2. REMOVE_ALL
+*Overview:*
+	Remove a list of key-value pairs from a map.
+	*Input:*
+	- `owner`: The instance containing the map to be removed from. Must include ID. 
+	- `input`: The list of keys whos corresponding values are to be removed from the map.
+
+	*Output:*
+	The deleted key-value pairs.
+3. PAGINATED__BATCH__
+*Overview and output:* 
+	Get a paginated batch of key-value pairs within the map.
+	*Input:*
+	- `owner`: The instance containing the map. Must include ID. 
+	- [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java): See GET_PAGINATED_BATCH. The only difference is that the return value is a page whos content field is a map.
+4. PAGINATED__FREE__TEXT__SEARCH
+*Overview and output:* 
+	Get a paginated batch of items within the map using free text search **on the keys set** (and not the values set).
+	*Input:*
+	- `owner`: The instance containing the map. Must include ID. 
+	-  [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.
+
 ### Spring security integration
 
 Annotation based security is especially well suited to GraphQL APIs given that they operate off of a single endpoint. Apifi supports full integration with spring security by leveraging the following 6 annotations: 
@@ -558,7 +626,7 @@ In order to apply a security annotation on the class (i.e. GraphQL service bean)
 7. `String postFilter() default "";`
 
 *Example:*
-```
+```java
 @Entity
 @WithServiceLevelSecurity(rolesAllowed = "ROLE_ADMIN")
 public class User {
@@ -576,7 +644,7 @@ public class User {
 
 Would generate the following:
 
-```
+```java
 @...
 @RolesAllowed("ROLE_ADMIN")
 public class UserGraphQLApiService {
@@ -587,7 +655,7 @@ public class UserGraphQLApiService {
 If a more granular security strategy is required, spring security annotations can be placed at the method level. In order to do so, the entity class can be annotated with one or more `@WithMethodLevelSecurity(...)` annotations. Each such annotation takes in one or more of the seven parameters described for `@WithServiceLevelSecurity(...)` annotation, as well as a `targets` parameter which takes in an array of [`CRUDEndpoints`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CRUDEndpoints.java), delineating which endpoints the specified security annotation(s) should be applied to.
 
 *Example:*
-```
+```java
 @Entity
 @WithCRUDEndpoints({CREATE, GET_BY_ID, UPDATE, DELETE})
 @WithMethodLevelSecurity(targets = {CREATE, DELETE}, rolesAllowed = "ROLE_ADMIN")
@@ -605,7 +673,7 @@ public class User {
 
 Would generate the following:
 
-```
+```java
 @...
 public class UserGraphQLApiService {
 
@@ -652,7 +720,7 @@ While generating the back end GraphQL API, Apifi simultaneously generates a simp
 
 ####  What it looks like
 Given the following example model:
-```
+```java
 @Entity
 @WithCRUDEndpoints({CREATE, GET_BY_ID})
 public class User {
@@ -666,7 +734,7 @@ public class User {
 }
 ```
 The corresponding *apifiClient.js* would look as follows:
-```
+```javascript
 let apiUrl = location.origin;
 let bearerToken = undefined;
 
@@ -721,7 +789,7 @@ export default{
 The file starts off with the `apiUrl` (defaults to `${window.location.origin}/graphql`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.
 
 ### Logs
-Virtually everything is logged in real time (not on main thread) using *SL4J*. It's not perfect but it is fairly comprehensive.
+Virtually everything is logged in real time using *SL4J*.
 
 ### Upcoming
 1. GraphQL subscriptions.
