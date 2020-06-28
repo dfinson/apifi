@@ -1,5 +1,5 @@
 package dev.sanda.apifi.generator.entity;
 
 public enum ElementCollectionEndpointType {
-    ADD, REMOVE, PAGINATED_BATCH, PAGINATED_FREE_TEXT_SEARCH
+    ADD_TO, REMOVE__FROM, PAGINATED__BATCH_, PAGINATED__FREE__TEXT_SEARCH
 }

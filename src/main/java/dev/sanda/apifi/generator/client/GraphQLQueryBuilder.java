@@ -1,15 +1,31 @@
 package dev.sanda.apifi.generator.client;
 
-import lombok.Data;
-import lombok.val;
-import lombok.var;
+import lombok.*;
 
+import javax.lang.model.element.TypeElement;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 
 @Data
 public class GraphQLQueryBuilder {
+
+    private GraphQLQueryBuilder(){}
+
+    public GraphQLQueryBuilder(Collection<TypeElement> typeElements){
+        entityTypes = typeElements
+                .stream()
+                .map(type -> type.getSimpleName().toString() + "Input")
+                .collect(Collectors.toCollection(HashSet::new));
+        entityTypes.add("PageRequestInput");
+        entityTypes.add("FreeTextSearchPageRequestInput");
+    }
+
+    private HashSet<String> entityTypes;
     private String queryName;
     private GraphQLQueryType queryType;
     private LinkedHashMap<String, String> vars = new LinkedHashMap<>();
@@ -17,11 +33,11 @@ public class GraphQLQueryBuilder {
 
     public String args(){
         val builder = new StringBuilder();
-        if(!vars.isEmpty())
-            vars.forEach((varName, varType) -> builder.append(varName).append(", "));
+        if(vars.isEmpty()) return "";
+        vars.forEach((varName, varType) -> builder.append(varName).append(", "));
         if(!isPrimitiveReturnType)
             builder.append("expectedReturn");
-        return builder.toString();
+        return builder.append(", ").toString();
     }
 
     private String varsDef(){
@@ -40,15 +56,20 @@ public class GraphQLQueryBuilder {
     }
 
     private String resolveVarType(String varType) {
-        if(!varType.contains(".")) return varType;
+        boolean isArray = varType.startsWith("[") && varType.endsWith("]");
+        if(isEntityType(varType)) return varType;
+        varType = varType.replaceAll("\\[", "").replaceAll("]", "").replaceAll("Input", "");
         val start = varType.lastIndexOf(".") + 1;
-        var corrected = varType.substring(start).replace("Input", "");
-        if(corrected.equals("Long"))
-            corrected = "Int";
-        else if(corrected.equals("Double"))
-            corrected = "Float";
-        val suffix = varType.endsWith("!") ? "!" : "";
-        return corrected + suffix;
+        var simpleTypeName = varType.substring(start);
+        if(simpleTypeName.equals("Long") || simpleTypeName.equals("Integer"))
+            simpleTypeName = "Int";
+        else if(simpleTypeName.equals("Double"))
+            simpleTypeName = "Float";
+        return  isArray ? "[" + simpleTypeName + "]" : simpleTypeName;
+    }
+
+    private boolean isEntityType(String varType) {
+        return entityTypes.contains(varType.replaceAll("\\[", "").replaceAll("]", ""));
     }
 
     private String varsArgs() {

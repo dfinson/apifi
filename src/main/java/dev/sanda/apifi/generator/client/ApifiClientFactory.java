@@ -25,7 +25,7 @@ public class ApifiClientFactory {
         queries.add(graphQLQueryBuilder);
     }
 
-    public void generate(){//TODO custom headers
+    public void generate(){
         StringBuilder builder = new StringBuilder();
         builder.append("let apiUrl = location.origin + '/graphql';\n");
         builder.append("let bearerToken = undefined;\n\n");
@@ -47,9 +47,10 @@ public class ApifiClientFactory {
 
     private String generateQueryFetcher(GraphQLQueryBuilder query) {
 
-        return "\n\tasync " + query.getQueryName() + "(" + query.args() + ")" +
+        return "\n\tasync " + query.getQueryName() + "(" + query.args() + "customHeaders)" +
                 "{\n" +
                 "\t\t\tlet requestHeaders = { \"Content-Type\": \"application/json\" }\n" +
+                "\t\t\tif(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);\n" +
                 "\t\t\tif(bearerToken !== undefined) requestHeaders[\"Authorization\"] = bearerToken;\n" +
                 "\t\t\tlet opts = {\n" +
                 "\t\t\t\tmethod: \"POST\",\n" +

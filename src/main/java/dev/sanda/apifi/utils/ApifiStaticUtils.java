@@ -76,6 +76,13 @@ public abstract class ApifiStaticUtils {
         return ParameterizedTypeName.get(ClassName.get(List.class), typeName);
     }
 
+    public static TypeName mapOf(VariableElement map){
+        val mapType = ClassName.get(Map.class);
+        val keyType = ClassName.bestGuess(getMapKeyType(map));
+        val valueType = ClassName.bestGuess(getMapValueType(map));
+        return ParameterizedTypeName.get(mapType, keyType, valueType);
+    }
+
     public static String dataManagerName(Element element) {
         return camelcaseNameOf(element) + "DataManager";
     }
@@ -109,6 +116,22 @@ public abstract class ApifiStaticUtils {
         return ParameterizedTypeName.get(
                 ClassName.get(Page.class),
                 ClassName.bestGuess(collectionType));
+    }
+
+    public static ParameterizedTypeName mapPageType(VariableElement map){
+        val collectionType = getMapValueType(map);
+        return ParameterizedTypeName.get(
+                ClassName.get(Page.class),
+                ClassName.bestGuess(collectionType));
+    }
+
+    public static ParameterizedTypeName mapEntryListPageType(VariableElement map){
+        val mapValueType = ClassName.bestGuess(getMapValueType(map));
+        val pageType = ClassName.get(Page.class);
+        val mapKeyType = ClassName.bestGuess(getMapKeyType(map));
+        val rawEntryType = ClassName.get(Map.Entry.class);
+        val entryType = ParameterizedTypeName.get(rawEntryType, mapKeyType, mapValueType);
+        return ParameterizedTypeName.get(pageType, entryType);
     }
 
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
@@ -163,6 +186,19 @@ public abstract class ApifiStaticUtils {
     }
 
     @SafeVarargs
+    public static <A extends Annotation> ParameterSpec asParamMapKeyList(VariableElement element, Class<A>... annotations) {
+        val listType = ClassName.get(List.class);
+        val keyType = ClassName.bestGuess(getMapKeyType(element));
+        var builder = ParameterSpec.builder(ParameterizedTypeName.get(listType, keyType), "input");
+        if (annotations.length > 0) {
+            for (Class<A> annotation : annotations) {
+                builder.addAnnotation(annotation);
+            }
+        }
+        return builder.build();
+    }
+
+    @SafeVarargs
     public static <A extends Annotation> ParameterSpec asParamList(TypeName typeName, Class<A>... annotations) {
         ClassName list = ClassName.get("java.util", "List");
         var builder = ParameterSpec.builder(ParameterizedTypeName.get(list, typeName), "input");
@@ -185,6 +221,27 @@ public abstract class ApifiStaticUtils {
             }
         }
         return builder.build();
+    }
+
+    @SafeVarargs
+    public static <A extends Annotation> ParameterSpec asParamMap(VariableElement map, Class<A>... annotations) {
+        val mapType = ClassName.get(Map.class);
+        val mapKeyType = ClassName.bestGuess(getMapKeyType(map));
+        val mapValueType = ClassName.bestGuess(getMapValueType(map));
+        var builder = ParameterSpec.builder(ParameterizedTypeName.get(mapType, mapKeyType, mapValueType), "input");
+        if (annotations.length > 0)
+            for (Class<A> annotation : annotations)
+                builder.addAnnotation(annotation);
+        return builder.build();
+    }
+
+    public static String getMapValueType(VariableElement map) {
+        return map
+                .asType()
+                .toString()
+                .replaceAll("^.+<", "")
+                .replaceAll(">", "")
+                .replaceAll(".+,", "");
     }
 
     public static boolean isAssignableFrom(ProcessingEnvironment processingEnv, TypeElement typeElement, String targetTypeName){ Elements elementUtil;

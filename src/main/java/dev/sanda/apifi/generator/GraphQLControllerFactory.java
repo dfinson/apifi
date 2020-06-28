@@ -54,7 +54,7 @@ public class GraphQLControllerFactory {
         val mapString2Object = ParameterizedTypeName.get(Map.class, String.class, Object.class);
         var builder = MethodSpec.methodBuilder("graphqlEndPoint")
                 .addAnnotation(AnnotationSpec.builder(PostMapping.class)
-                        .addMember("value", "$S", "/graphql")//TODO - make customizable
+                        .addMember("value", "$S", "${apifi.endpoint:/graphql}")
                         .build())
                 .addModifiers(PUBLIC)
                 .addParameter(ParameterSpec.builder(mapString2Object, "request")
@@ -98,7 +98,7 @@ public class GraphQLControllerFactory {
                 "graphQLInstance = $T\n" +
                         ".newGraphQL(schema)\n" +
                         ".queryExecutionStrategy(new $T())\n" +
-                        ".instrumentation(new $T(15))\n" +//TODO - make customizable
+                        ".instrumentation(new $T(maxQueryDepth))\n" +
                         ".build();\n",
                 GraphQL.class,
                 BatchedExecutionStrategy.class,
@@ -117,7 +117,14 @@ public class GraphQLControllerFactory {
                     .build();
             fieldSpecs.add(field);
         }
+        val maxQueryDepthField = FieldSpec.builder(Integer.class, "maxQueryDepth", PRIVATE)
+                .addAnnotation(AnnotationSpec.builder(Value.class)
+                        .addMember("value", "$S",
+                                "#{new Integer('${apifi.max-query-depth:15}')}")
+                        .build())
+                .build();
         fieldSpecs.add(graphQLInstanceField);
+        fieldSpecs.add(maxQueryDepthField);
         return fieldSpecs;
     }
 }

@@ -416,7 +416,7 @@ public final class TestLogic<T> {
         List<TEmbedded> toRemoveFromCollection = firstRandomEmbeddedN(owner, fieldName, reflectionCache);
 
         Collection<TEmbedded> removedFromEmbeddedCollection = apiLogic
-                .removeFromEmbeddedCollection(owner, fieldName, toRemoveFromCollection, embeddedCollectionApiHooks);
+                .removeFromEmbeddedCollection(owner, fieldName, toRemoveFromCollection, tEmbeddedDataManager, embeddedCollectionApiHooks);
         int expectedCollectionSize = originalEmbeddedCollection.size() - toRemoveFromCollection.size();
         int actualCollectionSize = 0;
         try {
