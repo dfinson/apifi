@@ -541,69 +541,69 @@ public class UserGraphQLApiService {
 *Note:* 
 The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EntityCollectionApiHooks<Post, User>` implementation has been specified.
 
-### Element Collections
-In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints:
-1. ADD_TO: 
-*Overview:*
-	Adds a list of inputted values to a collection.
-	*Input:*
-	- `owner`: The instance containing the collection to be added to. Must include ID. 
-	- `input`: The list of items to be added.
+### Element Collections 
+In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints: 
+1. ADD_TO:   
+*Overview:*  
+	Adds a list of inputted values to a collection.    
+	*Input:* 
+	- `owner`: The instance containing the collection to be added to. Must include ID.  
+	- `input`: The list of items to be added.  
 
-	*Output:*
-	The newly added items.
-2. REMOVE__FROM
-*Overview:*
-	Remove a list of items from a collection.
-	*Input:*
+	*Output:* 
+	The newly added items. 
+2. REMOVE__FROM  
+*Overview:*  
+	Remove a list of items from a collection.   
+	*Input:* 
 	- `owner`: The instance containing the collection to be removed from. Must include ID. 
 	- `input`: The list of items to be removed.
 
-	*Output:*
-	The deleted items.
-3. PAGINATED__BATCH_
-*Overview and output:* 
-	Get a paginated batch of items within the collection.
-	*Input:*
+	*Output:* 
+	The deleted items. 
+3. PAGINATED__BATCH_      
+*Overview and output:*  
+	Get a paginated batch of items within the collection.     
+	*Input:* 
 	- `owner`: The instance containing the collection. Must include ID. 
-	- `PageRequest`: See GET_PAGINATED_BATCH
-4. PAGINATED__FREE__TEXT_SEARCH
-*Overview and output:* 
-	Get a paginated batch of items within the collection using free text search.
-	*Input:*
+	- `PageRequest`: See GET_PAGINATED_BATCH 
+4. PAGINATED__FREE__TEXT_SEARCH      
+*Overview and output:*  
+	Get a paginated batch of items within the collection using free text search.    
+	*Input:* 
 	- `owner`: The instance containing the collection. Must include ID. 
 	-  [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.
 	
-### Element collection maps
+### Element collection maps 
 Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`, the [`@MapElementCollectionApi`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/MapElementCollectionApi.java) annotation can be utilized to generate the following [`MapElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/MapElementCollectionEndpointType.java) endpoints:
-1. PUT_ALL
-*Overview:*
-	Adds a list of inputted key-value pairs to a map.
-	*Input:*
+1. PUT_ALL     
+*Overview:*    
+	Adds a list of inputted key-value pairs to a map.     
+	*Input:* 
 	- `owner`: The instance containing the map to be added to. Must include ID. 
-	- `input`: The list of key-value items to be added.
+	- `input`: The list of key-value items to be added. 
 
-	*Output:*
-	The newly added key-value items.
-2. REMOVE_ALL
-*Overview:*
-	Remove a list of key-value pairs from a map.
+	*Output:* 
+	The newly added key-value items. 
+2. REMOVE_ALL       
+*Overview:*       
+	Remove a list of key-value pairs from a map.     
 	*Input:*
 	- `owner`: The instance containing the map to be removed from. Must include ID. 
 	- `input`: The list of keys whos corresponding values are to be removed from the map.
 
-	*Output:*
-	The deleted key-value pairs.
-3. PAGINATED__BATCH__
-*Overview and output:* 
-	Get a paginated batch of key-value pairs within the map.
-	*Input:*
+	*Output:* 
+	The deleted key-value pairs. 
+3. PAGINATED__BATCH__    
+*Overview and output:*    
+	Get a paginated batch of key-value pairs within the map.    
+	*Input:* 
 	- `owner`: The instance containing the map. Must include ID. 
 	- [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java): See GET_PAGINATED_BATCH. The only difference is that the return value is a page whos content field is a map.
-4. PAGINATED__FREE__TEXT__SEARCH
-*Overview and output:* 
-	Get a paginated batch of items within the map using free text search **on the keys set** (and not the values set).
-	*Input:*
+4. PAGINATED__FREE__TEXT__SEARCH   
+*Overview and output:*    
+	Get a paginated batch of items within the map using free text search **on the keys set** (and not the values set).   
+	*Input:* 
 	- `owner`: The instance containing the map. Must include ID. 
 	-  [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.
 
