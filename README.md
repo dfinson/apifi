@@ -4,7 +4,7 @@
  * [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [Defining GraphQL Endpoints](#-defining-graphql-endpoints--)
+ * [Defining GraphQL Endpoints](#-defining-graphql-endpoints-)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
