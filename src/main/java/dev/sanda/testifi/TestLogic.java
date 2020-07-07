@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.maximeroussy.invitrode.WordGenerator;
 import dev.sanda.apifi.service.ApiHooks;
 import dev.sanda.apifi.service.ApiLogic;
-import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.EntityCollectionApiHooks;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.persistence.Archivable;
@@ -326,10 +326,10 @@ public final class TestLogic<T> {
                 isEqualTo(fetchedAsEmbedded));
     }
 
-    public <TEmbedded> void getEmbeddedCollectionTest(
+    public <TEmbedded> void getEntityCollectionTest(
             DataManager<TEmbedded> tEmbeddedDataManager,
             String fieldName,
-            EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+            EntityCollectionApiHooks<TEmbedded, T> entityCollectionApiHooks) {
         if(dataManager.count() == 0) populate(clazz, entityMocker, 20);
         List<T> owners = firstRandomN(clazz, dataManager);
         Collection<Collection<TEmbedded>> embeddedEntityCollections = new ArrayList<>();
@@ -341,7 +341,7 @@ public final class TestLogic<T> {
         }
         owners = dataManager.saveAll(owners);
         List<List<TEmbedded>> fetchedAsEmbedded =
-                apiLogic.getEmbeddedCollection(owners, fieldName, embeddedCollectionApiHooks, tEmbeddedDataManager);
+                apiLogic.getEntityCollection(owners, fieldName, entityCollectionApiHooks, tEmbeddedDataManager);
 
         assertThat(
                 "Successfully fetched " + embeddedEntityCollections.size() +
@@ -351,14 +351,14 @@ public final class TestLogic<T> {
     }
 
     public <TEmbedded>
-    void associateWithEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
+    void associateWithEntityCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
                                              String fieldName,
-                                             EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+                                             EntityCollectionApiHooks<TEmbedded, T> entityCollectionApiHooks) {
         T toAddTo = entityMocker.instantiateEntity(clazz);
         @NonNull final Class<TEmbedded> tEmbeddedClass = tEmbeddedDataManager.getClazz();
         List<TEmbedded> toCreate = transientlyInstantiateCollectionOf(tEmbeddedClass, entityMocker);
         List<TEmbedded> created = apiLogic
-                .associateWithEmbeddedCollection(toAddTo, fieldName, toCreate, tEmbeddedDataManager, embeddedCollectionApiHooks);
+                .associateWithEntityCollection(toAddTo, fieldName, toCreate, tEmbeddedDataManager, entityCollectionApiHooks);
         assertThat("successfully created " + created.size() +
                     " " + toPlural(tEmbeddedClass.getSimpleName()) + " to " +
                     clazzSimpleName,
@@ -366,15 +366,15 @@ public final class TestLogic<T> {
     }
 
     public <TEmbedded>
-    void attachExistingToEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
+    void attachExistingToEntityCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
                                                 String fieldName,
-                                                EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+                                                EntityCollectionApiHooks<TEmbedded, T> entityCollectionApiHooks) {
         T toAssociateWith = entityMocker.instantiateEntity(clazz);
         List<TEmbedded> toAssociate = persistCollectionOf(tEmbeddedDataManager.getClazz(), entityMocker);
         List<TEmbedded> associated = apiLogic
-                .associatePreExistingWithEmbeddedCollection(
+                .associatePreExistingWithEntityCollection(
                         toAssociateWith, fieldName, toAssociate, 
-                        tEmbeddedDataManager, embeddedCollectionApiHooks);
+                        tEmbeddedDataManager, entityCollectionApiHooks);
         assertThat("successfully associated " + associated.size() +
                         " pre-existing " + toPlural(tEmbeddedDataManager.getClazzSimpleName()) + " to " +
                         clazzSimpleName,
@@ -382,42 +382,42 @@ public final class TestLogic<T> {
     }
 
     public <TEmbedded>
-    void updateEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
+    void updateEntityCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
                                       String fieldName,
-                                      EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+                                      EntityCollectionApiHooks<TEmbedded, T> entityCollectionApiHooks) {
         T owner = entityMocker.instantiateEntity(clazz);
         val tEmbeddedClass = tEmbeddedDataManager.getClazz();
-        List<TEmbedded> originalEmbeddedCollection = persistCollectionOf(tEmbeddedClass, entityMocker);
-        setCollectionField(owner, originalEmbeddedCollection, fieldName, entityMocker);
+        List<TEmbedded> originalEntityCollection = persistCollectionOf(tEmbeddedClass, entityMocker);
+        setCollectionField(owner, originalEntityCollection, fieldName, entityMocker);
         owner = dataManager.saveAndFlush(owner);
 
-        Collection<TEmbedded> updatedEmbeddedCollection = Lists.newArrayList(originalEmbeddedCollection);
-        updatedEmbeddedCollection.forEach(entityMocker::mockUpdate);
+        Collection<TEmbedded> updatedEntityCollection = Lists.newArrayList(originalEntityCollection);
+        updatedEntityCollection.forEach(entityMocker::mockUpdate);
 
-        Collection<TEmbedded> fetchedEmbeddedCollection = apiLogic
-                .updateEmbeddedCollection(owner, tEmbeddedDataManager, updatedEmbeddedCollection, embeddedCollectionApiHooks);
+        Collection<TEmbedded> fetchedEntityCollection = apiLogic
+                .updateEntityCollection(owner, tEmbeddedDataManager, updatedEntityCollection, entityCollectionApiHooks);
         assertThat(
-            "successfully updated " + fetchedEmbeddedCollection.size() + " " +
+            "successfully updated " + fetchedEntityCollection.size() + " " +
                     fieldName + " in " + clazzSimpleName,
-                    updatedEmbeddedCollection, isEqualTo(fetchedEmbeddedCollection));
+                    updatedEntityCollection, isEqualTo(fetchedEntityCollection));
     }
 
     public <TEmbedded>
-    void removeFromEmbeddedCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
+    void removeFromEntityCollectionTest(DataManager<TEmbedded> tEmbeddedDataManager,
                                           String fieldName,
-                                          EmbeddedCollectionApiHooks<TEmbedded, T> embeddedCollectionApiHooks) {
+                                          EntityCollectionApiHooks<TEmbedded, T> entityCollectionApiHooks) {
         T owner = entityMocker.instantiateEntity(clazz);
         val tEmbeddedClazz = tEmbeddedDataManager.getClazz();
-        List<TEmbedded> originalEmbeddedCollection = persistCollectionOf(tEmbeddedClazz, entityMocker);
-        setCollectionField(owner, originalEmbeddedCollection, fieldName, entityMocker);
-        tEmbeddedDataManager.saveAll(originalEmbeddedCollection);
+        List<TEmbedded> originalEntityCollection = persistCollectionOf(tEmbeddedClazz, entityMocker);
+        setCollectionField(owner, originalEntityCollection, fieldName, entityMocker);
+        tEmbeddedDataManager.saveAll(originalEntityCollection);
         owner = dataManager.saveAndFlush(owner);
 
         List<TEmbedded> toRemoveFromCollection = firstRandomEmbeddedN(owner, fieldName, reflectionCache);
 
-        Collection<TEmbedded> removedFromEmbeddedCollection = apiLogic
-                .removeFromEmbeddedCollection(owner, fieldName, toRemoveFromCollection, tEmbeddedDataManager, embeddedCollectionApiHooks);
-        int expectedCollectionSize = originalEmbeddedCollection.size() - toRemoveFromCollection.size();
+        Collection<TEmbedded> removedFromEntityCollection = apiLogic
+                .removeFromEntityCollection(owner, fieldName, toRemoveFromCollection, tEmbeddedDataManager, entityCollectionApiHooks);
+        int expectedCollectionSize = originalEntityCollection.size() - toRemoveFromCollection.size();
         int actualCollectionSize = 0;
         try {
             actualCollectionSize = ((Collection<T>)reflectionCache.getEntitiesCache()
@@ -427,7 +427,7 @@ public final class TestLogic<T> {
             e.printStackTrace();
         }
         assertEquals(
-                "successfully removed " + removedFromEmbeddedCollection.size() + " " +
+                "successfully removed " + removedFromEntityCollection.size() + " " +
                         fieldName + " from " + clazzSimpleName,
                 expectedCollectionSize, actualCollectionSize);
     }

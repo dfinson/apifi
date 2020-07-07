@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Component
-public interface EmbeddedCollectionApiHooks<TCollection, T>{
+public interface EntityCollectionApiHooks<TCollection, T>{
     default void preFetch(T ownerInstance, String collectionFieldName, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager){}
     default void postFetch(Collection<TCollection> fetchedItems, T ownerInstance, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
     default void preGetPaginatedBatch(T ownerInstance, PageRequest requestInput, DataManager<T> dataManager) {}

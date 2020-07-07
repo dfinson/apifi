@@ -2,8 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/NullEntityCollectionApiHooks.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/EntityCollectionApi.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityCollectionEndpointType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/EntityCollectionApiHooks.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/NullEmbeddedCollectionApiHooks.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/EquivalencyMatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/EquivalencyMatcher.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,10 +32,10 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Interface" />
         <option value="AnnotationType" />
         <option value="Enum" />
         <option value="Class" />
+        <option value="Interface" />
       </list>
     </option>
   </component>
@@ -34,7 +49,7 @@
     </ignored-facets>
   </component>
   <component name="ProjectId" id="1PgOZHjkgljVrOIN34zy69PVYMS" />
-  <component name="ProjectLevelVcsManager">
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
@@ -55,14 +70,17 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="extract.method.default.visibility" value="private" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../datafi" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/main/java/dev/sanda/apifi" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="project.structure.last.edited" value="SDKs" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src" />
+    </key>
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="dev.sanda.testifi" />
       <recent name="org.sindaryn.apifi.annotations" />
@@ -209,7 +227,15 @@
       <workItem from="1592307005956" duration="96000" />
       <workItem from="1592731658178" duration="298000" />
       <workItem from="1593321373612" duration="1935000" />
-      <workItem from="1593332845770" duration="2949000" />
+      <workItem from="1593332845770" duration="5136000" />
+      <workItem from="1593339340158" duration="960000" />
+      <workItem from="1593359319827" duration="83000" />
+      <workItem from="1593359439068" duration="1075000" />
+      <workItem from="1593370955390" duration="261000" />
+      <workItem from="1593505914216" duration="2061000" />
+      <workItem from="1594020298265" duration="2444000" />
+      <workItem from="1594026699030" duration="1575000" />
+      <workItem from="1594112985186" duration="1646000" />
     </task>
     <servers />
   </component>
@@ -244,14 +270,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="444" y="174" width="524" height="444" key="#com.intellij.ide.util.PackageChooserDialog/67.27.1299.741@67.27.1299.741" timestamp="1590318187165" />
-    <state x="399" y="124" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1585219133518">
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1594021178579">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="399" y="124" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/67.27.1299.741@67.27.1299.741" timestamp="1585219133518" />
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1592125184072">
-      <screen x="67" y="27" width="1299" height="741" />
-    </state>
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1592125184072" />
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1594021178579" />
     <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate" timestamp="1591694953949">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -260,10 +282,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state width="741" height="478" key="DebuggerActiveHint/67.27.1299.741@67.27.1299.741" timestamp="1591775758053" />
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1593322384082">
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl" timestamp="1594115170866">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1593322384082" />
+    <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1594115170866" />
     <state width="1253" height="122" key="GridCell.Tab.0.bottom" timestamp="1591791078041">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -316,10 +338,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="523" y="333" width="377" height="126" key="ReplaceDuplicatesPrompt/67.27.1299.741@67.27.1299.741" timestamp="1590141467104" />
-    <state x="205" y="27" width="1024" height="741" key="SettingsEditor" timestamp="1585824968258">
+    <state x="205" y="27" width="1024" height="741" key="SettingsEditor" timestamp="1593359403365">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="205" y="27" width="1024" height="741" key="SettingsEditor/67.27.1299.741@67.27.1299.741" timestamp="1585824968258" />
+    <state x="205" y="27" width="1024" height="741" key="SettingsEditor/67.27.1299.741@67.27.1299.741" timestamp="1593359403365" />
     <state width="649" height="371" key="XDebugger.FullValuePopup" timestamp="1589707744966">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -328,10 +350,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="67" y="127" width="1289" height="538" key="caller.chooser.dialog/67.27.1299.741@67.27.1299.741" timestamp="1589662120717" />
-    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1585252964188">
+    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1593336728838">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/67.27.1299.741@67.27.1299.741" timestamp="1585252964188" />
+    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/67.27.1299.741@67.27.1299.741" timestamp="1593336728838" />
     <state x="244" y="115" width="935" height="562" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1589708141863">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -340,10 +362,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1591770758919" />
-    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1592133551445">
+    <state x="282" y="95" width="1003" height="604" key="find.popup" timestamp="1594115114569">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1592133551445" />
+    <state x="282" y="95" width="1003" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1594115114569" />
     <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1589460794330">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -352,10 +374,6 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog/67.27.1299.741@67.27.1299.741" timestamp="1592125987813" />
-    <state x="380" y="175" key="run.anything.popup" timestamp="1585219512878">
-      <screen x="67" y="27" width="1299" height="741" />
-    </state>
-    <state x="380" y="175" key="run.anything.popup/67.27.1299.741@67.27.1299.741" timestamp="1585219512878" />
     <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1589705226495">
       <screen x="67" y="27" width="1299" height="741" />
     </state>

@@ -1,8 +1,8 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.generator.entity.CollectionEndpointType;
-import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
-import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
+import dev.sanda.apifi.generator.entity.EntityCollectionEndpointType;
+import dev.sanda.apifi.service.EntityCollectionApiHooks;
+import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,10 +11,10 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EmbeddedCollectionApi {
-    Class<? extends EmbeddedCollectionApiHooks> apiHooks() default NullEmbeddedCollectionApiHooks.class;
+public @interface EntityCollectionApi {
+    Class<? extends EntityCollectionApiHooks> apiHooks() default NullEntityCollectionApiHooks.class;
     boolean associatePreExistingOnly() default false;
-    CollectionEndpointType[] endpoints();
+    EntityCollectionEndpointType[] endpoints();
 
     String[] freeTextSearchFields() default "";
 

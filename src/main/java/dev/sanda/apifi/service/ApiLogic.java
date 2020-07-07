@@ -1,6 +1,6 @@
 package dev.sanda.apifi.service;
 
-import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
+import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
@@ -282,40 +282,40 @@ public final class ApiLogic<T> {
         return toDelete;
     }
 
-    public <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>> List<List<TCollection>>
-    getEmbeddedCollection(List<T> input, String collectionFieldName, E collectionApiHooks, DataManager<TCollection> collectionDataManager) {
+    public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<List<TCollection>>
+    getEntityCollection(List<T> input, String collectionFieldName, E collectionApiHooks, DataManager<TCollection> collectionDataManager) {
         if(collectionApiHooks != null)
             input.forEach(owner -> collectionApiHooks.preFetch(owner, collectionFieldName, dataManager, collectionDataManager));
         val rawQueryResults = (List)dataManager.entityManager().createQuery(
                         String.format(
-                        "SELECT owner, embeddedCollection " +
+                        "SELECT owner, entityCollection " +
                             "FROM %s owner " +
-                            "JOIN owner.%s embeddedCollection " +
+                            "JOIN owner.%s entityCollection " +
                             "WHERE owner.%s IN :ownerIds",
                         dataManager.getClazzSimpleName(),
                         collectionFieldName,
                         reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName())
                 ).setParameter("ownerIds", getIdList(input, reflectionCache))
                 .getResultList();
-        val owners2EmbeddedCollectionsMap = new HashMap<T, List<TCollection>>();
+        val owners2EntityCollectionsMap = new HashMap<T, List<TCollection>>();
         rawQueryResults.forEach(item -> {
             val ownerAndCollectionItem = (Object[])item;
             val owner = (T)ownerAndCollectionItem[0];
-            val embeddedCollectionItem = (TCollection)ownerAndCollectionItem[1];
-            if(!owners2EmbeddedCollectionsMap.containsKey(owner))
-                owners2EmbeddedCollectionsMap.put(owner, new ArrayList<>(Collections.singletonList(embeddedCollectionItem)));
+            val entityCollectionItem = (TCollection)ownerAndCollectionItem[1];
+            if(!owners2EntityCollectionsMap.containsKey(owner))
+                owners2EntityCollectionsMap.put(owner, new ArrayList<>(Collections.singletonList(entityCollectionItem)));
             else
-                owners2EmbeddedCollectionsMap.get(owner).add(embeddedCollectionItem);
+                owners2EntityCollectionsMap.get(owner).add(entityCollectionItem);
         });
         if(collectionApiHooks != null)
-            owners2EmbeddedCollectionsMap.keySet().forEach(
+            owners2EntityCollectionsMap.keySet().forEach(
                     owner -> collectionApiHooks
-                            .postFetch(owners2EmbeddedCollectionsMap.get(owner),
+                            .postFetch(owners2EntityCollectionsMap.get(owner),
                                        owner,
                                        collectionDataManager,
                                        dataManager)
             );
-        return input.stream().map(owners2EmbeddedCollectionsMap::get).collect(Collectors.toList());
+        return input.stream().map(owners2EntityCollectionsMap::get).collect(Collectors.toList());
     }
 
     public  <TCollection> List<TCollection> getEmbedded(
@@ -346,22 +346,22 @@ public final class ApiLogic<T> {
                 .getField();
     }
 
-    public  <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>>
-    List<TCollection> updateEmbeddedCollection(
+    public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
+    List<TCollection> updateEntityCollection(
             T owner,
             DataManager<TCollection> collectionDataManager,
             Collection<TCollection> toUpdate,
-            E embeddedCollectionApiHooks) {
+            E entityCollectionApiHooks) {
         var temp = dataManager
                 .findById(getId(owner, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(owner, reflectionCache);
         owner = temp;
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.preUpdate(toUpdate, owner, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.preUpdate(toUpdate, owner, collectionDataManager, dataManager);
         List<TCollection> entitiesToUpdate = collectionDataManager.findAllById(getIdList(toUpdate, reflectionCache));
         var result = collectionDataManager.cascadeUpdateCollection(entitiesToUpdate, toUpdate);
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postUpdate(toUpdate, result, owner, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.postUpdate(toUpdate, result, owner, collectionDataManager, dataManager);
         return result;
     }
 
@@ -666,20 +666,20 @@ public final class ApiLogic<T> {
         return returnValue;
     }
 
-    public  <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>>
-    List<TCollection> associateWithEmbeddedCollection(
+    public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
+    List<TCollection> associateWithEntityCollection(
             T input,
             String fieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E embeddedCollectionApiHooks) {
+            E entityCollectionApiHooks) {
 
         //get collection owner
         var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         input = temp;
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input, fieldName, collectionDataManager, dataManager);
-        Collection<TCollection> existingCollection = getEmbeddedCollectionFrom(input, fieldName);
+        if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, fieldName, collectionDataManager, dataManager);
+        Collection<TCollection> existingCollection = getEntityCollectionFrom(input, fieldName);
         if(existingCollection == null)
             existingCollection = iniTCollectionCollection(fieldName, collectionDataManager);
         existingCollection.addAll(toAssociate);
@@ -699,29 +699,29 @@ public final class ApiLogic<T> {
         final T t = input;
 
         Collection<TCollection> added =
-                getEmbeddedCollectionFrom(
+                getEntityCollectionFrom(
                         t,
                         fieldName);
         var result = collectionDataManager.saveAll(extractFromCollection(added, toAssociate));
         dataManager.save(t);
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postAssociate(toAssociate, result, input, fieldName, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.postAssociate(toAssociate, result, input, fieldName, collectionDataManager, dataManager);
         return result;
     }
 
-    public  <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>>
-    Page<TCollection> paginatedFreeTextSearchInEmbeddedCollection(
+    public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
+    Page<TCollection> paginatedFreeTextSearchInEntityCollection(
             T owner,
             dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
             String fieldName,
             DataManager<TCollection> collectionDataManager,
-            E embeddedCollectionApiHooks) {
+            E entityCollectionApiHooks) {
         //get collection owner
         var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         owner = temp;
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.preFreeTextSearch(owner, input.getSearchTerm(), dataManager, collectionDataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.preFreeTextSearch(owner, input.getSearchTerm(), dataManager, collectionDataManager);
 
         Page<TCollection> returnValue = new Page<>();
         validateSortByIfNonNull(collectionDataManager.getClazz(), input.getSortBy(), reflectionCache);
@@ -778,8 +778,8 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalItems);
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postFreeTextSearch(returnValue, input,owner, searchTerm, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.postFreeTextSearch(returnValue, input,owner, searchTerm, collectionDataManager, dataManager);
         return returnValue;
     }
     private final Map<String, String> searchTermQueryCache = new HashMap<>();
@@ -794,7 +794,7 @@ public final class ApiLogic<T> {
                 .getFields()
                 .get(collectionFieldName)
                 .getField()
-                .getAnnotation(EmbeddedCollectionApi.class)
+                .getAnnotation(EntityCollectionApi.class)
                 .freeTextSearchFields());
         if(searchFieldNames.isEmpty()) return "";
         val result = new StringBuilder();
@@ -810,19 +810,19 @@ public final class ApiLogic<T> {
         return resultString;
     }
 
-    public  <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>>
-    Page<TCollection> getPaginatedBatchInEmbeddedCollection(
+    public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
+    Page<TCollection> getPaginatedBatchInEntityCollection(
             T owner,
             dev.sanda.datafi.dto.PageRequest input,
             String fieldName,
             DataManager<TCollection> collectionDataManager,
-            E embeddedCollectionApiHooks) {
+            E entityCollectionApiHooks) {
         //get collection owner
         var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         owner = temp;
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.preGetPaginatedBatch(owner, input, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.preGetPaginatedBatch(owner, input, dataManager);
         Page<TCollection> returnValue = new Page<>();
         validateSortByIfNonNull(collectionDataManager.getClazz(), input.getSortBy(), reflectionCache);
         val isNonArchivedClause = isClazzArchivable(collectionDataManager.getClazz(), reflectionCache) ?
@@ -861,29 +861,29 @@ public final class ApiLogic<T> {
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
         returnValue.setPageNumber(input.getPageNumber());
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postGetPaginatedBatch(returnValue, owner, input, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.postGetPaginatedBatch(returnValue, owner, input, collectionDataManager, dataManager);
         return returnValue;
     }
 
-    public  <TCollection, E extends EmbeddedCollectionApiHooks<TCollection, T>>
+    public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
     List<TCollection>
-    associatePreExistingWithEmbeddedCollection(
+    associatePreExistingWithEntityCollection(
             T input,
             String embeddedFieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E embeddedCollectionApiHooks) {
+            E entityCollectionApiHooks) {
         //get collection owner
         var temp  = dataManager.findById(getId(input, reflectionCache)).orElse(null);
         if (temp == null) throw_entityNotFound(input, reflectionCache);
         input = temp;
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preAssociate(toAssociate, input, embeddedFieldName, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, embeddedFieldName, collectionDataManager, dataManager);
         //validate all candidates are pre-existing
         List<TCollection> toAssociateReloaded = collectionDataManager.findAllById(getIdList(toAssociate, reflectionCache));
         if (toAssociateReloaded.isEmpty() || toAssociateReloaded.size() != toAssociate.size())
             throw new IllegalArgumentException("illegal attempt made to indirectly add new strong entities");
-        Collection<TCollection> existingCollection = getEmbeddedCollectionFrom(input, toCamelCase(embeddedFieldName));
+        Collection<TCollection> existingCollection = getEntityCollectionFrom(input, toCamelCase(embeddedFieldName));
         if(existingCollection == null)
             existingCollection = iniTCollectionCollection(embeddedFieldName, collectionDataManager);
         existingCollection.addAll(toAssociate);
@@ -902,37 +902,37 @@ public final class ApiLogic<T> {
 
         final T owner = input;
         T updatedInputEntity = dataManager.saveAndFlush(owner);
-        Collection<TCollection> newlyAssociated = getEmbeddedCollectionFrom(
+        Collection<TCollection> newlyAssociated = getEntityCollectionFrom(
         updatedInputEntity,
         toCamelCase(embeddedFieldName));
         var result = extractFromCollection(newlyAssociated, toAssociate);
-        if(embeddedCollectionApiHooks != null) 
-            embeddedCollectionApiHooks.postAssociate(toAssociate, result, owner, embeddedFieldName, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null) 
+            entityCollectionApiHooks.postAssociate(toAssociate, result, owner, embeddedFieldName, collectionDataManager, dataManager);
         return result;
     }
 
     public  <TCollection>
     List<TCollection>
-    removeFromEmbeddedCollection(
+    removeFromEntityCollection(
             T owner,
             String toRemoveFieldName,
             List<TCollection> toRemove,
             DataManager<TCollection> collectionDataManager,
-            EmbeddedCollectionApiHooks<TCollection, T> embeddedCollectionApiHooks) {
+            EntityCollectionApiHooks<TCollection, T> entityCollectionApiHooks) {
         //get collection owner
         val temp = dataManager
                 .findById(getId(owner, reflectionCache)).orElse(null);
         if(temp == null) throw_entityNotFound(owner, reflectionCache);
         owner = temp;
         assert owner != null;
-        Collection<TCollection> currentCollection = getEmbeddedCollectionFrom(owner, toRemoveFieldName);
+        Collection<TCollection> currentCollection = getEntityCollectionFrom(owner, toRemoveFieldName);
         if(currentCollection == null)
             throw new RuntimeException("Illegal attempt to remove object from null collection");
-        if(embeddedCollectionApiHooks != null) embeddedCollectionApiHooks.preRemove(toRemove, owner, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null) entityCollectionApiHooks.preRemove(toRemove, owner, collectionDataManager, dataManager);
         currentCollection.removeIf(toRemove::contains);
         dataManager.save(owner);
-        if(embeddedCollectionApiHooks != null)
-            embeddedCollectionApiHooks.postRemove(toRemove, owner, collectionDataManager, dataManager);
+        if(entityCollectionApiHooks != null)
+            entityCollectionApiHooks.postRemove(toRemove, owner, collectionDataManager, dataManager);
         return toRemove;
     }
 
@@ -959,7 +959,7 @@ public final class ApiLogic<T> {
          throw exception;
     }
 
-    public <TCollection> Collection<TCollection> getEmbeddedCollectionFrom(T input, String fieldName) {
+    public <TCollection> Collection<TCollection> getEntityCollectionFrom(T input, String fieldName) {
         try {
             return (Collection<TCollection>)
                     reflectionCache

@@ -2,19 +2,17 @@ package dev.sanda.apifi.utils;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.ElementCollectionApi;
-import dev.sanda.apifi.annotations.EmbeddedCollectionApi;
+import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.annotations.MapElementCollectionApi;
 import dev.sanda.apifi.service.ElementCollectionApiHooks;
-import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.NullElementCollectionApiHooks;
-import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
 import dev.sanda.datafi.dto.Page;
-import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
 import lombok.var;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -25,11 +23,8 @@ import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.persistence.*;
-import javax.tools.FileObject;
 import javax.tools.StandardLocation;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,8 +82,8 @@ public abstract class ApifiStaticUtils {
         return camelcaseNameOf(element) + "DataManager";
     }
 
-    public static TypeName collectionTypeName(VariableElement embedded) {
-        String typeNameString = embedded.asType().toString();
+    public static TypeName collectionTypeName(VariableElement entityCollectionField) {
+        String typeNameString = entityCollectionField.asType().toString();
         typeNameString = typeNameString.replaceAll("^.+<", "");
         typeNameString = typeNameString.replaceAll(">", "");
         int lastDot = typeNameString.lastIndexOf('.');
@@ -97,7 +92,7 @@ public abstract class ApifiStaticUtils {
         return ClassName.get(packageName, simpleClassName);
     }
 
-    /*public static String collectionType(VariableElement embedded) {
+    /*public static String collectionType(VariableElement entityCollectionField) {
         String typeNameString = embedded.asType().toString();
         typeNameString = typeNameString.replaceAll("^.+<", "");
         typeNameString = typeNameString.replaceAll(">", "");
@@ -253,9 +248,9 @@ public abstract class ApifiStaticUtils {
         return processingEnv.getElementUtils().getTypeElement(targetTypeName).asType();
     }
 
-    public static ParameterSpec asEmbeddedCollectionParamList(VariableElement embedded){
+    public static ParameterSpec asEntityCollectionParamList(VariableElement entityCollectionField){
         ClassName list = ClassName.get("java.util", "List");
-        TypeName typeClassName = collectionTypeName(embedded);
+        TypeName typeClassName = collectionTypeName(entityCollectionField);
         return ParameterSpec.builder(ParameterizedTypeName.get(list, typeClassName), "input").build();
     }
 
@@ -277,51 +272,51 @@ public abstract class ApifiStaticUtils {
         return ParameterizedTypeName.get(ClassName.get(List.class), collectionTypeName(element));
     }
 
-    public static String embeddedCollectionApiHooksName(VariableElement embedded) {
-        val config = embedded.getAnnotation(EmbeddedCollectionApi.class);
+    public static String entityCollectionApiHooksName(VariableElement entityCollectionField) {
+        val config = entityCollectionField.getAnnotation(EntityCollectionApi.class);
         if(config == null) return "null";
         val apiHooks = getApiHooksTypeName(config);
-        return !apiHooks.toString().equals(NullEmbeddedCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + EmbeddedCollectionApiHooks.class.getSimpleName() : "null";
+        return !apiHooks.toString().equals(NullEntityCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(entityCollectionField) + EntityCollectionApiHooks.class.getSimpleName() : "null";
     }
 
-    public static String elementCollectionApiHooksName(VariableElement embedded) {
-        val config = embedded.getAnnotation(ElementCollectionApi.class);
+    public static String elementCollectionApiHooksName(VariableElement entityCollectionField) {
+        val config = entityCollectionField.getAnnotation(ElementCollectionApi.class);
         if(config == null) return "null";
         val apiHooks = getApiHooksTypeName(config);
-        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + ElementCollectionApiHooks.class.getSimpleName() : "null";
+        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(entityCollectionField) + ElementCollectionApiHooks.class.getSimpleName() : "null";
     }
 
-    public static String mapElementCollectionApiHooksName(VariableElement embedded) {
-        val config = embedded.getAnnotation(MapElementCollectionApi.class);
+    public static String mapElementCollectionApiHooksName(VariableElement entityCollectionField) {
+        val config = entityCollectionField.getAnnotation(MapElementCollectionApi.class);
         if(config == null) return "null";
         val apiHooks = getApiHooksTypeName(config);
-        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(embedded) + ElementCollectionApiHooks.class.getSimpleName() : "null";
+        return !apiHooks.toString().equals(NullElementCollectionApiHooks.class.getCanonicalName()) ? camelcaseNameOf(entityCollectionField) + ElementCollectionApiHooks.class.getSimpleName() : "null";
     }
 
-    public static TypeName getApiHooksTypeName(EmbeddedCollectionApi embeddedCollectionApi) {
+    public static TypeName getApiHooksTypeName(EntityCollectionApi entityCollectionApi) {
         TypeName apiHooksType = null;
         try {
-            embeddedCollectionApi.apiHooks();
+            entityCollectionApi.apiHooks();
         } catch (MirroredTypeException mte) {
             apiHooksType = TypeName.get(mte.getTypeMirror());
         }
         return apiHooksType;
     }
 
-    public static TypeName getApiHooksTypeName(ElementCollectionApi embeddedCollectionApi) {
+    public static TypeName getApiHooksTypeName(ElementCollectionApi entityCollectionApi) {
         TypeName apiHooksType = null;
         try {
-            embeddedCollectionApi.apiHooks();
+            entityCollectionApi.apiHooks();
         } catch (MirroredTypeException mte) {
             apiHooksType = TypeName.get(mte.getTypeMirror());
         }
         return apiHooksType;
     }
 
-    public static TypeName getApiHooksTypeName(MapElementCollectionApi embeddedCollectionApi) {
+    public static TypeName getApiHooksTypeName(MapElementCollectionApi entityCollectionApi) {
         TypeName apiHooksType = null;
         try {
-            embeddedCollectionApi.apiHooks();
+            entityCollectionApi.apiHooks();
         } catch (MirroredTypeException mte) {
             apiHooksType = TypeName.get(mte.getTypeMirror());
         }
@@ -407,8 +402,8 @@ public abstract class ApifiStaticUtils {
                 .toString();
     }
 
-    public static String collectionCanonicalTypeNameString(VariableElement embedded) {
-        return embedded.asType().toString().replaceAll("^.+<", "").replaceAll(">", "");
+    public static String collectionCanonicalTypeNameString(VariableElement entityCollectionField) {
+        return entityCollectionField.asType().toString().replaceAll("^.+<", "").replaceAll(">", "");
     }
 
     public static Properties loadPropertiesFromFile(String resourcePath, ProcessingEnvironment env){

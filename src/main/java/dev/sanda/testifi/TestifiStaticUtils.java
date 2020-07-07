@@ -144,8 +144,8 @@ public abstract class TestifiStaticUtils {
         return getEntitiesSet(roundEnvironment);
     }
 
-    public static String collectionTypeString(VariableElement embedded) {
-        String typeNameString = embedded.asType().toString();
+    public static String collectionTypeString(VariableElement entityCollectionField) {
+        String typeNameString = entityCollectionField.asType().toString();
         typeNameString = typeNameString.replaceAll("^.+<", "");
         typeNameString = typeNameString.replaceAll(">", "");
         int lastDot = typeNameString.lastIndexOf(46);

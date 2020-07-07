@@ -2,9 +2,9 @@ package dev.sanda.apifi.annotations;
 
 import dev.sanda.apifi.generator.entity.ElementCollectionEndpointType;
 import dev.sanda.apifi.service.ElementCollectionApiHooks;
-import dev.sanda.apifi.service.EmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.NullElementCollectionApiHooks;
-import dev.sanda.apifi.service.NullEmbeddedCollectionApiHooks;
+import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

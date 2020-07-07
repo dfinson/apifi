@@ -36,9 +36,9 @@ public class EquivalencyMatcher extends TypeSafeMatcher<Object> {
                 if(expectedAsList.size() != actualAsList.size())
                     return false;
                 for (int i = 0; i < expectedAsList.size(); i++) {
-                    boolean embeddedCollectionsAreEquivalent =
+                    boolean entityCollectionsAreEquivalent =
                             new EquivalencyMatcher(actualAsList.get(i)).matchesSafely(expectedAsList.get(i));
-                    if (!embeddedCollectionsAreEquivalent)
+                    if (!entityCollectionsAreEquivalent)
                         return false;
                 }
             }else if(expected.getClass().isPrimitive()){

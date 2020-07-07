@@ -4,7 +4,7 @@
  * [Introduction](#introduction)
  * [Installation](#installation)
  * [Hello World](#hello-world)
- * [@WithCRUDEndpoints(...)](#-withcrudendpoints--)
+ * [Defining GraphQL Endpoints](#-defining-graphql-endpoints--)
  * [Customization](#customization)
  * [Search endpoints](#search-endpoints)
  * [Free text search](#free-text-search)
@@ -29,8 +29,8 @@
 
 ## Introduction  
 Apifi is a Java 8+ annotation processing framework which auto generates GraphQL APIs for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.
-
-### Installation
+### Getting started
+#### Installation
 ```xml
 <dependency>
   <groupId>dev.sanda</groupId>
@@ -39,7 +39,7 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 </dependency>
 ```
 
-### Hello World
+#### Hello World
 ```java
 @Entity
 @WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})
@@ -53,6 +53,9 @@ public class User {
     private String passwordHash;
 }
 ```
+#### Configuration properties
+- `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.
+- `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15.
 
 After compiling the project and taking a peek in the *target* folder, the following is the auto generated GraphQL service bean:
 ```java
@@ -87,7 +90,7 @@ public class UserGraphQLApiService {
 *Note:* 
 As its name suggests, [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiLogic.java) implements API CRUD ops generically. 
 
-### @WithCRUDEndpoints(...)
+### Defining GraphQL Endpoints
 Note the `User` entity is annotated with `@WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})`. This is how Apifi can be directed to generate GraphQL API endpoints for an entity. There are 16 types of [CRUDEndpoints](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CRUDEndpoints.java):
 
 1. GET_PAGINATED_BATCH:
@@ -410,15 +413,15 @@ public class UserGraphQLService{
 ```
 
 ### Entity Collections
-`Collection<T>` collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with the `@EmbeddedCollectionApi` annotation. This annotation takes in several arguments, as follows:
+`Collection<T>` collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:
 1. `CollectionEndpointType[] endpoints()` - `CollectionEndpointType` is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `UPDATE_IN`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument delineates which CRUD endpoints should be generated for the embedded collection.
 2. `String[] freeTextSearchFields()` - If `PAGINATED_FREE_TEXT_SEARCH` was specified as an endpoint, this argument delineates which fields the entity should be searchable by.
-3. `Class<? extends EmbeddedCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` bean described above. It enables custom business logic to be hooked before and / or after CRUD operations. To use, create a public class which implements the `EmbeddedCollectionApiHooks<T>` interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`, etc.).
+3. `Class<? extends EntityCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` bean described above. It enables custom business logic to be hooked before and / or after CRUD operations. To use, create a public class which implements the `EntityCollectionApiHooks<T>` interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`, etc.).
 4. `boolean associatePreExistingOnly()` - This parameter specifies whether the `ASSOCIATE_WITH` endpoint should ensure that instances being added to the collection are already present in the database - defaults to `false` if not set.
 
 *Note:* 
 
-As of the current version, this feature does not support non entity collections (i.e. `@ElementCollection`). However it is relatively straightforward to apply logic to such collections by implementing [EmbeddedCollectionApiHooks](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/EmbeddedCollectionApiHooks.java)   and overriding the relevant methods. 
+As of the current version, this feature does not support non entity collections (i.e. `@ElementCollection`). However it is relatively straightforward to apply logic to such collections by implementing [EntityCollectionApiHooks](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/EntityCollectionApiHooks.java)   and overriding the relevant methods. 
 
 *Example:*
 In order to demonstrate this feature, a new Entity type `Post` with a `@ManyToOne` relationship to `User` will be created as follows:
@@ -451,7 +454,7 @@ public class User {
 }
 ```
 
-As mentioned above, [`@EmbeddedCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/EmbeddedCollectionApi.java) can generate five types of [`CollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java):
+As mentioned above, [`@EntityCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/EntityCollectionApi.java) can generate five types of [`CollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java):
 
 1. ASSOCIATE_WITH:
 	*Overview:*
@@ -497,7 +500,7 @@ public class User {
     private String email;
     private String phoneNumber;
     private String passwordHash;
-    @EmbeddedCollectionApi(endpoints = {
+    @EntityCollectionApi(endpoints = {
             ASSOCIATE_WITH,
             UPDATE_IN,
             REMOVE_FROM,
@@ -516,27 +519,27 @@ public class UserGraphQLApiService {
   
   @GraphQLMutation
   public List<Post> associatePostsWithUser(User owner, List<Post> input) {
-    return apiLogic.associateWithEmbeddedCollection(owner, "posts", input, postsDataManager, null);
+    return apiLogic.associateWithEntityCollection(owner, "posts", input, postsDataManager, null);
   }
 
   @GraphQLMutation
   public List<Post> updatePostsInUser(User owner, List<Post> input) {
-    return apiLogic.updateEmbeddedCollection(owner, postsDataManager, input, null);
+    return apiLogic.updateEntityCollection(owner, postsDataManager, input, null);
   }
 
   @GraphQLMutation
   public List<Post> removePostsFromUser(User owner, List<Post> input) {
-    return apiLogic.removeFromEmbeddedCollection(owner, "posts", input, null);
+    return apiLogic.removeFromEntityCollection(owner, "posts", input, null);
   }
 
   @GraphQLQuery
   public Page<Post> postsInUser(User owner, PageRequest input) {
-    return apiLogic.getPaginatedBatchInEmbeddedCollection(owner, input, "posts", postsDataManager, null);
+    return apiLogic.getPaginatedBatchInEntityCollection(owner, input, "posts", postsDataManager, null);
   }
 }
 ```
 *Note:* 
-The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EmbeddedCollectionApiHooks<Post, User>` implementation has been specified.
+The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EntityCollectionApiHooks<Post, User>` implementation has been specified.
 
 ### Element Collections
 In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints:
@@ -748,8 +751,9 @@ export default{
 		apiUrl = url;
 	},
 
-	async getUserById(input, expectedReturn){
+	async getUserById(input, expectedReturn, customHeaders){
 			let requestHeaders = { "Content-Type": "application/json" }
+			if(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
 			if(bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
 			let opts = {
 				method: "POST",
@@ -766,8 +770,9 @@ export default{
 			return await (await fetch(apiUrl, opts)).json();
 	},
 
-	async createUser(input, expectedReturn){
+	async createUser(input, expectedReturn, customHeaders){
 			let requestHeaders = { "Content-Type": "application/json" }
+			if(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
 			if(bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
 			let opts = {
 				method: "POST",
@@ -782,8 +787,7 @@ export default{
 				})
 			};
 			return await (await fetch(apiUrl, opts)).json();
-	},
-
+	}
 }
 ```
 The file starts off with the `apiUrl` (defaults to `${window.location.origin}/graphql`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.
