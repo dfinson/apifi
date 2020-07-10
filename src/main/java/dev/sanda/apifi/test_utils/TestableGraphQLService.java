@@ -1,5 +1,10 @@
 package dev.sanda.apifi.test_utils;
 
+import dev.sanda.apifi.annotations.WithCRUDEndpoints;
+import dev.sanda.apifi.generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.service.ApiHooks;
+import dev.sanda.apifi.service.ApiLogic;
+import dev.sanda.datafi.service.DataManager;
 import lombok.val;
 
 import java.util.Arrays;

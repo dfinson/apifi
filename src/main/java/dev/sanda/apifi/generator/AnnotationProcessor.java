@@ -6,24 +6,13 @@ import dev.sanda.apifi.annotations.WithCRUDEndpoints;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.EntityApiGenerator;
-import dev.sanda.apifi.generator.entity.ServiceAndTest;
-import dev.sanda.apifi.service.GraphQLRequestExecutor;
-import graphql.GraphQL;
-import graphql.analysis.MaxQueryDepthInstrumentation;
-import graphql.execution.batched.BatchedExecutionStrategy;
-import io.leangen.graphql.GraphQLSchemaGenerator;
+import dev.sanda.apifi.generator.entity.ServiceTestableServiceAndTest;
 import lombok.val;
 import lombok.var;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
-import javax.servlet.http.HttpServletRequest;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.*;
@@ -31,9 +20,6 @@ import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
-import static dev.sanda.datafi.DatafiStaticUtils.toCamelCase;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
 
 
 /**
@@ -87,14 +73,20 @@ public class AnnotationProcessor extends AbstractProcessor {
         return basePackage + ".service." + serviceAndTest.getService().name;
     }
 
-    private void writeServiceAndTestToJavaFiles(ServiceAndTest serviceAndTest) {
-        final TypeSpec service = serviceAndTest.getService();
+    private void writeServiceAndTestToJavaFiles(ServiceTestableServiceAndTest serviceTestableServiceAndTest) {
+        final TypeSpec service = serviceTestableServiceAndTest.getService();
         final JavaFile serviceJavaFile = JavaFile.builder(basePackage + ".service", service).build();
-        final TypeSpec test = serviceAndTest.getTest();
+
+        final TypeSpec testableService = serviceTestableServiceAndTest.getTestableService();
+        final JavaFile testableServiceJavaFile = JavaFile.builder(basePackage + ".testable_service", testableService).build();
+
+        final TypeSpec test = serviceTestableServiceAndTest.getTest();
         final JavaFile testsJavaFile = JavaFile.builder(basePackage + ".test", test).build();
         try {
             serviceJavaFile.writeTo(System.out);
             serviceJavaFile.writeTo(processingEnv.getFiler());
+            testableServiceJavaFile.writeTo(System.out);
+            testableServiceJavaFile.writeTo(processingEnv.getFiler());
             testsJavaFile.writeTo(System.out);
             testsJavaFile.writeTo(processingEnv.getFiler());
         } catch (IOException e) {

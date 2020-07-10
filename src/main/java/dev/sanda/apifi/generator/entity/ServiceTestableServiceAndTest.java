@@ -8,7 +8,8 @@ import javax.lang.model.element.TypeElement;
 
 @Data
 @AllArgsConstructor
-public class ServiceAndTest {
+public class ServiceTestableServiceAndTest {
     private TypeSpec service;
+    private TypeSpec testableService;
     private TypeSpec test;
 }
