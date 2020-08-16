@@ -7,7 +7,7 @@ import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.CollectionsTypeResolver;
 import dev.sanda.apifi.generator.entity.EntityApiGenerator;
-import dev.sanda.apifi.generator.entity.ServiceTestableServiceAndTest;
+import dev.sanda.apifi.generator.entity.ServiceAndTestableService;
 import lombok.val;
 import lombok.var;
 import org.springframework.context.annotation.Bean;
@@ -15,11 +15,9 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -105,22 +103,18 @@ public class AnnotationProcessor extends AbstractProcessor {
         return basePackage + ".service." + serviceAndTest.getService().name;
     }
 
-    private void writeServiceAndTestToJavaFiles(ServiceTestableServiceAndTest serviceTestableServiceAndTest) {
-        final TypeSpec service = serviceTestableServiceAndTest.getService();
+    private void writeServiceAndTestToJavaFiles(ServiceAndTestableService serviceAndTestableService) {
+        final TypeSpec service = serviceAndTestableService.getService();
         final JavaFile serviceJavaFile = JavaFile.builder(basePackage + ".service", service).build();
 
-        final TypeSpec testableService = serviceTestableServiceAndTest.getTestableService();
+        final TypeSpec testableService = serviceAndTestableService.getTestableService();
         final JavaFile testableServiceJavaFile = JavaFile.builder(basePackage + ".testable_service", testableService).build();
 
-        final TypeSpec test = serviceTestableServiceAndTest.getTest();
-        final JavaFile testsJavaFile = JavaFile.builder(basePackage + ".test", test).build();
         try {
             serviceJavaFile.writeTo(System.out);
             serviceJavaFile.writeTo(processingEnv.getFiler());
             testableServiceJavaFile.writeTo(System.out);
             testableServiceJavaFile.writeTo(processingEnv.getFiler());
-            testsJavaFile.writeTo(System.out);
-            testsJavaFile.writeTo(processingEnv.getFiler());
         } catch (IOException e) {
            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
         }

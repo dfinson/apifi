@@ -13,6 +13,7 @@ import dev.sanda.datafi.reflection.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
 import lombok.var;
+import org.atteo.evo.inflector.English;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -420,6 +421,14 @@ public abstract class ApifiStaticUtils {
             ex.printStackTrace();
         }
         return null;
+    }
+
+    public String pluralCamelCaseName(String s){
+        return toCamelCase(English.plural(s));
+    }
+
+    public String pluralPascalCaseName(String s){
+        return toPascalCase(English.plural(s));
     }
 
     public static String toSimpleCamelcaseName(String service) {

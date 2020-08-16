@@ -2,14 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/CollectionsTypeResolver.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/api_logic/TopLevelCRUDEndpointsAPILogic.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/EntityApiGenerator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/ServiceTestableServiceAndTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/ServiceAndTestableService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/ApiLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/api_logic/ApiLogic.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/EquivalencyMatcher.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestLogic.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/testifi/TestifiStaticUtils.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -233,6 +235,7 @@
       <workItem from="1594662858232" duration="4465000" />
       <workItem from="1597228017426" duration="10298000" />
       <workItem from="1597396713270" duration="8951000" />
+      <workItem from="1597570153709" duration="1999000" />
     </task>
     <servers />
   </component>
@@ -271,10 +274,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="444" y="174" width="524" height="444" key="#com.intellij.ide.util.PackageChooserDialog/67.27.1299.741@67.27.1299.741" timestamp="1590318187165" />
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1594385539209">
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1597571556185">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1594385539209" />
+    <state x="260" y="27" width="902" height="741" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/67.27.1299.741@67.27.1299.741" timestamp="1597571556185" />
     <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate" timestamp="1597404261135">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -347,18 +350,18 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="449" y="149" width="568" height="501" key="extract.method.dialog/67.27.1299.741@67.27.1299.741" timestamp="1591770758919" />
-    <state x="282" y="95" width="1004" height="604" key="find.popup" timestamp="1597402939210">
+    <state x="282" y="95" width="1004" height="604" key="find.popup" timestamp="1597570897415">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="282" y="95" width="1004" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1597402939210" />
+    <state x="282" y="95" width="1004" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1597570897415" />
     <state x="338" y="27" width="746" height="741" key="new project wizard" timestamp="1589460794330">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="338" y="27" width="746" height="741" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1589460794330" />
-    <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1592125987813">
+    <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1597571394438">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
-    <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog/67.27.1299.741@67.27.1299.741" timestamp="1592125987813" />
+    <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog/67.27.1299.741@67.27.1299.741" timestamp="1597571394438" />
     <state x="379" y="89" width="672" height="678" key="search.everywhere.popup" timestamp="1589705226495">
       <screen x="67" y="27" width="1299" height="741" />
     </state>

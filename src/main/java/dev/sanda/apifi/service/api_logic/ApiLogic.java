@@ -1,6 +1,7 @@
-package dev.sanda.apifi.service;
+package dev.sanda.apifi.service.api_logic;
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.generator.entity.CollectionsTypeResolver;
+import dev.sanda.apifi.service.*;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;

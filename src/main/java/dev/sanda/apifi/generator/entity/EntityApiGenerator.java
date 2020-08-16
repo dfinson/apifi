@@ -4,6 +4,7 @@ import com.squareup.javapoet.*;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.client.GraphQLQueryBuilder;
 import dev.sanda.apifi.service.*;
+import dev.sanda.apifi.service.api_logic.ApiLogic;
 import dev.sanda.apifi.test_utils.TestableGraphQLService;
 import dev.sanda.apifi.utils.ApifiStaticUtils;
 import dev.sanda.apifi.annotations.*;
@@ -11,7 +12,7 @@ import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
-import dev.sanda.testifi.TestLogic;
+
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLIgnore;
@@ -20,13 +21,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -47,8 +43,6 @@ import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.generator.entity.EntityCollectionEndpointType.*;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static dev.sanda.testifi.TestifiStaticUtils.pluralCamelCaseName;
-import static dev.sanda.testifi.TestifiStaticUtils.pluralPascalCaseName;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
@@ -77,7 +71,7 @@ public class EntityApiGenerator {
             return this;
         }
 
-        public ServiceTestableServiceAndTest build(
+        public ServiceAndTestableService build(
                 ProcessingEnvironment processingEnv,
                 ApifiClientFactory clientFactory,
                 Map<String, ClassName> collectionsTypes) {
@@ -95,14 +89,6 @@ public class EntityApiGenerator {
                             .addSuperinterface(testableGraphQLServiceInterface())
                             .addAnnotation(Service.class)
                             .addField(methodsMap());
-            var testBuilder = TypeSpec
-                    .classBuilder(entity.getSimpleName().toString() + "GraphQLApiServiceTest").addModifiers(PUBLIC)
-                    .addAnnotation(AnnotationSpec.builder(RunWith.class)
-                            .addMember("value", "$T.class", SpringRunner.class)
-                            .build())
-                    .addAnnotation(SpringBootTest.class).addAnnotation(Transactional.class)
-                    .addAnnotation(AnnotationSpec.builder(Scope.class).build());
-
             //generate fields:
 
             //fields 1,2 - ApiLogic & testLogic
@@ -112,17 +98,10 @@ public class EntityApiGenerator {
 
             serviceBuilder.addField(defaultDataManager());
             testableServiceBuilder.addField(defaultDataManager());
-            testBuilder.addField(defaultDataManager());
-
-            testBuilder.addField(testLogic());
             serviceBuilder.addField(defaultApiHooks());
             testableServiceBuilder.addField(defaultApiHooks());
-
-            testBuilder.addField(defaultApiHooks());
-            testBuilder.addField(apiLogic());
             serviceBuilder.addMethod(postConstructInitApiLogic());
             testableServiceBuilder.addMethod(postConstructInitApiLogic());
-            testBuilder.addMethod(postConstructInitTestLogic());
 
             //field(s) 4 - foreign key data managers
             fields.forEach(field -> {
@@ -132,7 +111,6 @@ public class EntityApiGenerator {
                     final FieldSpec typeDataManager = dataManager(type, dataManagerName(field));
                     serviceBuilder.addField(typeDataManager);
                     testableServiceBuilder.addField(typeDataManager);
-                    testBuilder.addField(typeDataManager);
                 }
             });
 
@@ -162,7 +140,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genGetPaginatedBatchTest());
             }
 
             //GET_TOTAL_NON_ARCHIVED_COUNT
@@ -171,7 +148,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                //TODO test method
             }
 
             //GET_TOTAL_ARCHIVED_COUNT
@@ -180,7 +156,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                //TODO test method
             }
 
             //GET_BY_ID
@@ -189,7 +164,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genGetByIdTest());
             }
             //GET_BATCH_BY_IDS
             if (crudResolvers.containsKey(GET_BATCH_BY_IDS)) {
@@ -197,7 +171,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genGetBatchByIdsTest());
             }
             //CREATE
             if (crudResolvers.containsKey(CREATE)) {
@@ -205,7 +178,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genCreate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genCreateTest());
             }
             //BATCH_CREATE
             if (crudResolvers.containsKey(BATCH_CREATE)) {
@@ -213,7 +185,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genBatchCreateTest());
             }
             //UPDATE
             if (crudResolvers.containsKey(UPDATE)) {
@@ -221,7 +192,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genUpdate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genUpdateTest());
             }
             //BATCH_UPDATE
             if (crudResolvers.containsKey(BATCH_UPDATE)) {
@@ -229,7 +199,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genBatchUpdateTest());
             }
             //DELETE
             if (crudResolvers.containsKey(DELETE)) {
@@ -237,7 +206,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDelete(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genDeleteTest());
             }
             //BATCH_DELETE
             if (crudResolvers.containsKey(BATCH_DELETE)) {
@@ -245,7 +213,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genBatchDeleteTest());
             }
             //ARCHIVE
             if (crudResolvers.containsKey(ARCHIVE)) {
@@ -253,7 +220,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genArchiveTest());
             }
             //BATCH_ARCHIVE
             if (crudResolvers.containsKey(BATCH_ARCHIVE)) {
@@ -261,7 +227,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genBatchArchiveTest());
             }
             //DE_ARCHIVE
             if (crudResolvers.containsKey(DE_ARCHIVE)) {
@@ -269,7 +234,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDeArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genDeArchiveTest());
             }
             //BATCH_DE_ARCHIVE
             if (crudResolvers.containsKey(BATCH_DE_ARCHIVE)) {
@@ -277,7 +241,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genBatchDeArchiveTest());
             }
             //GET_ARCHIVED_PAGINATED_BATCH
             if (crudResolvers.containsKey(GET_ARCHIVED_PAGINATED_BATCH)) {
@@ -285,7 +248,6 @@ public class EntityApiGenerator {
                 serviceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
-                testBuilder.addMethod(genGetArchivedPaginatedBatchTest());
             }
 
             //generate foreign key endpoints
@@ -295,29 +257,29 @@ public class EntityApiGenerator {
 
                             val config = fk.getAnnotation(EntityCollectionApi.class);
                             val resolvers = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<EntityCollectionEndpointType>();
-                            addApiHooksIfPresent(fk, testableServiceBuilder, serviceBuilder, testBuilder, config);
+                            addApiHooksIfPresent(fk, testableServiceBuilder, serviceBuilder, config);
 
                             //read
                             if (!isGraphQLIgnored(fk)) {
-                                serviceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
-                                testableServiceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
-                                testBuilder.addMethod(genGetEntityCollectionTest(fk));
+                                final MethodSpec getEntityCollection = genGetEntityCollection(fk);
+                                serviceBuilder.addMethod(getEntityCollection);
+                                testableServiceBuilder.addMethod(getEntityCollection);
                             }
                             //associate
                             if (resolvers.contains(ASSOCIATE_WITH)) {
                                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                                serviceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
-                                testableServiceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
+                                final MethodSpec associateWithEntityCollection = genAssociateWithEntityCollection(fk, clientQueryBuilder);
+                                serviceBuilder.addMethod(associateWithEntityCollection);
+                                testableServiceBuilder.addMethod(associateWithEntityCollection);
                                 clientFactory.addQuery(clientQueryBuilder);
-                                testBuilder.addMethod(genAssociateWithEntityCollectionTest(fk));
                             }
                             //update
                             if (resolvers.contains(EntityCollectionEndpointType.UPDATE_IN)) {
                                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                                serviceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
-                                testableServiceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
+                                final MethodSpec updateInEntityCollection = genUpdateInEntityCollection(fk, clientQueryBuilder);
+                                serviceBuilder.addMethod(updateInEntityCollection);
+                                testableServiceBuilder.addMethod(updateInEntityCollection);
                                 clientFactory.addQuery(clientQueryBuilder);
-                                testBuilder.addMethod(genUpdateInEntityCollectionTest(fk));
                             }
                             //remove
                             if (resolvers.contains(REMOVE_FROM)) {
@@ -325,26 +287,22 @@ public class EntityApiGenerator {
                                 serviceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
-                                testBuilder.addMethod(genRemoveFromEntityCollectionTest(fk));
                             }
                             if (resolvers.contains(GET_PAGINATED__BATCH)) {
                                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                                 serviceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
-                                /*testBuilder.addMethod(genGetPaginatedBatchInEntityCollectionTest(fk));TODO*/
                             }
                             if (resolvers.contains(PAGINATED__FREE_TEXT_SEARCH)) {
                                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                                 serviceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
-                                /*testBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollectionTest(fk));TODO*/
                             }
                         } else {
                             serviceBuilder.addMethod(genGetEmbedded(fk));
                             testableServiceBuilder.addMethod(genGetEmbedded(fk));
-                            testBuilder.addMethod(genGetEmbeddedTest(fk));
                         }
                     });
 
@@ -380,7 +338,7 @@ public class EntityApiGenerator {
                     .forEach(serviceBuilder::addMethods);
 
             //return result
-            return new ServiceTestableServiceAndTest(serviceBuilder.build(), testableServiceBuilder.build(), testBuilder.build());
+            return new ServiceAndTestableService(serviceBuilder.build(), testableServiceBuilder.build());
         }
 
         private void generateElementCollectionMethods(ApifiClientFactory clientFactory, TypeSpec.Builder testableServiceBuilder, TypeSpec.Builder serviceBuilder, VariableElement elemCollection, ElementCollectionApi config) {
@@ -500,7 +458,7 @@ public class EntityApiGenerator {
 
         //method specs
         private MethodSpec genGetPaginatedBatch(GraphQLQueryBuilder clientQueryBuilder) {
-            final String name = pluralCamelCaseName(entity);
+            final String name = toPlural(camelcaseNameOf(entity));
             var builder = MethodSpec.methodBuilder(name)
                     .addModifiers(PUBLIC)
                     .addAnnotation(graphqlQueryAnnotation())
@@ -1004,7 +962,7 @@ public class EntityApiGenerator {
         }
 
         @SuppressWarnings("deprecation")
-        private MethodSpec genGetEntityCollection(VariableElement entityCollectionField, TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder) {
+        private MethodSpec genGetEntityCollection(VariableElement entityCollectionField) {
             String queryName = camelcaseNameOf(entityCollectionField);
             ParameterSpec input = asParamList(entity, GraphQLContext.class);
             String entityCollectionApiHooksName = entityCollectionApiHooksName(entityCollectionField);
@@ -1271,187 +1229,6 @@ public class EntityApiGenerator {
                 return "String";
         }
 
-        //test method specs
-        private MethodSpec genGetEmbeddedTest(VariableElement entityCollectionField) {
-            String testName = "get" + pascalCaseNameOf(entityCollectionField) + "From" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getEmbeddedTest($L, $S)",
-                            dataManagerName(entityCollectionField),
-                            entityCollectionField.getSimpleName().toString())
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genGetEntityCollectionTest(VariableElement entityCollectionField) {
-            String testName = "get" + toPlural(pascalCaseNameOf(entityCollectionField)) + "From" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getEntityCollectionTest($L, $S, $L)",
-                            dataManagerName(entityCollectionField),
-                            entityCollectionField.getSimpleName().toString(),
-                            entityCollectionApiHooksName(entityCollectionField))
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genGetArchivedPaginatedBatchTest() {
-            String testName = "archived" + pluralPascalCaseName(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getArchivedPaginatedBatchTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genBatchDeArchiveTest() {
-            String testName = "deArchive" + toPlural(pascalCaseNameOf(entity)) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.batchDeArchiveTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genDeArchiveTest() {
-            String testName = "deArchive" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.deArchiveTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genBatchArchiveTest() {
-            String testName = "archive" + toPlural(pascalCaseNameOf(entity)) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.batchArchiveTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genArchiveTest() {
-            String testName = "archive" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.archiveTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genBatchDeleteTest() {
-            String testName = "delete" + pluralPascalCaseName(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.batchDeleteTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genDeleteTest() {
-            String testName = "delete" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.deleteTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genBatchUpdateTest() {
-            String testName = "update" + pluralPascalCaseName(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.batchUpdateTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genUpdateTest() {
-            String testName = "update" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.updateTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genBatchCreateTest() {
-            String testName = "create" + pluralPascalCaseName(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.batchCreateTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genCreateTest() {
-            String testName = "create" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.createTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genGetBatchByIdsTest() {
-            String testName = "get" + pluralPascalCaseName(entity) + "ByIdTest";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getBatchByIdsTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genGetByIdTest() {
-            String testName = "get" + pascalCaseNameOf(entity) + "ByIdTest";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getByIdTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genGetPaginatedBatchTest() {
-            String testName = pluralCamelCaseName(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.getPaginatedBatchTest()")
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genAssociateWithEntityCollectionTest(VariableElement fk) {
-            String testName = "associate" + pascalCaseNameOf(fk) + "With" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.associateWithEntityCollectionTest($L, $S, $L)",
-                            dataManagerName(fk), fk.getSimpleName(), entityCollectionApiHooksName(fk))
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genUpdateInEntityCollectionTest(VariableElement fk) {
-            String testName = "update" + pascalCaseNameOf(fk) + "Of" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.updateEntityCollectionTest($L, $S, $L)",
-                            dataManagerName(fk), fk.getSimpleName(), entityCollectionApiHooksName(fk))
-                    .returns(void.class)
-                    .build();
-        }
-        private MethodSpec genRemoveFromEntityCollectionTest(VariableElement fk) {
-            String testName = "remove" + pascalCaseNameOf(fk) + "From" + pascalCaseNameOf(entity) + "Test";
-            return MethodSpec.methodBuilder(testName)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(Test.class)
-                    .addStatement("testLogic.removeFromEntityCollectionTest($L, $S, $L)",
-                            dataManagerName(fk), fk.getSimpleName(), entityCollectionApiHooksName(fk))
-                    .returns(void.class)
-                    .build();
-        }
-
         //field spec helpers
         private FieldSpec dataManager(TypeElement entity, String namePrefix) {
             String suffix = namePrefix.endsWith("DataManager") ? "" : "DataManager";
@@ -1475,12 +1252,6 @@ public class EntityApiGenerator {
             return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(ApiLogic.class), ClassName.get(entity)), "apiLogic")
                     .addAnnotation(Autowired.class)
                     .addAnnotation(Getter.class)
-                    .addModifiers(PRIVATE)
-                    .build();
-        }
-        private FieldSpec testLogic() {
-            return FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(TestLogic.class), ClassName.get(entity)), "testLogic")
-                    .addAnnotation(Autowired.class)
                     .addModifiers(PRIVATE)
                     .build();
         }
@@ -1530,12 +1301,11 @@ public class EntityApiGenerator {
         }
         private void addApiHooksIfPresent(VariableElement entityCollectionField,
                                           TypeSpec.Builder testableServiceBuilder,
-                                          TypeSpec.Builder serviceBuilder, TypeSpec.Builder testBuilder, EntityCollectionApi entityCollectionApi) {
+                                          TypeSpec.Builder serviceBuilder, EntityCollectionApi entityCollectionApi) {
             if(!isCustomEntityCollectionApiHooks(entityCollectionApi)) return;
             final FieldSpec apiHooks = entityCollectionApiHooks(entityCollectionField);
             serviceBuilder.addField(apiHooks);
             testableServiceBuilder.addField(apiHooks);
-            testBuilder.addField(apiHooks);
         }
         private boolean isApiFindByAnnotated(VariableElement variableElement) {
             return
