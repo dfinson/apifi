@@ -1,21 +1,26 @@
 package dev.sanda.apifi.test_utils;
 
-import dev.sanda.apifi.annotations.WithCRUDEndpoints;
-import dev.sanda.apifi.generator.entity.CRUDEndpoints;
-import dev.sanda.apifi.service.ApiHooks;
-import dev.sanda.apifi.service.ApiLogic;
-import dev.sanda.datafi.service.DataManager;
+import lombok.SneakyThrows;
 import lombok.val;
+import org.dom4j.IllegalAddException;
 
-import java.util.Arrays;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 public interface TestableGraphQLService<TEntity> {
+    Map<String, Method> getMethodsMap();
+    @SneakyThrows
     default <TReturn> TReturn invokeEndpoint(String methodName, Object... args){
         try {
-            val params = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
-            val methodToInvoke = this.getClass().getMethod(methodName, params);
+            val methodToInvoke = getMethodsMap().get(methodName);
+            if(methodToInvoke == null) throw new NoSuchMethodException();
             return (TReturn) methodToInvoke.invoke(this, args);
-        }catch (Exception e){
+        }
+        catch (InvocationTargetException e){
+            throw e.getTargetException();
+        }
+        catch (IllegalAccessException | NoSuchMethodException e){
             throw new RuntimeException(e);
         }
     }

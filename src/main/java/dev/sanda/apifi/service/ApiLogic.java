@@ -1,16 +1,13 @@
 package dev.sanda.apifi.service;
-
 import dev.sanda.apifi.annotations.EntityCollectionApi;
+import dev.sanda.apifi.generator.entity.CollectionsTypeResolver;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import dev.sanda.mockeri.meta.CollectionInstantiator;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.val;
-import lombok.var;
+import lombok.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,22 +29,28 @@ import static dev.sanda.datafi.reflection.CachedEntityTypeInfo.genDefaultInstanc
 
 @Service
 @Scope("prototype")
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public final class ApiLogic<T> {
 
     @Value("#{new Boolean('${datafi.logging-enabled:false}')}")
     private Boolean datafiLoggingEnabled;
     @Setter
     private ApiHooks<T> apiHooks;
-    @Autowired
-    private ReflectionCache reflectionCache;
-    @Autowired
-    private CollectionInstantiator collectionInstantiator;
+    @NonNull
+    private final ReflectionCache reflectionCache;
+    @NonNull
+    private final CollectionInstantiator collectionInstantiator;
+    @NonNull
+    private final CollectionsTypeResolver collectionsTypeResolver;
+
     private DataManager<T> dataManager;
     public void setDataManager(DataManager<T> dataManager){
         this.dataManager = dataManager;
+        this.entityName = dataManager.getClazzSimpleName();
         this.dataManager.setLoggingEnabled(datafiLoggingEnabled);
         this.idFieldName = reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName();
     }
+    private String entityName;
     private String idFieldName;
 
     public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
@@ -172,6 +175,11 @@ public final class ApiLogic<T> {
     }
 
     public T update(T input) {
+        if(input == null){
+            throw new IllegalArgumentException(
+                    String.format("Illegal attempt to update %s instance with null input", entityName)
+            );
+        }
         val id = getId(input, reflectionCache);
         T toUpdate = getById(id);
         if (toUpdate == null) throw_entityNotFound(input, reflectionCache);
@@ -365,6 +373,7 @@ public final class ApiLogic<T> {
         return result;
     }
 
+    @SneakyThrows
     public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection>
     addToElementCollection(T input, String fieldName, List<TCollection> toAdd, E elementCollectionApiHooks){
         var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
@@ -382,7 +391,14 @@ public final class ApiLogic<T> {
         if(cachedElementCollectionField == null)
             throw new RuntimeException(String.format("No element collection \"%s\" found in type \"%s\"",
                     fieldName, dataManager.getClazzSimpleName()));
-
+        final Field collectionField = cachedElementCollectionField.getField();
+        if(collectionField.get(input) == null) {
+            /*collectionField.setAccessible(true);
+            collectionField.set(input, initElementCollection(fieldName));*/
+            throw new RuntimeException(
+                    "Illegal attempt to add to " + fieldName +
+                    " without having initialized the collection");
+        }
         cachedElementCollectionField.addAll(input, toAdd);
 
         if(elementCollectionApiHooks != null)
@@ -456,6 +472,7 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
+        returnValue.setPageNumber(input.getPageNumber());
         if(elementCollectionApiHooks != null)
             elementCollectionApiHooks.postGetPaginatedBatch(returnValue, fieldName, owner, input, dataManager);
         return returnValue;
@@ -508,6 +525,7 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
+        returnValue.setPageNumber(input.getPageNumber());
         if(elementCollectionApiHooks != null)
             elementCollectionApiHooks.postFreeTextSearch(input, returnValue, owner, fieldName, dataManager);
         return returnValue;
@@ -681,7 +699,7 @@ public final class ApiLogic<T> {
         if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, fieldName, collectionDataManager, dataManager);
         Collection<TCollection> existingCollection = getEntityCollectionFrom(input, fieldName);
         if(existingCollection == null)
-            existingCollection = iniTCollectionCollection(fieldName, collectionDataManager);
+            existingCollection = initEntityCollection(fieldName, collectionDataManager);
         existingCollection.addAll(toAssociate);
 
         //save owner
@@ -778,13 +796,14 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalItems);
+        returnValue.setPageNumber(input.getPageNumber());
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postFreeTextSearch(returnValue, input,owner, searchTerm, collectionDataManager, dataManager);
         return returnValue;
     }
     private final Map<String, String> searchTermQueryCache = new HashMap<>();
     private String buildSearchTermQuery(String collectionFieldName) {
-        val key = collectionFieldName + "In" + dataManager.getClazzSimpleName() + "FreeTextSearch";
+        val key = collectionFieldName + "Of" + dataManager.getClazzSimpleName() + "FreeTextSearch";
         if(searchTermQueryCache.containsKey(key)) return searchTermQueryCache.get(key);
         val searchFieldNames =
                 Arrays.asList(
@@ -827,12 +846,13 @@ public final class ApiLogic<T> {
         validateSortByIfNonNull(collectionDataManager.getClazz(), input.getSortBy(), reflectionCache);
         val isNonArchivedClause = isClazzArchivable(collectionDataManager.getClazz(), reflectionCache) ?
                 "AND embedded.isArchived = false " : " ";
+        final String ownerEntityName = dataManager.getClazzSimpleName();
         val contentQueryString = String.format(
                 "SELECT embedded FROM %s owner " +
                         "JOIN owner.%s embedded " +
                         "WHERE owner.%s = :ownerId %s" +
-                        "ORDER BY %s",
-                dataManager.getClazzSimpleName(),
+                        "ORDER BY owner.%s",
+                ownerEntityName,
                 fieldName,
                 idFieldName,
                 isNonArchivedClause,
@@ -841,7 +861,7 @@ public final class ApiLogic<T> {
                 "SELECT COUNT(embedded) FROM %s owner " +
                         "JOIN owner.%s embedded " +
                         "WHERE owner.%s = :ownerId %s",
-                dataManager.getClazzSimpleName(),
+                ownerEntityName,
                 fieldName,
                 idFieldName,
                 isNonArchivedClause);
@@ -885,7 +905,7 @@ public final class ApiLogic<T> {
             throw new IllegalArgumentException("illegal attempt made to indirectly add new strong entities");
         Collection<TCollection> existingCollection = getEntityCollectionFrom(input, toCamelCase(embeddedFieldName));
         if(existingCollection == null)
-            existingCollection = iniTCollectionCollection(embeddedFieldName, collectionDataManager);
+            existingCollection = initEntityCollection(embeddedFieldName, collectionDataManager);
         existingCollection.addAll(toAssociate);
         //update & save owner
         try {
@@ -987,7 +1007,8 @@ public final class ApiLogic<T> {
         log(msg, false, args);
     }
 
-    private <TCollection> Collection<TCollection> iniTCollectionCollection(String fieldName, DataManager<TCollection> collectionDataManager) {
+    private <TCollection> Collection<TCollection> initEntityCollection(
+            String fieldName, DataManager<TCollection> collectionDataManager) {
         val collectionType = reflectionCache
                 .getEntitiesCache()
                 .get(dataManager.getClazzSimpleName())
@@ -999,10 +1020,22 @@ public final class ApiLogic<T> {
         return collectionInstantiator.instantiateCollection(collectionType, collectibleType);
     }
 
+    private <TCollection> Collection<TCollection> initElementCollection(String fieldName){
+        val collectionType = reflectionCache
+                .getEntitiesCache()
+                .get(entityName)
+                .getFields()
+                .get(fieldName)
+                .getField()
+                .getType();
+        Class collectibleType = collectionsTypeResolver.resolveFor(entityName + "." + fieldName);
+        return collectionInstantiator.instantiateCollection(collectionType, collectibleType);
+    }
+
     private <TKey, TValue> Map<TKey, TValue> initMapElementCollection(String fieldName){
         val mapType = reflectionCache
                 .getEntitiesCache()
-                .get(dataManager.getClazzSimpleName())
+                .get(entityName)
                 .getFields()
                 .get(fieldName)
                 .getField()

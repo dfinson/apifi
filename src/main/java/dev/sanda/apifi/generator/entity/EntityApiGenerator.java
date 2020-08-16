@@ -34,6 +34,7 @@ import javax.lang.model.element.*;
 import javax.persistence.ElementCollection;
 import javax.tools.Diagnostic;
 import javax.transaction.Transactional;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,8 +46,7 @@ import static dev.sanda.apifi.generator.entity.MapElementCollectionEndpointType.
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.apifi.generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.datafi.DatafiStaticUtils.getIdType;
-import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
 import static dev.sanda.testifi.TestifiStaticUtils.pluralCamelCaseName;
 import static dev.sanda.testifi.TestifiStaticUtils.pluralPascalCaseName;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -77,24 +77,29 @@ public class EntityApiGenerator {
             return this;
         }
 
-        public ServiceTestableServiceAndTest build(ProcessingEnvironment processingEnv, ApifiClientFactory clientFactory){
+        public ServiceTestableServiceAndTest build(
+                ProcessingEnvironment processingEnv,
+                ApifiClientFactory clientFactory,
+                Map<String, ClassName> collectionsTypes) {
             this.clientFactory = clientFactory;
             this.processingEnv = processingEnv;
+            registerCollectionsTypes(collectionsTypes);
             SecurityAnnotationsFactory.setProcessingEnv(processingEnv);
             //init builders
             var serviceBuilder =
                     TypeSpec.classBuilder(entity.getSimpleName().toString() + "GraphQLApiService").addModifiers(PUBLIC)
-                    .addAnnotation(Service.class).addAnnotation(Transactional.class);
+                            .addAnnotation(Service.class).addAnnotation(Transactional.class);
             var testableServiceBuilder =
                     TypeSpec
-                    .classBuilder("Testable" + entity.getSimpleName().toString() + "GraphQLApiService").addModifiers(PUBLIC)
-                    .addSuperinterface(testableGraphQLServiceInterface())
-                    .addAnnotation(Service.class);
+                            .classBuilder("Testable" + entity.getSimpleName().toString() + "GraphQLApiService").addModifiers(PUBLIC)
+                            .addSuperinterface(testableGraphQLServiceInterface())
+                            .addAnnotation(Service.class)
+                            .addField(methodsMap());
             var testBuilder = TypeSpec
                     .classBuilder(entity.getSimpleName().toString() + "GraphQLApiServiceTest").addModifiers(PUBLIC)
                     .addAnnotation(AnnotationSpec.builder(RunWith.class)
-                        .addMember("value", "$T.class", SpringRunner.class)
-                        .build())
+                            .addMember("value", "$T.class", SpringRunner.class)
+                            .build())
                     .addAnnotation(SpringBootTest.class).addAnnotation(Transactional.class)
                     .addAnnotation(AnnotationSpec.builder(Scope.class).build());
 
@@ -121,21 +126,21 @@ public class EntityApiGenerator {
 
             //field(s) 4 - foreign key data managers
             fields.forEach(field -> {
-                        String typeNameKey = isIterable(field.asType(), processingEnv) ? getCollectionType(field) : field.asType().toString();
-                        TypeElement type = entitiesMap.get(typeNameKey);
-                        if(type != null) {
-                            final FieldSpec typeDataManager = dataManager(type, dataManagerName(field));
-                            serviceBuilder.addField(typeDataManager);
-                            testableServiceBuilder.addField(typeDataManager);
-                            testBuilder.addField(typeDataManager);
-                        }
-                    });
+                String typeNameKey = isIterable(field.asType(), processingEnv) ? getCollectionType(field) : field.asType().toString();
+                TypeElement type = entitiesMap.get(typeNameKey);
+                if (type != null) {
+                    final FieldSpec typeDataManager = dataManager(type, dataManagerName(field));
+                    serviceBuilder.addField(typeDataManager);
+                    testableServiceBuilder.addField(typeDataManager);
+                    testBuilder.addField(typeDataManager);
+                }
+            });
 
             // generate class level security annotations
             val serviceLevelSecurity = entity.getAnnotation(WithServiceLevelSecurity.class);
-            if(serviceLevelSecurity != null){
+            if (serviceLevelSecurity != null) {
                 val securityAnnotations = SecurityAnnotationsFactory.of(serviceLevelSecurity);
-                if(!securityAnnotations.isEmpty()) {
+                if (!securityAnnotations.isEmpty()) {
                     serviceBuilder.addAnnotations(securityAnnotations);
                     testableServiceBuilder.addAnnotations(securityAnnotations);
                 }
@@ -144,15 +149,15 @@ public class EntityApiGenerator {
             // prepare the groundwork for method level security annotations
             methodLevelSecuritiesMap = new HashMap<>();
             val methodLevelSecurities = entity.getAnnotationsByType(WithMethodLevelSecurity.class);
-            if(methodLevelSecurities.length > 0){
+            if (methodLevelSecurities.length > 0) {
                 for (var security : methodLevelSecurities)
                     handleTargetMethodsMapping(security, methodLevelSecuritiesMap);
             }
 
             //generate crud methods:
-            
+
             //GET_PAGINATED_BATCH
-            if(crudResolvers.containsKey(GET_PAGINATED_BATCH)) {
+            if (crudResolvers.containsKey(GET_PAGINATED_BATCH)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
@@ -161,7 +166,7 @@ public class EntityApiGenerator {
             }
 
             //GET_TOTAL_NON_ARCHIVED_COUNT
-            if(crudResolvers.containsKey(GET_TOTAL_COUNT)){
+            if (crudResolvers.containsKey(GET_TOTAL_COUNT)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
@@ -170,7 +175,7 @@ public class EntityApiGenerator {
             }
 
             //GET_TOTAL_ARCHIVED_COUNT
-            if(crudResolvers.containsKey(GET_TOTAL_ARCHIVED_COUNT)){
+            if (crudResolvers.containsKey(GET_TOTAL_ARCHIVED_COUNT)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
@@ -179,7 +184,7 @@ public class EntityApiGenerator {
             }
 
             //GET_BY_ID
-            if(crudResolvers.containsKey(GET_BY_ID)) {
+            if (crudResolvers.containsKey(GET_BY_ID)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
@@ -187,7 +192,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genGetByIdTest());
             }
             //GET_BATCH_BY_IDS
-            if(crudResolvers.containsKey(GET_BATCH_BY_IDS)) {
+            if (crudResolvers.containsKey(GET_BATCH_BY_IDS)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
@@ -195,7 +200,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genGetBatchByIdsTest());
             }
             //CREATE
-            if(crudResolvers.containsKey(CREATE)) {
+            if (crudResolvers.containsKey(CREATE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genCreate(clientQueryBuilder));
@@ -203,7 +208,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genCreateTest());
             }
             //BATCH_CREATE
-            if(crudResolvers.containsKey(BATCH_CREATE)) {
+            if (crudResolvers.containsKey(BATCH_CREATE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
@@ -211,7 +216,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genBatchCreateTest());
             }
             //UPDATE
-            if(crudResolvers.containsKey(UPDATE)) {
+            if (crudResolvers.containsKey(UPDATE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genUpdate(clientQueryBuilder));
@@ -219,7 +224,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genUpdateTest());
             }
             //BATCH_UPDATE
-            if(crudResolvers.containsKey(BATCH_UPDATE)) {
+            if (crudResolvers.containsKey(BATCH_UPDATE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
@@ -227,7 +232,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genBatchUpdateTest());
             }
             //DELETE
-            if(crudResolvers.containsKey(DELETE)) {
+            if (crudResolvers.containsKey(DELETE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDelete(clientQueryBuilder));
@@ -235,7 +240,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genDeleteTest());
             }
             //BATCH_DELETE
-            if(crudResolvers.containsKey(BATCH_DELETE)) {
+            if (crudResolvers.containsKey(BATCH_DELETE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
@@ -243,7 +248,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genBatchDeleteTest());
             }
             //ARCHIVE
-            if(crudResolvers.containsKey(ARCHIVE)) {
+            if (crudResolvers.containsKey(ARCHIVE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genArchive(clientQueryBuilder));
@@ -251,7 +256,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genArchiveTest());
             }
             //BATCH_ARCHIVE
-            if(crudResolvers.containsKey(BATCH_ARCHIVE)) {
+            if (crudResolvers.containsKey(BATCH_ARCHIVE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
@@ -259,7 +264,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genBatchArchiveTest());
             }
             //DE_ARCHIVE
-            if(crudResolvers.containsKey(DE_ARCHIVE)) {
+            if (crudResolvers.containsKey(DE_ARCHIVE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDeArchive(clientQueryBuilder));
@@ -267,7 +272,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genDeArchiveTest());
             }
             //BATCH_DE_ARCHIVE
-            if(crudResolvers.containsKey(BATCH_DE_ARCHIVE)) {
+            if (crudResolvers.containsKey(BATCH_DE_ARCHIVE)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
@@ -275,7 +280,7 @@ public class EntityApiGenerator {
                 testBuilder.addMethod(genBatchDeArchiveTest());
             }
             //GET_ARCHIVED_PAGINATED_BATCH
-            if(crudResolvers.containsKey(GET_ARCHIVED_PAGINATED_BATCH)) {
+            if (crudResolvers.containsKey(GET_ARCHIVED_PAGINATED_BATCH)) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
@@ -285,82 +290,82 @@ public class EntityApiGenerator {
 
             //generate foreign key endpoints
             fields.stream().filter(ApifiStaticUtils::isForeignKeyOrKeys).collect(Collectors.toList())
-            .forEach(fk -> {
-                if(isIterable(fk.asType(), processingEnv)){
+                    .forEach(fk -> {
+                        if (isIterable(fk.asType(), processingEnv)) {
 
-                    val config = fk.getAnnotation(EntityCollectionApi.class);
-                    val resolvers = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<EntityCollectionEndpointType>();
-                    addApiHooksIfPresent(fk, testableServiceBuilder, serviceBuilder, testBuilder, config);
+                            val config = fk.getAnnotation(EntityCollectionApi.class);
+                            val resolvers = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<EntityCollectionEndpointType>();
+                            addApiHooksIfPresent(fk, testableServiceBuilder, serviceBuilder, testBuilder, config);
 
-                    //read
-                    if(!isGraphQLIgnored(fk)){
-                        serviceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
-                        testableServiceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
-                        testBuilder.addMethod(genGetEntityCollectionTest(fk));
-                    }
-                    //associate
-                    if(resolvers.contains(ASSOCIATE_WITH)){
-                        val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                        serviceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
-                        testableServiceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
-                        clientFactory.addQuery(clientQueryBuilder);
-                        testBuilder.addMethod(genAssociateWithEntityCollectionTest(fk));
-                    }
-                    //update
-                    if(resolvers.contains(EntityCollectionEndpointType.UPDATE_IN)){
-                        val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                        serviceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
-                        testableServiceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
-                        clientFactory.addQuery(clientQueryBuilder);
-                        testBuilder.addMethod(genUpdateInEntityCollectionTest(fk));
-                    }
-                    //remove
-                    if(resolvers.contains(REMOVE_FROM)){
-                        val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                        serviceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
-                        testableServiceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
-                        clientFactory.addQuery(clientQueryBuilder);
-                        testBuilder.addMethod(genRemoveFromEntityCollectionTest(fk));
-                    }
-                    if(resolvers.contains(GET_PAGINATED__BATCH)){
-                        val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                        serviceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
-                        testableServiceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
-                        clientFactory.addQuery(clientQueryBuilder);
-                        /*testBuilder.addMethod(genGetPaginatedBatchInEntityCollectionTest(fk));TODO*/
-                    }
-                    if(resolvers.contains(PAGINATED__FREE_TEXT_SEARCH)){
-                        val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                        serviceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
-                        testableServiceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
-                        clientFactory.addQuery(clientQueryBuilder);
-                        /*testBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollectionTest(fk));TODO*/
-                    }
-                }else {
-                    serviceBuilder.addMethod(genGetEmbedded(fk));
-                    testableServiceBuilder.addMethod(genGetEmbedded(fk));
-                    testBuilder.addMethod(genGetEmbeddedTest(fk));
-                }
-            });
+                            //read
+                            if (!isGraphQLIgnored(fk)) {
+                                serviceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
+                                testableServiceBuilder.addMethod(genGetEntityCollection(fk, serviceBuilder, testBuilder));
+                                testBuilder.addMethod(genGetEntityCollectionTest(fk));
+                            }
+                            //associate
+                            if (resolvers.contains(ASSOCIATE_WITH)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                serviceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
+                                testableServiceBuilder.addMethod(genAssociateWithEntityCollection(fk, clientQueryBuilder));
+                                clientFactory.addQuery(clientQueryBuilder);
+                                testBuilder.addMethod(genAssociateWithEntityCollectionTest(fk));
+                            }
+                            //update
+                            if (resolvers.contains(EntityCollectionEndpointType.UPDATE_IN)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                serviceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
+                                testableServiceBuilder.addMethod(genUpdateInEntityCollection(fk, clientQueryBuilder));
+                                clientFactory.addQuery(clientQueryBuilder);
+                                testBuilder.addMethod(genUpdateInEntityCollectionTest(fk));
+                            }
+                            //remove
+                            if (resolvers.contains(REMOVE_FROM)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                serviceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
+                                testableServiceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
+                                clientFactory.addQuery(clientQueryBuilder);
+                                testBuilder.addMethod(genRemoveFromEntityCollectionTest(fk));
+                            }
+                            if (resolvers.contains(GET_PAGINATED__BATCH)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                serviceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
+                                testableServiceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
+                                clientFactory.addQuery(clientQueryBuilder);
+                                /*testBuilder.addMethod(genGetPaginatedBatchInEntityCollectionTest(fk));TODO*/
+                            }
+                            if (resolvers.contains(PAGINATED__FREE_TEXT_SEARCH)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                serviceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
+                                testableServiceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
+                                clientFactory.addQuery(clientQueryBuilder);
+                                /*testBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollectionTest(fk));TODO*/
+                            }
+                        } else {
+                            serviceBuilder.addMethod(genGetEmbedded(fk));
+                            testableServiceBuilder.addMethod(genGetEmbedded(fk));
+                            testBuilder.addMethod(genGetEmbeddedTest(fk));
+                        }
+                    });
 
             //generate element collection endpoints
             fields.stream().filter(f -> f.getAnnotation(ElementCollection.class) != null).collect(Collectors.toList())
-            .forEach(elemCollection -> {
-                val elementCollectionApiConfig = elemCollection.getAnnotation(ElementCollectionApi.class);
-                if(elementCollectionApiConfig != null)
-                    generateElementCollectionMethods(clientFactory, testableServiceBuilder, serviceBuilder, elemCollection, elementCollectionApiConfig);
-                else {
-                    val mapElementCollectionApiConfig = elemCollection.getAnnotation(MapElementCollectionApi.class);
-                    if(mapElementCollectionApiConfig != null)
-                        generateMapElementCollectionMethods(clientFactory, testableServiceBuilder, serviceBuilder, elemCollection, mapElementCollectionApiConfig);
-                }
-            });
+                    .forEach(elemCollection -> {
+                        val elementCollectionApiConfig = elemCollection.getAnnotation(ElementCollectionApi.class);
+                        if (elementCollectionApiConfig != null)
+                            generateElementCollectionMethods(clientFactory, testableServiceBuilder, serviceBuilder, elemCollection, elementCollectionApiConfig);
+                        else {
+                            val mapElementCollectionApiConfig = elemCollection.getAnnotation(MapElementCollectionApi.class);
+                            if (mapElementCollectionApiConfig != null)
+                                generateMapElementCollectionMethods(clientFactory, testableServiceBuilder, serviceBuilder, elemCollection, mapElementCollectionApiConfig);
+                        }
+                    });
 
             //generate api free text search endpoints
             val hasFreeTextSearchFields = fields
                     .stream()
                     .anyMatch(this::isFreeTextSearchAnnotated);
-            if(hasFreeTextSearchFields) {
+            if (hasFreeTextSearchFields) {
                 val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
                 serviceBuilder.addMethod(genFreeTextSearchBy(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genFreeTextSearchBy(clientQueryBuilder));
@@ -786,7 +791,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genFreeTextSearchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
-            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "Of" + pascalCaseNameOf(entity);
             val config = elemCollection.getAnnotation(ElementCollectionApi.class);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
@@ -812,7 +817,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genGetPaginatedBatchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
-            val queryName = camelcaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val queryName = camelcaseNameOf(elemCollection) + "Of" + pascalCaseNameOf(entity);
             val config = elemCollection.getAnnotation(ElementCollectionApi.class);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
@@ -892,7 +897,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genFreeTextSearchInMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
-            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "Of" + pascalCaseNameOf(entity);
             val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
@@ -918,7 +923,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genGetPaginatedBatchInMapElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
-            val queryName = camelcaseNameOf(elemCollection) + "In" + pascalCaseNameOf(entity);
+            val queryName = camelcaseNameOf(elemCollection) + "Of" + pascalCaseNameOf(entity);
             val config = elemCollection.getAnnotation(MapElementCollectionApi.class);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
@@ -1095,8 +1100,18 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genGetPaginatedFreeTextSearchInEntityCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
-            String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "FreeTextSearch";
+            String queryName = camelcaseNameOf(fk) + "Of" + pascalCaseNameOf(entity) + "FreeTextSearch";
             val config = fk.getAnnotation(EntityCollectionApi.class);
+            if(config.freeTextSearchFields().length == 1 && config.freeTextSearchFields()[0].equals("")){
+                logCompilationError(processingEnv, fk,
+                        "collection field " + fk.getSimpleName().toString() +
+                        " in " + entity.getSimpleName().toString() +
+                        " has been marked " +
+                        "as free text searchable, but no field names of entity type " +
+                        getCollectionType(fk) + " have been specified in the " +
+                        "freeTextSearchFields parameter"
+                );
+            }
             ParameterSpec input = ParameterSpec.builder(TypeName.get(FreeTextSearchPageRequest.class), "input").build();
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(PUBLIC)
@@ -1121,7 +1136,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genGetPaginatedBatchInEntityCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
-            String queryName = camelcaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
+            String queryName = camelcaseNameOf(fk) + "Of" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EntityCollectionApi.class);
             ParameterSpec input = ParameterSpec.builder(TypeName.get(PageRequest.class), "input").build();
             var builder = MethodSpec.methodBuilder(queryName)
@@ -1147,7 +1162,7 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genUpdateInEntityCollection(VariableElement fk, GraphQLQueryBuilder clientQueryBuilder) {
-            val mutationName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity);
+            val mutationName = "update" + pascalCaseNameOf(fk) + "Of" + pascalCaseNameOf(entity);
             val config = fk.getAnnotation(EntityCollectionApi.class);
             val hasApiHooks = isCustomEntityCollectionApiHooks(config);
             final TypeName collectionTypeName = collectionTypeName(fk);
@@ -1417,7 +1432,7 @@ public class EntityApiGenerator {
                     .build();
         }
         private MethodSpec genUpdateInEntityCollectionTest(VariableElement fk) {
-            String testName = "update" + pascalCaseNameOf(fk) + "In" + pascalCaseNameOf(entity) + "Test";
+            String testName = "update" + pascalCaseNameOf(fk) + "Of" + pascalCaseNameOf(entity) + "Test";
             return MethodSpec.methodBuilder(testName)
                     .addModifiers(Modifier.PUBLIC)
                     .addAnnotation(Test.class)
@@ -1483,6 +1498,20 @@ public class EntityApiGenerator {
                                     Modifier.PRIVATE)
                             .addAnnotation(Autowired.class)
                             .build();
+        }
+
+        private FieldSpec methodsMap(){
+            val methodsMapType = ParameterizedTypeName.get(Map.class, String.class, Method.class);
+            return FieldSpec.builder(methodsMapType, "methodsMap")
+                    .initializer(
+                            "$T" +
+                            ".stream(this.getClass().getDeclaredMethods())" +
+                            ".collect($T.toMap(Method::getName, method -> method))",
+                            Arrays.class, Collectors.class
+                    )
+                    .addAnnotation(Getter.class)
+                    .addModifiers(PRIVATE)
+                    .build();
         }
 
         //misc util methods
@@ -1559,6 +1588,18 @@ public class EntityApiGenerator {
 
         private static boolean isPrimitive(String packageName) {
             return packageName.contains("java.lang");
+        }
+
+        private void registerCollectionsTypes(Map<String, ClassName> collectionsTypes) {
+            this.fields.forEach(field -> {
+                if(isIterable(field.asType(), processingEnv)){
+                    String key = entity.getSimpleName().toString() + "." + field.getSimpleName().toString();
+                    ClassName value = ClassName.bestGuess(
+                            field.asType().toString().replaceAll(".+<", "").replaceAll(">", "")
+                    );
+                    collectionsTypes.put(key, value);
+                }
+            });
         }
 
     }
