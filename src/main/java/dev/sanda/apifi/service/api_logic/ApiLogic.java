@@ -1,5 +1,6 @@
 package dev.sanda.apifi.service.api_logic;
 import dev.sanda.apifi.annotations.EntityCollectionApi;
+import dev.sanda.apifi.dto.KeyAndValue;
 import dev.sanda.apifi.generator.entity.CollectionsTypeResolver;
 import dev.sanda.apifi.service.*;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
@@ -598,10 +599,11 @@ public final class ApiLogic<T> {
             apiHooks.preGetPaginatedBatch(owner, input, dataManager);
         Page<Map.Entry<TMapKey, TMapValue>> returnValue = new Page<>();
         val contentQueryString = String.format(
-                "SELECT map FROM %s owner " +
+                "SELECT new dev.sanda.apifi.dto.KeyAndValue(KEY(map), VALUE(map)) " +
+                    "FROM %s owner " +
                     "JOIN owner.%s map " +
                     "WHERE owner.%s = :ownerId " +
-                    "ORDER BY VALUE(map) %s",
+                    "ORDER BY KEY(map) %s",
                 dataManager.getClazzSimpleName(),
                 fieldName,
                 idFieldName,
@@ -614,13 +616,18 @@ public final class ApiLogic<T> {
                 fieldName,
                 idFieldName);
         Object ownerId = getId(temp, reflectionCache);
-        val content = dataManager
+
+        List<Map.Entry<TMapKey, TMapValue>> content =
+                (List<Map.Entry<TMapKey, TMapValue>>)
+                 dataManager
                 .entityManager()
                 .createQuery(contentQueryString)
                 .setParameter("ownerId", ownerId)
                 .setFirstResult(input.getPageNumber() * input.getPageSize())
                 .setMaxResults(input.getPageSize())
-                .getResultList();
+                .getResultStream()
+                .map(entry -> ((KeyAndValue)entry).toEntry())
+                .collect(Collectors.toList());
         val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
                 .setParameter("ownerId", ownerId)
                 .getSingleResult();
@@ -628,6 +635,7 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
+        returnValue.setPageNumber(input.getPageNumber());
         if(apiHooks != null)
             apiHooks.postGetPaginatedBatch(returnValue, input, owner, dataManager);
         return returnValue;
@@ -646,11 +654,12 @@ public final class ApiLogic<T> {
             apiHooks.preFreeTextSearch(owner, input, dataManager);
         Page<Map.Entry<TMapKey, TMapValue>> returnValue = new Page<>();
         val contentQueryString = String.format(
-                "SELECT map FROM %s owner " +
+                "SELECT new dev.sanda.apifi.dto.KeyAndValue(KEY(map), VALUE(map)) " +
+                        "FROM %s owner " +
                         "JOIN owner.%s map " +
                         "WHERE owner.%s = :ownerId AND " +
                         "LOWER(KEY(map)) LIKE LOWER(CONCAT('%%', :searchTerm, '%%')) " +
-                        "ORDER BY VALUE(map) %s",
+                        "ORDER BY KEY(map) %s",
                 dataManager.getClazzSimpleName(),
                 fieldName,
                 idFieldName,
@@ -664,14 +673,18 @@ public final class ApiLogic<T> {
                 fieldName,
                 idFieldName);
         Object ownerId = getId(temp, reflectionCache);
-        val content = dataManager
+        val content =
+                (List<java.util.Map.Entry<TMapKey,TMapValue>>)
+                 dataManager
                 .entityManager()
                 .createQuery(contentQueryString)
                 .setParameter("ownerId", ownerId)
                 .setParameter("searchTerm", input.getSearchTerm())
                 .setFirstResult(input.getPageNumber() * input.getPageSize())
                 .setMaxResults(input.getPageSize())
-                .getResultList();
+                .getResultStream()
+                .map(entry -> ((KeyAndValue)entry).toEntry())
+                .collect(Collectors.toList());
         val totalRecords = (long)dataManager.entityManager().createQuery(countQueryString)
                 .setParameter("ownerId", ownerId)
                 .setParameter("searchTerm", input.getSearchTerm())
@@ -680,6 +693,7 @@ public final class ApiLogic<T> {
         returnValue.setContent(content);
         returnValue.setTotalPagesCount((long) totalPages);
         returnValue.setTotalItemsCount(totalRecords);
+        returnValue.setPageNumber(input.getPageNumber());
         if(apiHooks != null)
             apiHooks.postFreeTextSearch(returnValue, input, owner, dataManager);
         return returnValue;
