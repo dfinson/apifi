@@ -1103,6 +1103,7 @@ public class EntityApiGenerator {
                     .addParameter(ParameterSpec.builder(ClassName.get(entity), "owner").build())
                     .addParameter(input)
                     .addCode(initSortByIfNull(entitiesMap.get(getCollectionType(fk))))
+                    //TODO - should be "apiLogic.getPaginatedBatchOfEntityCollection"
                     .addStatement("return apiLogic.getPaginatedBatchInEntityCollection(owner, input, $S, $L, $L)",
                             camelcaseNameOf(fk),
                             dataManagerName(fk),

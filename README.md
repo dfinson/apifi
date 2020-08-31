@@ -35,7 +35,7 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 <dependency>  
 	 <groupId>dev.sanda</groupId> 
 		 <artifactId>apifi</artifactId> 
-	 <version>0.0.4</version>
+	 <version>0.0.5</version>
 </dependency>  
 ```  
   
@@ -44,7 +44,14 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 @Entity  
 @WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})  
 public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;}  
+    @Id 
+    @GeneratedValue 
+    private Long id; 
+    private String name; 
+    private String email; 
+    private String phoneNumber; 
+    private String passwordHash;
+}  
 ```  
 #### Configuration properties  
 - `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
