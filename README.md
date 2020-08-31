@@ -33,11 +33,14 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 #### Installation  
 ```xml  
 <dependency>  
-	 <groupId>dev.sanda</groupId> 
-		 <artifactId>apifi</artifactId> 
-	 <version>0.0.5</version>
+	<groupId>dev.sanda</groupId> 
+	<artifactId>apifi</artifactId> 
+	<version>0.0.5</version>
 </dependency>  
 ```  
+#### Configuration properties  
+- `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
+- `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15. 
   
 #### Hello World  
 ```java  
@@ -53,9 +56,6 @@ public class User {
     private String passwordHash;
 }  
 ```  
-#### Configuration properties  
-- `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
-- `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15.  
   
 After compiling the project and taking a peek in the *target* folder, the following is the auto generated GraphQL service bean:  
 ```java  
