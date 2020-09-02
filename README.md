@@ -17,7 +17,7 @@
    + [Class level security](#class-level-security)  
    + [Method level security](#method-level-security)  
    + [Search endpoints security](#search-endpoints-security)  
- * [Testing the API](#testing-the-api)
+ * [Testing](#testing)
  * [GraphQL Client](#graphql-client)  
    + [Overview](#overview-1)  
    + [What it looks like](#what-it-looks-like)  
@@ -33,11 +33,20 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 #### Installation  
 ```xml  
 <dependency>  
+<<<<<<< HEAD
 	 <groupId>dev.sanda</groupId> 
 		 <artifactId>apifi</artifactId> 
 	 <version>0.0.5</version>
+=======
+	<groupId>dev.sanda</groupId> 
+	<artifactId>apifi</artifactId> 
+	<version>0.0.5</version>
+>>>>>>> b9d90b05db448b90f87604771a00d6e8abf6857b
 </dependency>  
 ```  
+#### Configuration properties  
+- `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
+- `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15. 
   
 #### Hello World  
 ```java  
@@ -53,22 +62,43 @@ public class User {
     private String passwordHash;
 }  
 ```  
-#### Configuration properties  
-- `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
-- `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15.  
   
 After compiling the project and taking a peek in the *target* folder, the following is the auto generated GraphQL service bean:  
 ```java  
 @...  
-public class UserGraphQLApiService {  
-  
- /*... various internal logic ...*/   @Autowired    
-  private ApiLogic<User> apiLogic;  
-  
- @GraphQLQuery public User getUserById(Long input) { return apiLogic.getById(input); }  
- @GraphQLMutation public User createUser(User input) { return apiLogic.create(input); }  
- @GraphQLMutation public User updateUser(User input) { return apiLogic.update(input); }  
- @GraphQLMutation public User deleteUser(User input) { return apiLogic.delete(input); }```  
+public class UserGraphQLApiService {
+
+    /*... various internal logic ...*/
+    @Autowired
+    private ApiLogic < User > apiLogic;
+
+    @GraphQLQuery 
+    public User getUserById(Long input) {
+        return apiLogic.getById(input);
+    }
+    @GraphQLMutation 
+    public User createUser(User input) {
+        return apiLogic.create(input);
+    }
+    @GraphQLMutation 
+    public User updateUser(User input) {
+        return apiLogic.update(input);
+    }
+    @GraphQLMutation 
+    public User deleteUser(User input) {
+        return apiLogic.delete(input);
+    }
+    
+	@GraphQLMutation 
+	public User updateUser(User input) {
+	    return apiLogic.update(input);
+	}
+	@GraphQLMutation 
+	public User deleteUser(User input) {
+	    return apiLogic.delete(input);
+	}
+}
+ ```
 *Note:* As its name suggests, [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiLogic.java) implements API CRUD ops generically.   
   
 ### Defining GraphQL Endpoints  
@@ -208,12 +238,15 @@ Oftentimes there is a need for additional business logic on CRUD endpoints. This
 To gain a better understanding as to how this works, see the following code snippet from the `ApiLogic<T>` class where the CRUD operational logic is generically implemented.  More specifically, this is the `batchCreate(List<T> input)` method:   
   
 ```java  
-public List<T> batchCreate(List<T> input) {    
-   if(apiHooks != null) // <--- note this  
- apiHooks.preBatchCreate(input, dataManager);   val result = dataManager.saveAll(input);    
-   if(apiHooks != null) // <--- and this  
- apiHooks.postBatchCreate(result, dataManager);   logInfo("batchCreate: created {} new {}", result.size(),toPlural(dataManager.getClazzSimpleName()));    
-return result; }  
+public List < T > batchCreate(List < T > input) {
+    if (apiHooks != null) // <--- note this  
+        apiHooks.preBatchCreate(input, dataManager);
+    val result = dataManager.saveAll(input);
+    if (apiHooks != null) // <--- and this  
+        apiHooks.postBatchCreate(result, dataManager);
+    logInfo("batchCreate: created {} new {}", result.size(), toPlural(dataManager.getClazzSimpleName()));
+    return result;
+}  
 ```  
 This pattern repeats itself in the same manner in all of the other [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiLogic.java) methods, allowing for the execution of custom defined logic prior to or following mutations and queries. In order to make use of this feature for an entity of type `T`:  
 1. create a public class which implements `ApiHooks<T>`  
@@ -223,17 +256,35 @@ No further configuration is necessary - Apifi leverages spring dependency inject
   
 Using the previous example:  
 ```java  
-@Entity  
-@WithCRUDEndpoints({CREATE, UPDATE, GET_BY_ID, DELETE})  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;}  
+@Entity
+@WithCRUDEndpoints({
+    CREATE,
+    UPDATE,
+    GET_BY_ID,
+    DELETE
+})
+public class User {
+    @Id @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+}  
 ```  
 Imagine there is a requirement to print a welcome message to the console after every time a new user is added, and a goodbye message after every time a user is deleted. To do so, a custom implementation of `ApiHooks<T>` could be implemented as follows:  
 ```java  
-@Service  
-public class UserApiHooks implements ApiHooks<User> {  
- @Override public void postCreate(User added, DataManager<User> dataManager) { System.out.println(String.format("Hello %s!", added.getName())); }  
- @Override public void postDelete(User deleted, DataManager<User> dataManager) { System.out.println(String.format("Goodbye %s", deleted.getName())); }}  
+@Service
+public class UserApiHooks implements ApiHooks <User> {
+    @Override 
+    public void postCreate(User added, DataManager < User > dataManager) {
+        System.out.println(String.format("Hello %s!", added.getName()));
+    }
+    @Override 
+    public void postDelete(User deleted, DataManager < User > dataManager) {
+        System.out.println(String.format("Goodbye %s", deleted.getName()));
+    }
+}
 ```  
 The same workflow applies to less trivial use cases such as third party API calls, data related metrics, etc.  
   
@@ -242,35 +293,84 @@ The same workflow applies to less trivial use cases such as third party API call
 In addition to the above CRUD endpoints, additional endpoints can be added by making use of the following annotations:  
 - `@ApiFindBy`: To fetch a `List<T>` of instances of type `T`, with the search criteria being the value of a specific field of type `TField`, the field in question can be annotated with the `@ApiFindBy` annotation.   
 *Example*:   
-    ```java  
-   @Entity  
-   public class User {  
- @Id @GeneratedValue private Long id; @ApiFindBy // <--- private String name; private String email; private String phoneNumber; private String passwordHash;   }  
- ```  The above `@ApiFindBy` annotation generates the following GraphQL endpoint:  
-    ```java  
- @... UserGraphQLService{ ... @GraphQLQuery public List<User> findUsersByName(String name) { return apiLogic.apiFindBy("name", name); } ... } ```- `@ApiFindAllBy`: Fetch a list of instances with a field value matching at least one of the inputted values.   
+ ```java  
+	@Entity
+	public class User {
+	   @Id @GeneratedValue 
+	   private Long id;
+	   @ApiFindBy // <--- 
+	   private String name; 
+	   private String email; 
+	   private String phoneNumber; 
+	   private String passwordHash;   
+	} 
+  ```  
+ The above `@ApiFindBy` annotation generates the following GraphQL endpoint:  
+   ```java  
+ @...
+public class UserGraphQLService {
+	    ...
+	    @GraphQLQuery 
+	    public List <User> findUsersByName(String name) {
+	    return apiLogic.apiFindBy("name", name);
+	  }
+	  ...
+} 
+```
+ - `@ApiFindAllBy`: Fetch a list of instances with a field value matching at least one of the inputted values.   
 *Example:*  
   ```java  
- @Entity   public class User {  
- @Id @GeneratedValue private Long id; @ApiFindAllBy // <--- private String name; private String email; private String phoneNumber; private String passwordHash;   }  
- ```  The above `@ApiFindAllBy` would generate the following endpoint:  
-    ```java  
- @... UserGraphQLService{ ... @GraphQLQuery public List<User> findUsersByNames(List<String> names) { return apiLogic.apiFindAllBy("name", names); } ... } ```- `@ApiFindByUnique`: To fetch a single instance by the value of a unique field, the field can be annotated with the `@ApiFindByUnique` annotation.  
+@Entity 
+public class User {
+    @Id @GeneratedValue 
+    private Long id;
+    @ApiFindAllBy // <--- 
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+} 
+ ```  
+ The above `@ApiFindAllBy` would generate the following endpoint:  
+   ```java  
+ @... 
+ public class UserGraphQLService{ 
+	 ... 
+	 @GraphQLQuery 
+	 public List<User> findUsersByNames(List<String> names) {
+		 return apiLogic.apiFindAllBy("name", names); 
+	 } 
+	 ... 
+ } 
+ ```
+ - `@ApiFindByUnique`: To fetch a single instance by the value of a unique field, the field can be annotated with the `@ApiFindByUnique` annotation.  
 *Example*:  
-    ```java  
-   @Entity  
-   public class User {  
- @Id @GeneratedValue private Long id; private String name; @ApiFindByUnique // <--- @Column(unique = true) // Column MUST be marked as unique! private String email; private String phoneNumber; private String passwordHash;   }  
- ```  The above `@ApiFindByUnique` would generate the following endpoint:  
-    ```java  
+  ```java  
+@Entity
+public class User {
+	   @Id
+	   @GeneratedValue 
+	   private Long id;
+	   private String name;
+	   @ApiFindByUnique // <--- 
+	   @Column(unique = true) // Column MUST be marked as unique! 
+	   private String email; 
+	   private String phoneNumber; 
+	   private String passwordHash;   
+}  
+ ```  
+ The above `@ApiFindByUnique` would generate the following endpoint:  
+   ```java  
    @...  
-   UserGraphQLService{  
- ...      @GraphQLQuery    
+   public class UserGraphQLService{  
+ ...      
+	  @GraphQLQuery    
       public User findUserByUniqueEmail(String email) {    
         return apiLogic.apiFindByUnique("email", email);    
       }  
       ...  
- } ```  
+ } 
+```  
 ### Free text search  
   
 #### Overview  
@@ -284,42 +384,74 @@ A single [FreeTextSearchPageRequest](https://github.com/sanda-dev/datafi/blob/ma
 A [Page](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/Page.java) object containing `List<T> content`, `long totalPageCount`, and `long totalItemsCount` (same output type as GET_PAGINATED_BATCH).  
   
 *Example:*  
-```java @Entity  
-@WithApiFreeTextSearchByFields({"name", "email", "phoneNumber"})  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;}  
-``` Which would generate the following endpoint:  
-```java @... public class UserGraphQLService{   
-   
-  /* ... */  
-   @GraphQLQuery  
- public Page<User> userFreeTextSearch(FreeTextSearchPageRequest input) { if(input.getSortBy() == null) { input.setSortBy("id"); } return apiLogic.freeTextSearch(input); }  }   
+```java 
+@Entity
+@WithApiFreeTextSearchByFields({
+  "name",
+  "email",
+  "phoneNumber"
+})
+public class User {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+}
+``` 
+Which would generate the following endpoint:  
+```java 
+@... 
+public class UserGraphQLService {
+
+  /* ... */
+  @GraphQLQuery
+  public Page < User > userFreeTextSearch(FreeTextSearchPageRequest input) {
+    if (input.getSortBy() == null) {
+      input.setSortBy("id");
+    }
+    return apiLogic.freeTextSearch(input);
+  }
+}  
 ```  
   
 ### Entity Collections  
-collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an embedded collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:  
-1. `EntityCollectionEndpointType[] endpoints()` - `EntityCollectionEndpointType` is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `UPDATE_IN`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument delineates which CRUD endpoints should be generated for the embedded collection.  
-2. `String[] freeTextSearchFields()` - If `PAGINATED_FREE_TEXT_SEARCH` was specified as an endpoint, this argument delineates which fields the entity should be searchable by.  
-3. `Class<? extends EntityCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` bean described above. It enables custom business logic to be hooked before and / or after CRUD operations. To use, create a public class which implements the `EntityCollectionApiHooks<T>` interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`, etc.).  
-4. `boolean associatePreExistingOnly()` - This parameter specifies whether the `ASSOCIATE_WITH` endpoint should ensure that instances being added to the collection are already present in the database - defaults to `false` if not set.  
-  
-*Note:*   
-As of the current version, this feature does not support non entity collections (i.e. `@ElementCollection`). However it is relatively straightforward to apply logic to such collections by implementing [EntityCollectionApiHooks](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/EntityCollectionApiHooks.java)   and overriding the relevant methods.   
+Collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an entity collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:  
+1. `EntityCollectionEndpointType[] endpoints()` - [`EntityCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/EntityCollectionEndpointType.java) is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `UPDATE_IN`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument denotes which endpoints should be generated.
+2. `String[] freeTextSearchFields()` - If `PAGINATED_FREE_TEXT_SEARCH` was specified as an endpoint, this argument denotes which fields the entity should be searchable by.  
+3. `Class<? extends EntityCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` interface described above. It enables custom business logic to be "hooked" before and / or after CRUD operations. To use, create a public class which implements the [`EntityCollectionApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/EntityCollectionApiHooks.java) interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`/etc.).  
+4. `boolean associatePreExistingOnly()` - This parameter specifies whether the `ASSOCIATE_WITH` endpoint should ensure that instances being added to the collection are already present in the database, and defaults to `false` if not set.  
   
 *Example:*  
 In order to demonstrate this feature, a new Entity type `Post` with a `@ManyToOne` relationship to `User` will be created as follows:  
   
 ```java  
-@Entity  
-public class Post {  
- @Id @GeneratedValue private Long id; @ManyToOne private User user; private String content;}  
+@Entity
+public class Post {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    @ManyToOne 
+    private User user;
+    private String content;
+}  
 ```  
 `User` will be modified as follows:  
 ```java  
-@Entity  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;     @OneToMany(mappedBy = "user")  
- private Set<Post> posts;}  
+@Entity
+public class User {
+    @Id
+    @GeneratedValue
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+    @OneToMany(mappedBy = "user")
+    private Set<Post> posts;
+}
 ```  
   
 As mentioned above, [`@EntityCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/EntityCollectionApi.java) can generate five types of [`CollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CollectionEndpointType.java):  
@@ -359,24 +491,57 @@ As mentioned above, [`@EntityCollectionApi(...)`](https://github.com/sanda-dev/a
   
 *Example:*  
 ```java  
-@Entity  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash; @EntityCollectionApi(endpoints = { ASSOCIATE_WITH, UPDATE_IN, REMOVE_FROM, PAGINATED_BATCH }) @OneToMany(mappedBy = "user") private Set<Post> posts;}  
+@Entity
+public class User {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+    @EntityCollectionApi(endpoints = {
+    ASSOCIATE_WITH,
+    UPDATE_IN,
+    REMOVE_FROM,
+    PAGINATED_BATCH
+    })
+    @OneToMany(mappedBy = "user") 
+    private Set<Post> posts;
+}
 ```  
 Which generates the following endpoints:  
 ```java  
 @...  
-public class UserGraphQLApiService {  
-   //...  
-   @GraphQLMutation  
- public List<Post> associatePostsWithUser(User owner, List<Post> input) { return apiLogic.associateWithEntityCollection(owner, "posts", input, postsDataManager, null); }  
- @GraphQLMutation public List<Post> updatePostsInUser(User owner, List<Post> input) { return apiLogic.updateEntityCollection(owner, postsDataManager, input, null); }  
- @GraphQLMutation public List<Post> removePostsFromUser(User owner, List<Post> input) { return apiLogic.removeFromEntityCollection(owner, "posts", input, null); }  
- @GraphQLQuery public Page<Post> postsInUser(User owner, PageRequest input) { return apiLogic.getPaginatedBatchInEntityCollection(owner, input, "posts", postsDataManager, null); }}  
+public class UserGraphQLApiService {
+    //...  
+    
+    @GraphQLMutation
+    public List < Post > associatePostsWithUser(User owner, List < Post > input) {
+    return apiLogic.associateWithEntityCollection(owner, "posts", input, postsDataManager, null);
+    }
+    
+    @GraphQLMutation 
+    public List < Post > updatePostsInUser(User owner, List < Post > input) {
+    return apiLogic.updateEntityCollection(owner, postsDataManager, input, null);
+    }
+    
+    @GraphQLMutation 
+    public List < Post > removePostsFromUser(User owner, List < Post > input) {
+    return apiLogic.removeFromEntityCollection(owner, "posts", input, null);
+    }
+    
+    @GraphQLQuery 
+    public Page < Post > postsInUser(User owner, PageRequest input) {
+    return apiLogic.getPaginatedBatchInEntityCollection(owner, input, "posts", postsDataManager, null);
+    }
+} 
 ```  
-*Note:* The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EntityCollectionApiHooks<Post, User>` implementation has been specified.  
+*Note:* 
+The final argument in all four of the above method calls to `apiLogic(...)` is `null`. That is because no class type token for an `EntityCollectionApiHooks<Post, User>` implementation has been specified.  
   
-### Element Collections In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints:   
+### Element Collections 
+In the event of a collection of primitive / embedded types annotated with the `@ElementCollection` annotation, the [`@ElementCollectionApi(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/ElementCollectionApi.java) annotation can be used to generate the following [`ElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/ElementCollectionEndpointType.java) GraphQL endpoints:   
 1. ADD_TO:     
 *Overview:*    
  Adds a list of inputted values to a collection.      
@@ -408,7 +573,8 @@ public class UserGraphQLApiService {
 - `owner`: The instance containing the collection. Must include ID.   
    - [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.  
      
-### Element collection maps Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`, the [`@MapElementCollectionApi`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/MapElementCollectionApi.java) annotation can be utilized to generate the following [`MapElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/MapElementCollectionEndpointType.java) endpoints:  
+### Element collection maps 
+Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`, the [`@MapElementCollectionApi`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/MapElementCollectionApi.java) annotation can be utilized to generate the following [`MapElementCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/MapElementCollectionEndpointType.java) endpoints:  
 1. PUT_ALL       
 *Overview:*      
  Adds a list of inputted key-value pairs to a map.       
@@ -452,7 +618,7 @@ Annotation based security is especially well suited to GraphQL APIs given that t
 - [`@PostFilter`](https://docs.spring.io/spring-security/site/docs/4.2.13.BUILD-SNAPSHOT/apidocs/org/springframework/security/access/prepost/PostFilter.html).  
   
 #### Class level security  
-In order to apply a security annotation on the class (i.e. GraphQL service bean) level, the `@WithWithServiceLevelSecurity(...)` annotation can be used. It takes in any combination of the following seven arguments:  
+In order to apply a security annotation on the class (i.e. GraphQL service bean) level, the [`@WithServiceLevelSecurity(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/WithServiceLevelSecurity.java) annotation can be used. It takes in any combination of the following seven arguments:  
 1. `String secured() default "";`  
 2. `String[] rolesAllowed() default "";`  
 3. `String preAuthorize() default "";`  
@@ -463,10 +629,19 @@ In order to apply a security annotation on the class (i.e. GraphQL service bean)
   
 *Example:*  
 ```java  
-@Entity  
-@WithServiceLevelSecurity(rolesAllowed = "ROLE_ADMIN")  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash; @OneToMany(mappedBy = "user", cascade = ALL) private Set<Post> posts;}  
+@Entity
+@WithServiceLevelSecurity(rolesAllowed = "ROLE_ADMIN")
+public class User {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+    @OneToMany(mappedBy = "user", cascade = ALL) 
+    private Set<Post> posts;
+}  
 ```  
   
 Would generate the following:  
@@ -475,32 +650,61 @@ Would generate the following:
 @...  
 @RolesAllowed("ROLE_ADMIN")  
 public class UserGraphQLApiService {  
- ...}  
+	 ...
+ }  
 ```  
 #### Method level security  
-If a more granular security strategy is required, spring security annotations can be placed at the method level. In order to do so, the entity class can be annotated with one or more `@WithMethodLevelSecurity(...)` annotations. Each such annotation takes in one or more of the seven parameters described for `@WithServiceLevelSecurity(...)` annotation, as well as a `targets` parameter which takes in an array of [`CRUDEndpoints`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CRUDEndpoints.java), delineating which endpoints the specified security annotation(s) should be applied to.  
+If a more granular security strategy is required, spring security annotations can be placed at the method level. In order to do so, the entity class can be annotated with one or more [`@WithMethodLevelSecurity(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/WithMethodLevelSecurity.java) annotations. Each such annotation takes in one or more of the seven parameters described for [`@WithServiceLevelSecurity(...)`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/annotations/WithServiceLevelSecurity.java) annotation, as well as a `targets` parameter which takes in an array of [`CRUDEndpoints`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/CRUDEndpoints.java), denoting which auto generated endpoints the specified security annotation(s) should be applied to.  
   
 *Example:*  
 ```java  
-@Entity  
-@WithCRUDEndpoints({CREATE, GET_BY_ID, UPDATE, DELETE})  
-@WithMethodLevelSecurity(targets = {CREATE, DELETE}, rolesAllowed = "ROLE_ADMIN")  
-@WithMethodLevelSecurity(targets = {UPDATE, GET_BY_ID}, rolesAllowed = "ROLE_USER")  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;}  
+@Entity
+@WithCRUDEndpoints({CREATE, GET_BY_ID, UPDATE, DELETE})
+@WithMethodLevelSecurity(targets = {CREATE,DELETE}, rolesAllowed = "ROLE_ADMIN")
+@WithMethodLevelSecurity(targets = {UPDATE,GET_BY_ID}, rolesAllowed = "ROLE_USER")
+public class User {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+}
 ```  
   
 Would generate the following:  
   
 ```java  
 @...  
-public class UserGraphQLApiService {  
+public class UserGraphQLApiService {
+    
+  /* ... */
   
- @Autowired private ApiLogic<User> apiLogic; /* ... */   @GraphQLQuery  
- @RolesAllowed("ROLE_USER") public User getUserById(Long input) { return apiLogic.getById(input); }  
- @GraphQLMutation @RolesAllowed("ROLE_ADMIN") public User createUser(User input) { return apiLogic.create(input); }  
- @GraphQLMutation @RolesAllowed("ROLE_USER") public User updateUser(User input) { return apiLogic.update(input); }  
- @GraphQLMutation @RolesAllowed("ROLE_ADMIN") public User deleteUser(User input) { return apiLogic.delete(input); }}  
+  @GraphQLQuery
+  @RolesAllowed("ROLE_USER") 
+  public User getUserById(Long input) {
+    return apiLogic.getById(input);
+  }
+  
+  @GraphQLMutation
+  @RolesAllowed("ROLE_ADMIN") 
+  public User createUser(User input) {
+    return apiLogic.create(input);
+  }
+  
+  @GraphQLMutation
+  @RolesAllowed("ROLE_USER") 
+  public User updateUser(User input) {
+    return apiLogic.update(input);
+  }
+  
+  @GraphQLMutation
+  @RolesAllowed("ROLE_ADMIN") 
+  public User deleteUser(User input) {
+    return apiLogic.delete(input);
+  }
+} 
 ```  
 *Note:*   
 In the event of a discrepancy, method level security annotations will override class level security annotations.  
@@ -508,15 +712,18 @@ In the event of a discrepancy, method level security annotations will override c
 #### Search endpoints security  
 All search endpoints (`@ApiFindBy`, `@ApiFindAllBy`, `@ApiFindByUnique`, `@WithFreeTextSearchFields(...)`) optionally take in the same seven parameters as `@WithServiceLevelSecurity(...)` and `@WithMethodLevelSecurity(...)`, allowing for security policies on a per endpoint basis if need be.  
 
-### Testing the API
-The obvious problem with testing the code which makes up the auto generated API is that it's auto generated... at compile time. There's obviously no **direct** way to test against code which is unavailable during compilation. This is where `TestableGraphQLService<T>` comes into play. 
+### Testing
+The obvious problem with testing components made up of code which is generated at compile time is that they cannot be referenced at compile time. There's obviously no **direct** way to test against code which is unavailable during compilation. This is where [`TestableGraphQLService<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java) comes into play. 
+
 #### TestableGraphQLService
-For each graphql service bean which is auto generated, a corresponding testable replica is also generated. This replica is can be located in the *target/generated-sources/annotations/.../testable_service* directory after compilation. It contains all of the same publicly declared methods as the original class, but has 3 key differences:
+
+For each graphql service bean which is auto generated, a corresponding testable replica is also generated. This replica is can be located in the *target/generated-sources/annotations/...your package structure here.../testable_service* directory after compilation. It contains all of the same publicly declared methods as the original `...GraphQLService` class, but has 3 key differences:
 1. Naming convention - It has the same name as the original with the prefix "Testable".
-2. It implements the `TestableGraphQLService<T>` interface - This is what allows us to leverage springs `@Autowired` annotation to get a runtime reference to the bean.
+2. It implements the [`TestableGraphQLService<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java) interface - This is what allows us to leverage springs `@Autowired` annotation to get a runtime reference to the bean.
 3. It's not annotated as `@Transactional` - Tests are typically run as transactions, and seeing as JPA doesn't support nested transactions this is actually quite crucial in order to prevent unexpected behavior while testing. 
 
 #### Example
+
 ##### Model
 ```java
 @Entity
@@ -532,7 +739,7 @@ public class User {
 ```  
 
 
-  ##### Actual GraphQL service
+  ##### Actual GraphQL service to be included in schema
 ```java
 @Service
 @Transactional
@@ -560,7 +767,7 @@ public class UserGraphQLApiService {
 }
 ```
 
-  ##### Testable GraphQL service class
+  ##### Testable GraphQL service class which is **not** exposed as part of the schema
 
 ```java
 @Service
@@ -601,6 +808,25 @@ class UserGraphQLApiServiceTest {
     @Autowired
     private JpaRepository<User, Long> userRepo;
 
+	// helpers
+	
+    private User generateMockUser(boolean saveUser) {
+	    // from java-faker library
+        Faker faker = new Faker();
+        User user = new User();
+        user.setName(faker.name().fullName());
+        user.setPhoneNumber(faker.phoneNumber().cellPhone());
+        user.setUsername(faker.name().username());
+        if(saveUser)
+            user = userRepo.save(user);
+        return user;
+    }
+    private User generateMockUser() {
+        return generateMockUser(false);
+    }
+
+	//tests
+	
     @Test
     void getUserById() {
         // case 1 - user is found
@@ -653,23 +879,7 @@ class UserGraphQLApiServiceTest {
         User user = generateMockUser(true);
         User deletedUser = testApi.invokeEndpoint("deleteUser", user);
         assertEquals(user, deletedUser);
-        assertFalse(userDataManager.existsById(user.getId()));
-    }
-    
-    // helpers
-    private User generateMockUser(boolean saveUser) {
-	    // from java-faker library
-        Faker faker = new Faker();
-        User user = new User();
-        user.setName(faker.name().fullName());
-        user.setPhoneNumber(faker.phoneNumber().cellPhone());
-        user.setUsername(faker.name().username());
-        if(saveUser)
-            user = userRepo.save(user);
-        return user;
-    }
-    private User generateMockUser() {
-        return generateMockUser(false);
+        assertFalse(userRepo.existsById(user.getId()));
     }
 }
 ```
@@ -679,31 +889,80 @@ class UserGraphQLApiServiceTest {
   
 #### Overview  
   
-While generating the back end GraphQL API, Apifi simultaneously generates a simple, ultra-lightweight and easy to use front end GraphQL client. This client is a single JavaScript file called *apifiClient.js*, which is written / overwritten to the root project directory at compile time. *apifiClient.js* is made up of pure JavaScript with no external dependencies, relying solely on the *fetch* API in order to send and receive data from the back end.   
+While generating the back end GraphQL API, Apifi simultaneously generates a simple, ultra-lightweight and easy to use front end GraphQL client. This client is a single JavaScript file called *apifiClient.js*, which is written to the root project directory at compile time. *apifiClient.js* is made up of pure JavaScript with no external dependencies, relying solely on the *fetch* API in order to send and receive data from the back end API.   
   
 #### What it looks like  
 Given the following example model:  
 ```java  
-@Entity  
-@WithCRUDEndpoints({CREATE, GET_BY_ID})  
-public class User {  
- @Id @GeneratedValue private Long id; private String name; private String email; private String phoneNumber; private String passwordHash;}  
+@Entity
+@WithCRUDEndpoints({CREATE, GET_BY_ID})
+public class User {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+}
 ```  
 The corresponding *apifiClient.js* would look as follows:  
 ```javascript  
-let apiUrl = location.origin;  
-let bearerToken = undefined;  
-  
-export default{  
-  
- setBearerToken(token){ bearerToken = token; },  
- setApiUrl(url){ apiUrl = url; },  
- async getUserById(input, expectedReturn, customHeaders){ let requestHeaders = { "Content-Type": "application/json" } if(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders); if(bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken; let opts = { method: "POST", credentials: "include", headers: requestHeaders, body: JSON.stringify({ query: `query getUserById($input: Int!) { getUserById(input: $input)${expectedReturn} }`,               variables: {  
- "input": input },               operationName: "getUserById"  
- }) }; return await (await fetch(apiUrl, opts)).json(); },  
- async createUser(input, expectedReturn, customHeaders){ let requestHeaders = { "Content-Type": "application/json" } if(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders); if(bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken; let opts = { method: "POST", credentials: "include", headers: requestHeaders, body: JSON.stringify({ query: `mutation createUser($input: UserInput) { createUser(input: $input)${expectedReturn} }`,               variables: {  
- "input": input },               operationName: "createUser"  
- }) }; return await (await fetch(apiUrl, opts)).json(); }}  
+let apiUrl = `${location.origin}/graphql`;
+let bearerToken = undefined;
+
+export default {
+
+    setBearerToken(token) {
+        bearerToken = token;
+    },
+    
+    setApiUrl(url) {
+        apiUrl = url;
+    },
+    
+    async getUserById(input, expectedReturn, customHeaders) {
+        let requestHeaders = {
+            "Content-Type": "application/json"
+        }
+        if (customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
+        if (bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
+        let opts = {
+            method: "POST",
+            credentials: "include",
+            headers: requestHeaders,
+            body: JSON.stringify({
+                query: `query getUserById($input: Int!) { getUserById(input: $input)${expectedReturn} }`,
+                variables: {
+                    "input": input
+                },
+                operationName: "getUserById"
+            })
+        };
+        return await (await fetch(apiUrl, opts)).json();
+    },
+    
+    async createUser(input, expectedReturn, customHeaders) {
+        let requestHeaders = {
+            "Content-Type": "application/json"
+        }
+        if (customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
+        if (bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
+        let opts = {
+            method: "POST",
+            credentials: "include",
+            headers: requestHeaders,
+            body: JSON.stringify({
+                query: `mutation createUser($input: UserInput) { createUser(input: $input)${expectedReturn} }`,
+                variables: {
+                    "input": input
+                },
+                operationName: "createUser"
+            })
+        };
+        return await (await fetch(apiUrl, opts)).json();
+    }
+}
 ```  
 The file starts off with the `apiUrl` (defaults to `${window.location.origin}/graphql`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.  
   
@@ -712,7 +971,7 @@ Virtually everything is logged in real time using *SL4J*.
   
 ### Upcoming  
 1. GraphQL subscriptions.  
-2. Auto generated baseline test coverage for generated CRUD endpoints.  
+2. Suggestions welcome :)  
   
   
 ### Known issues  

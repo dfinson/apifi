@@ -233,6 +233,7 @@
       <workItem from="1598440969569" duration="2577000" />
       <workItem from="1598608358611" duration="1383000" />
       <workItem from="1598797122456" duration="1010000" />
+      <workItem from="1598876621116" duration="619000" />
     </task>
     <servers />
   </component>
@@ -331,6 +332,10 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="282" y="95" width="1004" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1598868379256" />
+    <state x="67" y="100" width="1289" height="592" key="new project wizard" timestamp="1598878484411">
+      <screen x="67" y="27" width="1299" height="741" />
+    </state>
+    <state x="67" y="100" width="1289" height="592" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1598878484411" />
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1597571394438">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
