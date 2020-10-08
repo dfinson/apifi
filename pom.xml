@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>apifi</artifactId>
-    <version>0.0.5.1</version>
+    <version>0.0.5.2</version>
 
     <parent>
         <groupId>dev.sanda</groupId>
@@ -22,6 +22,7 @@
         <spqr.version>0.10.1</spqr.version>
         <lombok-maven-plugin.version>0.11.6.0</lombok-maven-plugin.version>
         <delombok.output>target/classes</delombok.output>
+        <joda-time.version>2.10.6</joda-time.version>
     </properties>
 
     <dependencies>
@@ -66,15 +67,10 @@
         </dependency>
 
         <dependency>
-            <groupId>dev.sanda</groupId>
-            <artifactId>mockeri</artifactId>
-            <version>${mockeri.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -88,38 +84,13 @@
             <scope>compile</scope>
         </dependency>
 
-    </dependencies>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>${joda-time.version}</version>
+        </dependency>
 
- <!--   <build>
-        <plugins>
-            <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-                <version>${lombok-maven-plugin.version}</version>
-                <configuration>
-                    <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
-                    <outputDirectory>${delombok.output}</outputDirectory>
-                    <addOutputDirectory>false</addOutputDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>delombok</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc-plugin.version}</version>
-                <configuration>
-                    <sourcepath>${delombok.output}</sourcepath>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>-->
+    </dependencies>
 
     <name>Apifi</name>
     <description>

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -43,6 +44,10 @@ public abstract class ApifiStaticUtils {
             }
         }
         return fields;
+    }
+
+    public static<T> T randomFrom(List<T> aList) {
+        return aList.get(ThreadLocalRandom.current().nextInt(aList.size()));
     }
 
     public static void argsToResolver(String resolverParams, MethodSpec.Builder builder) {
