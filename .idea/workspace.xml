@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme images/apifi-logo.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,6 +35,7 @@
       <facet id="apify/invalid/Web" />
     </ignored-facets>
   </component>
+  <component name="JupyterTrust" id="c50271ec-1cc8-4fc3-b0b8-42297d5df289" />
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -262,6 +263,7 @@
       <workItem from="1602158144690" duration="6781000" />
       <workItem from="1602394363215" duration="80000" />
       <workItem from="1602394451098" duration="45000" />
+      <workItem from="1602493760127" duration="408000" />
     </task>
     <servers />
   </component>
