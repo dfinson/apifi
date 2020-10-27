@@ -1,4 +1,6 @@
   
+  <img src='https://github.com/sanda-dev/apifi/blob/master/readme%20images/apifi-logo.png' width='470' alt='Apifi Logo' />
+  
 # Apifi   
  * [Introduction](#introduction)  
  * [Installation](#installation)  
