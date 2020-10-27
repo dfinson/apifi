@@ -127,6 +127,8 @@ public final class ApiLogic<T> {
         if(apiHooks != null) apiHooks.postGetById(result, dataManager);
         logInfo("getById: Got {} by id #{}", dataManager.getClazzSimpleName(), id);
         return result;
+
+
     }
 
     public T apiFindByUnique(String fieldName, Object fieldValue) {
