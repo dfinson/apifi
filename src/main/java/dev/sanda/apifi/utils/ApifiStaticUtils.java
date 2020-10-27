@@ -14,6 +14,8 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
 import lombok.var;
 import org.atteo.evo.inflector.English;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.proxy.LazyInitializer;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;

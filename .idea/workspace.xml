@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/readme images/apifi-logo.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/aws.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/aws.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ApifiStaticUtils.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,12 +69,13 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="extract.method.default.visibility" value="private" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../apifi_demo_users_posts" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../datafi" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="project.structure.last.edited" value="SDKs" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
@@ -88,17 +93,6 @@
     </key>
   </component>
   <component name="RunManager" selected="Remote.AnnotationParserDebug">
-    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
-      <option name="arquillianRunConfiguration">
-        <value>
-          <option name="containerStateName" value="" />
-        </value>
-      </option>
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="AnnotationParserDebug" type="Remote">
       <module name="apify" />
       <option name="USE_SOCKET_TRANSPORT" value="true" />
@@ -263,7 +257,9 @@
       <workItem from="1602158144690" duration="6781000" />
       <workItem from="1602394363215" duration="80000" />
       <workItem from="1602394451098" duration="45000" />
-      <workItem from="1602493760127" duration="408000" />
+      <workItem from="1602493760127" duration="1106000" />
+      <workItem from="1603805173215" duration="140000" />
+      <workItem from="1603805329579" duration="1144000" />
     </task>
     <servers />
   </component>
@@ -302,11 +298,11 @@
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="474" y="141" width="586" height="511" key="#xdebugger.evaluate/67.27.1299.741@67.27.1299.741" timestamp="1597404261135" />
-    <state x="687" y="207" width="424" height="484" key="FileChooserDialogImpl" timestamp="1602159776776">
+    <state x="687" y="207" width="424" height="520" key="FileChooserDialogImpl" timestamp="1603805673730">
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
     <state x="499" y="154" width="424" height="484" key="FileChooserDialogImpl/67.27.1299.741@67.27.1299.741" timestamp="1597400460121" />
-    <state x="687" y="207" key="FileChooserDialogImpl/72.27.1848.1053@72.27.1848.1053" timestamp="1602159776776" />
+    <state x="687" y="207" width="424" height="520" key="FileChooserDialogImpl/72.27.1848.1053@72.27.1848.1053" timestamp="1603805673730" />
     <state width="1253" height="304" key="GridCell.Tab.0.bottom" timestamp="1597515914815">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
@@ -352,19 +348,15 @@
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
     <state x="188" y="284" width="1605" height="545" key="caller.chooser.dialog/72.27.1848.1053@72.27.1848.1053" timestamp="1602173012780" />
-    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1594115648280">
-      <screen x="67" y="27" width="1299" height="741" />
-    </state>
-    <state x="370" y="27" width="683" height="741" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/67.27.1299.741@67.27.1299.741" timestamp="1594115648280" />
     <state x="282" y="95" width="1004" height="604" key="find.popup" timestamp="1598868379256">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
     <state x="282" y="95" width="1004" height="604" key="find.popup/67.27.1299.741@67.27.1299.741" timestamp="1598868379256" />
-    <state x="72" y="131" width="802" height="599" key="new project wizard" timestamp="1602394493467">
+    <state x="72" y="131" width="802" height="599" key="new project wizard" timestamp="1602496835618">
       <screen x="72" y="27" width="1848" height="1053" />
     </state>
     <state x="67" y="100" width="1289" height="592" key="new project wizard/67.27.1299.741@67.27.1299.741" timestamp="1598878484411" />
-    <state x="72" y="131" width="802" height="599" key="new project wizard/72.27.1848.1053@72.27.1848.1053" timestamp="1602394493467" />
+    <state x="72" y="131" width="802" height="599" key="new project wizard/72.27.1848.1053@72.27.1848.1053" timestamp="1602496835618" />
     <state x="412" y="27" width="598" height="741" key="refactoring.ChangeSignatureDialog" timestamp="1597571394438">
       <screen x="67" y="27" width="1299" height="741" />
     </state>
