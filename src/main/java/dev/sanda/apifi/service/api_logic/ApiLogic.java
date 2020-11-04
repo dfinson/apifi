@@ -104,13 +104,21 @@ public final class ApiLogic<T> {
 
     public Page<T> freeTextSearch(FreeTextSearchPageRequest request){
         try{
+
             String clazzSimpleNamePlural = toPlural(dataManager.getClazzSimpleName());
+
             if(request.getSearchTerm() == null || request.getSearchTerm().equals(""))
-                throw new IllegalArgumentException(
-                        "Illegal attempt to search for " + clazzSimpleNamePlural + " with null or blank string");
+                throw new IllegalArgumentException("Illegal attempt to search for " + clazzSimpleNamePlural + " with null or blank string");
             validateSortByIfNonNull(dataManager.getClazz(), request.getSortBy(), reflectionCache);
-            if(request.getFetchAll()) request.setPageNumber(0);
-            val result = ApiFreeTextSearchByImpl.freeTextSearch(dataManager, request, apiHooks, reflectionCache);
+
+            if(request.getFetchAll())
+                request.setPageNumber(0);
+            Page<T> result;
+
+            if(apiHooks != null && (result = apiHooks.executeCustomFreeTextSearch(request, dataManager)) != null)
+                return result;
+
+            result = ApiFreeTextSearchByImpl.freeTextSearch(dataManager, request, apiHooks, reflectionCache);
             logInfo("freeTextSearchBy(String searchTerm)", "found {} {} by searchTerm '{}'",
                     result.getTotalItemsCount(), toPlural(dataManager.getClazzSimpleName()), request.getSearchTerm());
             return result;
@@ -326,25 +334,34 @@ public final class ApiLogic<T> {
                                        collectionDataManager,
                                        dataManager)
             );
-        return input.stream().map(owners2EntityCollectionsMap::get).collect(Collectors.toList());
+        return input.stream().map(key -> {
+            final List<TCollection> collection = owners2EntityCollectionsMap.get(key);
+            return collection != null ? collection : new ArrayList<TCollection>();
+        }).collect(Collectors.toList());
     }
 
     public  <TCollection> List<TCollection> getEmbedded(
             List<T> input,
             String fieldName,
             DataManager<TCollection> collectionDataManager) {
-        List<Object> ids = new ArrayList<>();
-        input.forEach(t -> {
-            final TCollection embeddedReference;
-            try {
-                embeddedReference = (TCollection) getField(fieldName, t)
-                        .get(t);
-                ids.add(getId(embeddedReference, reflectionCache));
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        });
-        return collectionDataManager.findAllById(ids);
+        val queryString = String.format(
+                "SELECT new dev.sanda.apifi.dto.KeyAndValue(owner, owner.%s) FROM %s owner WHERE owner.%s IN :ids " +
+                "ORDER BY owner.%s",
+                fieldName, entityName, idFieldName, idFieldName
+        );
+        final Map<T, TCollection> resultMap =
+                (Map<T, TCollection>)
+                dataManager
+                .entityManager()
+                .createQuery(queryString)
+                .setParameter("ids", getIdList(input, reflectionCache))
+                .getResultStream()
+                .collect(Collectors.toMap(
+                        KeyAndValue::getKey,
+                        KeyAndValue::getValue,
+                        (first, second) -> first
+                ));
+        return input.stream().map(resultMap::get).collect(Collectors.toList());
     }
 
     @NonNull
@@ -487,12 +504,18 @@ public final class ApiLogic<T> {
             dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
             String fieldName,
             E elementCollectionApiHooks) {
-        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        owner = temp;
+        owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (owner == null) throw_entityNotFound(input, reflectionCache);
+
+        Page<TCollection> returnValue;
+
+        if(elementCollectionApiHooks != null && (returnValue = elementCollectionApiHooks.executeCustomFreeTextSearch(input, owner, dataManager)) != null)
+            return returnValue;
+
         if(elementCollectionApiHooks != null)
             elementCollectionApiHooks.preFreeTextSearch(owner, input, fieldName, dataManager);
-        Page<TCollection> returnValue = new Page<>();
+
+        returnValue = new Page<>();
         val contentQueryString = String.format(
                 "SELECT collection FROM %s owner " +
                         "JOIN owner.%s collection " +
@@ -511,7 +534,7 @@ public final class ApiLogic<T> {
                 dataManager.getClazzSimpleName(),
                 fieldName,
                 idFieldName);
-        Object ownerId = getId(temp, reflectionCache);
+        Object ownerId = getId(owner, reflectionCache);
         val content = dataManager
                 .entityManager()
                 .createQuery(contentQueryString)
@@ -648,12 +671,17 @@ public final class ApiLogic<T> {
             dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
             String fieldName,
             E apiHooks) {
-        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        owner = temp;
+        owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (owner == null) throw_entityNotFound(input, reflectionCache);
+
+        Page<Map.Entry<TMapKey, TMapValue>> returnValue;
+
+        if(apiHooks != null && (returnValue = apiHooks.executeCustomFreeTextSearch(input, owner, dataManager)) != null)
+            return returnValue;
+
         if(apiHooks != null)
             apiHooks.preFreeTextSearch(owner, input, dataManager);
-        Page<Map.Entry<TMapKey, TMapValue>> returnValue = new Page<>();
+        returnValue = new Page<>();
         val contentQueryString = String.format(
                 "SELECT new dev.sanda.apifi.dto.KeyAndValue(KEY(map), VALUE(map)) " +
                         "FROM %s owner " +
@@ -673,7 +701,7 @@ public final class ApiLogic<T> {
                 dataManager.getClazzSimpleName(),
                 fieldName,
                 idFieldName);
-        Object ownerId = getId(temp, reflectionCache);
+        Object ownerId = getId(owner, reflectionCache);
         val content =
                 (List<java.util.Map.Entry<TMapKey,TMapValue>>)
                  dataManager
@@ -736,7 +764,8 @@ public final class ApiLogic<T> {
                 getEntityCollectionFrom(
                         t,
                         fieldName);
-        var result = collectionDataManager.saveAll(extractFromCollection(added, toAssociate));
+        val newlyAssociated = collectionDataManager.saveAll(toAssociate);
+        var result = collectionDataManager.saveAll(extractFromCollection(added, newlyAssociated));
         dataManager.save(t);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postAssociate(toAssociate, result, input, fieldName, collectionDataManager, dataManager);
@@ -751,13 +780,19 @@ public final class ApiLogic<T> {
             DataManager<TCollection> collectionDataManager,
             E entityCollectionApiHooks) {
         //get collection owner
-        var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        owner = temp;
+        owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+        if (owner == null) throw_entityNotFound(input, reflectionCache);
+
+        Page<TCollection> returnValue;
+
+        if(entityCollectionApiHooks != null && (returnValue = entityCollectionApiHooks.executeCustomFreeTextSearch(input, owner, dataManager, collectionDataManager)) != null)
+            return returnValue;
+
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.preFreeTextSearch(owner, input.getSearchTerm(), dataManager, collectionDataManager);
 
-        Page<TCollection> returnValue = new Page<>();
+
+        returnValue = new Page<>();
         validateSortByIfNonNull(collectionDataManager.getClazz(), input.getSortBy(), reflectionCache);
 
         String clazzSimpleNamePlural = toPlural(collectionDataManager.getClazzSimpleName());
@@ -965,7 +1000,8 @@ public final class ApiLogic<T> {
         if(currentCollection == null)
             throw new RuntimeException("Illegal attempt to remove object from null collection");
         if(entityCollectionApiHooks != null) entityCollectionApiHooks.preRemove(toRemove, owner, collectionDataManager, dataManager);
-        currentCollection.removeIf(toRemove::contains);
+        Set<Object> toRemoveIds = new HashSet<>(getIdList(toRemove, reflectionCache));
+        currentCollection.removeIf(item -> toRemoveIds.contains(getId(item, reflectionCache)));
         dataManager.save(owner);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postRemove(toRemove, owner, collectionDataManager, dataManager);
@@ -1012,7 +1048,7 @@ public final class ApiLogic<T> {
     }
 
     private final static Logger log = LoggerFactory.getLogger(ApiLogic.class);
-    private static Executor loggerThread = Executors.newSingleThreadExecutor();
+    private static final Executor loggerThread = Executors.newSingleThreadExecutor();
     private static synchronized void log(String msg, boolean isError, Object... args){
         loggerThread.execute(() -> {
             if (isError) log.error(msg, args);

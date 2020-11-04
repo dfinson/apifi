@@ -335,7 +335,10 @@ public class EntityApiGenerator {
                     .stream()
                     .filter(this::isApiFindByAnnotated)
                     .map(field -> toApiFindByEndpoints(field, clientFactory))
-                    .forEach(serviceBuilder::addMethods);
+                    .forEach(methodSpecs -> {
+                        serviceBuilder.addMethods(methodSpecs);
+                        testableServiceBuilder.addMethods(methodSpecs);
+                    });
 
             //return result
             return new ServiceAndTestableService(serviceBuilder.build(), testableServiceBuilder.build());

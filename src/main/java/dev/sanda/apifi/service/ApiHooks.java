@@ -1,7 +1,9 @@
 package dev.sanda.apifi.service;
 
+import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.dto.PageRequest;
+import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import org.springframework.stereotype.Component;
 import java.util.List;
@@ -18,6 +20,9 @@ public interface ApiHooks<T> {
     default void postApiFindAllBy(String fieldName, List<?> arguments, List<T> result, DataManager<T> dataManager) {}
     default void preGetPaginatedBatch(PageRequest request, DataManager<T> dataManager) {}
     default void postGetPaginatedBatch(PageRequest request, Page<T> result, DataManager<T> dataManager){}
+    default Page<T> executeCustomFreeTextSearch(FreeTextSearchPageRequest request, DataManager<T> dataManager){
+        return null;
+    }
     default void preFreeTextSearch(String searchTerm, DataManager<T> dataManager){}
     default void postFreeTextSearch(String searchTerm, List<T> result, DataManager<T> dataManager){}
     default void postGetById(T result, DataManager<T> dataManager){}

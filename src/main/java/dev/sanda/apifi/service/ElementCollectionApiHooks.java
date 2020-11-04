@@ -16,4 +16,7 @@ public interface ElementCollectionApiHooks<TCollection, T> {
     default void postGetPaginatedBatch(Page<TCollection> returnPage, String fieldName, T ownerInstance, PageRequest request, DataManager<T> ownerDataManager){}
     default void preFreeTextSearch(T owner, FreeTextSearchPageRequest request, String fieldName, DataManager<T> ownerDataManager){}
     default void postFreeTextSearch(FreeTextSearchPageRequest request, Page<TCollection> returnPage, T owner, String fieldName, DataManager<T> ownerDataManager){}
+    default Page<TCollection> executeCustomFreeTextSearch(FreeTextSearchPageRequest input, T owner, DataManager<T> dataManager){
+        return null;
+    }
 }

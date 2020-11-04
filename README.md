@@ -37,7 +37,7 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 <dependency>  
 	<groupId>sanda.dev</groupId>
 	<artifactId>apifi</artifactId>
-	<version>0.0.5.3</version>
+	<version>0.0.5.4</version>
 </dependency>  
 ```  
 #### Configuration properties  

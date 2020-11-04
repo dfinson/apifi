@@ -15,6 +15,9 @@ public interface EntityCollectionApiHooks<TCollection, T>{
     default void postFetch(Collection<TCollection> fetchedItems, T ownerInstance, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
     default void preGetPaginatedBatch(T ownerInstance, PageRequest requestInput, DataManager<T> dataManager) {}
     default void postGetPaginatedBatch(Page<TCollection> resultPage, T ownerInstance, PageRequest inputRequest, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
+    default Page<TCollection> executeCustomFreeTextSearch(FreeTextSearchPageRequest input, T owner, DataManager<T> dataManager, DataManager<TCollection> collectionDataManager){
+        return null;
+    }
     default void preFreeTextSearch(T ownerInstance, String searchTerm, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager) {}
     default void postFreeTextSearch(Page<TCollection> resultPage, FreeTextSearchPageRequest inputRequest, T ownerInstance, String searchTerm, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
     default void preRemove(Collection<TCollection> toRemoveInput, T ownerInstance, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}

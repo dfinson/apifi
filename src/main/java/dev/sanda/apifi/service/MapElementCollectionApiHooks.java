@@ -20,4 +20,7 @@ public interface MapElementCollectionApiHooks<TMapKey, TMapValue, T> {
     default void postGetPaginatedBatch(Page<Map.Entry<TMapKey, TMapValue>> returnValue, PageRequest request, T ownerInstance, DataManager<T> ownerDataManager){}
     default void preFreeTextSearch(T ownerInstance, FreeTextSearchPageRequest request, DataManager<T> ownerDataManager){}
     default void postFreeTextSearch(Page<Map.Entry<TMapKey, TMapValue>> returnPage, FreeTextSearchPageRequest request, T ownerInstance, DataManager<T> ownerDataManager){}
+    default Page<Map.Entry<TMapKey,TMapValue>> executeCustomFreeTextSearch(FreeTextSearchPageRequest input, T owner, DataManager<T> dataManager){
+        return null;
+    }
 }

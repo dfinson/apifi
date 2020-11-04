@@ -52,7 +52,7 @@ public class ApifiClientFactory {
                 "\t\t\tlet requestHeaders = { \"Content-Type\": \"application/json\" }\n" +
                 "\t\t\tif(customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);\n" +
                 "\t\t\tif(bearerToken !== undefined) requestHeaders[\"Authorization\"] = bearerToken;\n" +
-                "\t\t\tlet opts = {\n" +
+                "\t\t\tconst opts = {\n" +
                 "\t\t\t\tmethod: \"POST\",\n" +
                 "\t\t\t\tcredentials: \"include\",\n" +
                 "\t\t\t\theaders: requestHeaders,\n" +
