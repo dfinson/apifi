@@ -86,14 +86,14 @@ public class UserGraphQLApiService {
         return apiLogic.delete(input);
     }
     
-	@GraphQLMutation 
-	public User updateUser(User input) {
-	    return apiLogic.update(input);
-	}
-	@GraphQLMutation 
-	public User deleteUser(User input) {
-	    return apiLogic.delete(input);
-	}
+    @GraphQLMutation 
+    public User updateUser(User input) {
+        return apiLogic.update(input);
+    }
+    @GraphQLMutation 
+    public User deleteUser(User input) {
+       return apiLogic.delete(input);
+    }
 }
  ```
 *Note:* As its name suggests, [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiLogic.java) implements API CRUD ops generically.   
