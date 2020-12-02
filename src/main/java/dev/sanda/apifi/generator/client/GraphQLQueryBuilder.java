@@ -61,10 +61,6 @@ public class GraphQLQueryBuilder {
         varType = varType.replaceAll("\\[", "").replaceAll("]", "").replaceAll("Input", "");
         val start = varType.lastIndexOf(".") + 1;
         var simpleTypeName = varType.substring(start);
-        if(simpleTypeName.equals("Long") || simpleTypeName.equals("Integer"))
-            simpleTypeName = "Int";
-        else if(simpleTypeName.equals("Double"))
-            simpleTypeName = "Float";
         return  isArray ? "[" + simpleTypeName + "]" : simpleTypeName;
     }
 

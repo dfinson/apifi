@@ -511,7 +511,9 @@ public class EntityApiGenerator {
             final ClassName idType = getIdType(entity, processingEnv);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation())
+                    .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
+                            .addMember("name", "$S", queryName)
+                            .build())
                     .addParameter(idType, "input")
                     .addStatement("return apiLogic.getById(input)")
                     .returns(TypeName.get(entity.asType()));
@@ -1221,16 +1223,22 @@ public class EntityApiGenerator {
             return methodsToAdd;
         }
         private String getInputTypeSimpleName(String simpleName, String packageName) {
-            return isPrimitive(packageName) ? resolveSimpleTypeName(simpleName) + "!" : simpleName + "Input";
+            return isPrimitive(packageName) ? resolveSimpleTypeName(simpleName) /*+ "!" */: simpleName + "Input";
         }
         private String resolveSimpleTypeName(String simpleName) {
-            val n = simpleName.toLowerCase();
+            /*val n = simpleName.toLowerCase();
+            switch (n){
+                case "long":;
+                case "Long": return "Long";
+                case "in"
+            }
             if(n.equals("long") || n.equals("integer") || n.equals("int") || n.equals("short") || n.equals("byte"))
                 return "Int";
             else if(n.equals("float") || n.equals("double"))
                 return "Float";
             else
-                return "String";
+                return "String";*/
+            return simpleName;
         }
 
         //field spec helpers
