@@ -12,6 +12,7 @@
    + [Overview](#overview)  
    + [Input](#input)  
    + [Output](#output)  
+   + [Customization](#customization)
  * [Entity Collections](#entity-collections)  
  * [Element Collections](#element-collections)  
  * [Element collection maps](#element-collection-maps)  
@@ -37,7 +38,7 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 <dependency>  
 	<groupId>sanda.dev</groupId>
 	<artifactId>apifi</artifactId>
-	<version>0.0.5.4</version>
+	<version>0.0.5.5</version>
 </dependency>  
 ```  
 #### Configuration properties  
@@ -85,14 +86,14 @@ public class UserGraphQLApiService {
         return apiLogic.delete(input);
     }
     
-	@GraphQLMutation 
-	public User updateUser(User input) {
-	    return apiLogic.update(input);
-	}
-	@GraphQLMutation 
-	public User deleteUser(User input) {
-	    return apiLogic.delete(input);
-	}
+    @GraphQLMutation 
+    public User updateUser(User input) {
+        return apiLogic.update(input);
+    }
+    @GraphQLMutation 
+    public User deleteUser(User input) {
+       return apiLogic.delete(input);
+    }
 }
  ```
 *Note:* As its name suggests, [`ApiLogic<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiLogic.java) implements API CRUD ops generically.   
@@ -412,6 +413,12 @@ public class UserGraphQLService {
   }
 }  
 ```  
+	 
+  
+#### Customization
+The default Apifi implementation for free text search utilizes JPQL LIKE statements. This is usually fine for small datasets where the requirements are simple and do not need to scale. However since this approach is typically insufficient for larger datasets in projects with more complex free text search requirements, Apifi allows for custom implementations of the free text search. 
+
+This can be utilized by overriding the `executeCustomFreeTextSearch` method present in all [`ApiHooks`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) implementations. The method takes in a [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java) argument, as well as a [`DataManager<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java) argument. It returns a [`Page<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/Page.java) object. `executeCustomFreeTextSearch` leaves the implementation of all free text search functionality - including pagination, in the hands of the developer.
   
 ### Entity Collections  
 Collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an entity collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:  
