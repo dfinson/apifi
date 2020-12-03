@@ -12,6 +12,7 @@ import java.util.List;
 public interface ApiHooks<T> {
     //queries
     default void preGetById(Object id, DataManager<T> dataManager){}
+    default void preGetBatchByIds(List<?> ids, DataManager<T> dataManager){}
     default void preApiFindByUnique(String fieldName, Object argument, DataManager<T> dataManager){}
     default void postApiFindByUnique(String fieldName, Object fieldValue, T result, DataManager<T> dataManager) {}
     default void preApiFindBy(String fieldName, Object argument, DataManager<T> dataManager){}
@@ -26,6 +27,7 @@ public interface ApiHooks<T> {
     default void preFreeTextSearch(String searchTerm, DataManager<T> dataManager){}
     default void postFreeTextSearch(String searchTerm, List<T> result, DataManager<T> dataManager){}
     default void postGetById(T result, DataManager<T> dataManager){}
+    default void postGetBatchByIds(List<T> result, DataManager<T> dataManager){}
     default void preGetArchivedPaginatedBatch(PageRequest request, DataManager<T> dataManager){}
     default void postGetArchivedPaginatedBatch(PageRequest request, Page<T> result, DataManager<T> dataManager) {}
 

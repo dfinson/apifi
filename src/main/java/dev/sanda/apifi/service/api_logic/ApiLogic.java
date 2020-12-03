@@ -263,7 +263,18 @@ public final class ApiLogic<T> {
     }
 
     public List<T> getBatchByIds(List<?> ids) {
-        return dataManager.findAllById(ids);
+        if(apiHooks != null)
+            apiHooks.preGetBatchByIds(ids, dataManager);
+        List<T> result = dataManager.findAllById(ids);
+        if(result.size() != ids.size())
+            throw new IllegalArgumentException(
+                    "Could not find " + ids.size() + " " +
+                    toPlural(entityName) + " by ids: [" +
+                    ids.stream().map(Object::toString).collect(Collectors.joining(", ")) +
+                    "]");
+        if(apiHooks != null)
+            apiHooks.postGetBatchByIds(result, dataManager);
+        return result;
     }
 
     public List<T> batchCreate(List<T> input) {
