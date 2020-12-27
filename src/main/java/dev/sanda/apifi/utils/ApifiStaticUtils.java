@@ -9,13 +9,11 @@ import dev.sanda.apifi.service.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.NullElementCollectionApiHooks;
 import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
 import dev.sanda.datafi.dto.Page;
-import dev.sanda.datafi.reflection.ReflectionCache;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import lombok.val;
 import lombok.var;
 import org.atteo.evo.inflector.English;
-import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.proxy.LazyInitializer;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;

@@ -4,7 +4,7 @@ import dev.sanda.apifi.annotations.WithApiFreeTextSearchByFields;
 import dev.sanda.datafi.code_generator.FreeTextSearchMethodsFactory;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
-import dev.sanda.datafi.reflection.ReflectionCache;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import lombok.val;
 

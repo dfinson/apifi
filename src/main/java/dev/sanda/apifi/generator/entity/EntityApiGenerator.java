@@ -511,9 +511,7 @@ public class EntityApiGenerator {
             final ClassName idType = getIdType(entity, processingEnv);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(AnnotationSpec.builder(GraphQLQuery.class)
-                            .addMember("name", "$S", queryName)
-                            .build())
+                    .addAnnotation(namedGraphQLQuery(queryName))
                     .addParameter(idType, "input")
                     .addStatement("return apiLogic.getById(input)")
                     .returns(TypeName.get(entity.asType()));
@@ -527,11 +525,11 @@ public class EntityApiGenerator {
             return builder.build();
         }
         private MethodSpec genGetBatchByIds(ProcessingEnvironment processingEnv, GraphQLQueryBuilder clientQueryBuilder) {
-            String queryName = "get" + toPlural(pascalCaseNameOf(entity)) + "ById";
+            String queryName = "get" + toPlural(pascalCaseNameOf(entity)) + "ByIds";
             final ClassName idType = getIdType(entity, processingEnv);
             var builder = MethodSpec.methodBuilder(queryName)
                     .addModifiers(Modifier.PUBLIC)
-                    .addAnnotation(graphqlQueryAnnotation())
+                    .addAnnotation(namedGraphQLQuery(queryName))
                     .addParameter(ParameterSpec.builder(listOf(idType), "input").build())
                     .addStatement("return apiLogic.getBatchByIds(input)")
                     .returns(listOf(entity));
@@ -1384,5 +1382,11 @@ public class EntityApiGenerator {
             });
         }
 
+    }
+
+    private static AnnotationSpec namedGraphQLQuery(String queryName) {
+        return AnnotationSpec.builder(GraphQLQuery.class)
+                .addMember("name", "$S", queryName)
+                .build();
     }
 }

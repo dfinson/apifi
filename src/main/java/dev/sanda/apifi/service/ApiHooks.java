@@ -3,7 +3,6 @@ package dev.sanda.apifi.service;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.dto.PageRequest;
-import dev.sanda.datafi.reflection.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import org.springframework.stereotype.Component;
 import java.util.List;

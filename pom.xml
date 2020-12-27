@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -5,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>apifi</artifactId>
-    <version>0.0.5.5</version>
+    <version>0.0.5.6</version>
 
     <parent>
         <groupId>dev.sanda</groupId>
@@ -15,7 +16,7 @@
     </parent>
 
     <properties>
-        <datafi.version>0.0.5.3</datafi.version>
+        <datafi.version>0.0.5.4</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
         <mockeri.version>0.0.2</mockeri.version>

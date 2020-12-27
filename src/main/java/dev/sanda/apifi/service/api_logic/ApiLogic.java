@@ -1,12 +1,13 @@
 package dev.sanda.apifi.service.api_logic;
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.dto.KeyAndValue;
-import dev.sanda.apifi.generator.entity.CollectionsTypeResolver;
 import dev.sanda.apifi.service.*;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
-import dev.sanda.datafi.reflection.ReflectionCache;
+import dev.sanda.datafi.reflection.runtime_services.CollectionInstantiator;
+import dev.sanda.datafi.reflection.runtime_services.CollectionsTypeResolver;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import lombok.*;
 import org.slf4j.Logger;
@@ -21,11 +22,12 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static dev.sanda.datafi.reflection.CachedEntityTypeInfo.genDefaultInstance;
+import static dev.sanda.datafi.reflection.cached_type_info.CachedEntityTypeInfo.genDefaultInstance;
 
 
 @Service
@@ -519,7 +521,7 @@ public final class ApiLogic<T> {
         if (owner == null) throw_entityNotFound(input, reflectionCache);
 
         Page<TCollection> returnValue;
-
+        if(input.getFetchAll()) input.setPageNumber(0);
         if(elementCollectionApiHooks != null && (returnValue = elementCollectionApiHooks.executeCustomFreeTextSearch(input, owner, dataManager)) != null)
             return returnValue;
 
@@ -684,7 +686,7 @@ public final class ApiLogic<T> {
             E apiHooks) {
         owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
         if (owner == null) throw_entityNotFound(input, reflectionCache);
-
+        if(input.getFetchAll()) input.setPageNumber(0);
         Page<Map.Entry<TMapKey, TMapValue>> returnValue;
 
         if(apiHooks != null && (returnValue = apiHooks.executeCustomFreeTextSearch(input, owner, dataManager)) != null)
@@ -755,8 +757,30 @@ public final class ApiLogic<T> {
         Collection<TCollection> existingCollection = getEntityCollectionFrom(input, fieldName);
         if(existingCollection == null)
             existingCollection = initEntityCollection(fieldName, collectionDataManager);
+        var existingInstancesIds = toAssociate
+                .stream()
+                .filter(obj -> getId(obj, reflectionCache) != null)
+                .map(obj -> getId(obj, reflectionCache))
+                .collect(Collectors.toSet());
+        if(!existingInstancesIds.isEmpty()){
+            val existingInstancesById = collectionDataManager
+                    .findAllById(existingInstancesIds)
+                    .stream()
+                    .collect(Collectors.toMap(item -> getId(item, reflectionCache), Function.identity()));
+            if(existingInstancesById.size() != existingInstancesIds.size()){
+                throw new IllegalArgumentException("At least one inputted element contains a non-existent id");
+            }
+            toAssociate = toAssociate.stream().map(item -> {
+                val id = getId(item, reflectionCache);
+                val preExisting = id != null ? existingInstancesById.get(id) : null;
+                if(preExisting != null){
+                    return preExisting;
+                }else {
+                    return item;
+                }
+            }).collect(Collectors.toList());
+        }
         existingCollection.addAll(toAssociate);
-
         //save owner
         try {
             reflectionCache
@@ -777,6 +801,7 @@ public final class ApiLogic<T> {
                         fieldName);
         val newlyAssociated = collectionDataManager.saveAll(toAssociate);
         var result = collectionDataManager.saveAll(extractFromCollection(added, newlyAssociated));
+        setBackpointersIfRelationshipIsBiDirectional(temp, result, fieldName);
         dataManager.save(t);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postAssociate(toAssociate, result, input, fieldName, collectionDataManager, dataManager);
@@ -793,7 +818,7 @@ public final class ApiLogic<T> {
         //get collection owner
         owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
         if (owner == null) throw_entityNotFound(input, reflectionCache);
-
+        if(input.getFetchAll()) input.setPageNumber(0);
         Page<TCollection> returnValue;
 
         if(entityCollectionApiHooks != null && (returnValue = entityCollectionApiHooks.executeCustomFreeTextSearch(input, owner, dataManager, collectionDataManager)) != null)
@@ -1093,6 +1118,19 @@ public final class ApiLogic<T> {
                 .getType();
         Class collectibleType = collectionsTypeResolver.resolveFor(entityName + "." + fieldName);
         return collectionInstantiator.instantiateCollection(collectionType, collectibleType);
+    }
+
+    private <TCollection> void setBackpointersIfRelationshipIsBiDirectional(T owner, List<TCollection> associated, String fieldName) {
+        if(associated.isEmpty()) return;
+        val sourceField = reflectionCache.getEntitiesCache().get(entityName).getFields().get(fieldName).getField();
+        val fieldTypeSimpleName = associated.get(0).getClass().getSimpleName();
+        for(val instance : associated){
+            reflectionCache
+                    .getEntitiesCache()
+                    .get(fieldTypeSimpleName)
+                    .getRelationshipSyncronizer()
+                    .trySetBackpointer(sourceField, instance, owner);
+        }
     }
 
     private <TKey, TValue> Map<TKey, TValue> initMapElementCollection(String fieldName){
