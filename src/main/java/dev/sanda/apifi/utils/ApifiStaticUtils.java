@@ -57,7 +57,7 @@ public abstract class ApifiStaticUtils {
         builder.addStatement(block.build());
     }
 
-    public static Set<? extends TypeElement> getGraphQLApiEntities(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
+    public static Set<? extends TypeElement> getGraphQLApiEntities(RoundEnvironment roundEnvironment) {
         return getEntitiesSet(roundEnvironment);
     }
 

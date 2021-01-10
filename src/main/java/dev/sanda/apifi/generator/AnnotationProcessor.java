@@ -7,7 +7,7 @@ import com.squareup.javapoet.TypeSpec;
 import dev.sanda.apifi.annotations.WithCRUDEndpoints;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
-import dev.sanda.apifi.generator.entity.EntityApiGenerator;
+import dev.sanda.apifi.generator.entity.GraphQLApiBuilder;
 import dev.sanda.apifi.generator.entity.ServiceAndTestableService;
 import lombok.val;
 import lombok.var;
@@ -36,19 +36,19 @@ public class AnnotationProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
         basePackage = getBasePackage(roundEnvironment);
         val clientFactory = new ApifiClientFactory();
-        Set<? extends TypeElement> entities = getGraphQLApiEntities(annotations, roundEnvironment);
+        Set<? extends TypeElement> entities = getGraphQLApiEntities(roundEnvironment);
         Map<String, TypeElement> entitiesMap =
                 entities
                 .stream()
                 .collect(
                         Collectors.toMap(type -> type.getQualifiedName().toString(), type -> type)
                 );
-        List<String> services = new ArrayList<>();
+        List<String> services;
         Map<String, ClassName> collectionsTypes = new HashMap<>();
-        entities.forEach(entity -> {
-            val service = generateApiForEntity(entity, entitiesMap, clientFactory, collectionsTypes);
-            services.add(service);
-        });
+        services = entities
+                .stream()
+                .map(entity -> generateApiForEntity(entity, entitiesMap, clientFactory, collectionsTypes))
+                .collect(Collectors.toList());
         if(!services.isEmpty()){
             val controller = GraphQLControllerFactory.generate(services);
             writeControllerToFile(controller);
@@ -70,8 +70,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 
     private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap, ApifiClientFactory clientFactory, Map<String, ClassName> collectionsTypes) {
         List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
-        var apiBuilder = new EntityApiGenerator.GraphQLApiBuilder(entity, entitiesMap);
-        apiBuilder.setCrudResolvers(crudResolvers);
+        var apiBuilder = new GraphQLApiBuilder(entity, entitiesMap, crudResolvers);
         var serviceAndTest = apiBuilder.build(processingEnv, clientFactory, collectionsTypes);
         writeServiceAndTestToJavaFiles(serviceAndTest);
         return basePackage + ".service." + serviceAndTest.getService().name;

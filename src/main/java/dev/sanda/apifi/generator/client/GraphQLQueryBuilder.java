@@ -6,15 +6,12 @@ import javax.lang.model.element.TypeElement;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 
 @Data
 public class GraphQLQueryBuilder {
-
-    private GraphQLQueryBuilder(){}
 
     public GraphQLQueryBuilder(Collection<TypeElement> typeElements){
         entityTypes = typeElements
