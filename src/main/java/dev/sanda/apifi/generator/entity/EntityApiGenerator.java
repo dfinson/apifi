@@ -415,27 +415,12 @@ public class EntityApiGenerator {
                     .addModifiers(PRIVATE)
                     .build();
         }
-        private MethodSpec postConstructInitTestLogic() {
-            return MethodSpec.methodBuilder("postConstructInit")
-                    .addAnnotation(PostConstruct.class)
-                    .addModifiers(PRIVATE)
-                    .returns(void.class)
-                    .addStatement("apiLogic.setApiHooks(apiHooks)")
-                    .addStatement("apiLogic.setDataManager(dataManager)")
-                    .addStatement("testLogic.setApiHooks(apiHooks)")
-                    .addStatement("testLogic.setDataManager(dataManager)")
-                    .addStatement("testLogic.setApiLogic(apiLogic)")
-                    .addStatement("testLogic.setClazz($T.class)", ClassName.get(entity))
-                    .addStatement("testLogic.setClazzSimpleName($T.class.getSimpleName())", ClassName.get(entity))
-                    .build();
-        }
         private MethodSpec postConstructInitApiLogic() {
             return MethodSpec.methodBuilder("postConstructInit")
                     .addAnnotation(PostConstruct.class)
                     .addModifiers(PRIVATE)
                     .returns(void.class)
-                    .addStatement("apiLogic.setApiHooks(apiHooks)")
-                    .addStatement("apiLogic.setDataManager(dataManager)")
+                    .addStatement("apiLogic.init(dataManager, apiHooks)")
                     .build();
         }
         private void handleTargetMethodsMapping(WithMethodLevelSecurity security, Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap) {
