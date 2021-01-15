@@ -14,6 +14,8 @@ import lombok.var;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.io.IOException;
@@ -52,9 +54,23 @@ public class AnnotationProcessor extends AbstractProcessor {
         if(!services.isEmpty()){
             val controller = GraphQLControllerFactory.generate(services);
             writeControllerToFile(controller);
+            clientFactory.setProcessingEnv(processingEnv);
+            clientFactory.setEntities((Set<TypeElement>) entities);
+            clientFactory.setEnums(extractEnums(roundEnvironment.getRootElements()));
+            clientFactory.setTypescriptMode(false);
+            clientFactory.generate();
+            clientFactory.setTypescriptMode(true);
             clientFactory.generate();
         }
         return false;
+    }
+
+    private Set<TypeElement> extractEnums(Set<? extends Element> rootElements) {
+        return rootElements
+                .stream()
+                .filter(element -> element.getKind() == ElementKind.ENUM)
+                .map(element -> (TypeElement)element)
+                .collect(Collectors.toSet());
     }
 
 

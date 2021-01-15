@@ -1,24 +1,26 @@
 package dev.sanda.apifi.generator.client;
 
 import lombok.Data;
+import lombok.Setter;
 import lombok.val;
 
 import javax.annotation.processing.ProcessingEnvironment;
-import java.io.File;
-import java.io.IOException;
+import javax.lang.model.element.TypeElement;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
+import java.util.Set;
 
 @Data
 public class ApifiClientFactory {
 
     private List<GraphQLQueryBuilder> queries = new ArrayList<>();
-    private String fileName = "apifiClient";
+    private boolean isTypescriptMode;
+    private ProcessingEnvironment processingEnv;
+    private Set<TypeElement> entities;
+    private Set<TypeElement> enums;
 
     public void addQuery(GraphQLQueryBuilder graphQLQueryBuilder){
         if(queries == null) queries = new ArrayList<>();
@@ -29,20 +31,26 @@ public class ApifiClientFactory {
         StringBuilder builder = new StringBuilder();
         builder.append("let apiUrl = location.origin + '/graphql';\n");
         builder.append("let bearerToken = undefined;\n\n");
-        builder.append("export default{\n");
+        if(isTypescriptMode)
+            builder.append(TypescriptModelFactory.generateInterfaces(entities, enums, processingEnv));
+        builder.append("\n\nexport default{\n");
         builder.append("\n\tsetBearerToken(token){\n\t\tbearerToken = token;\n\t},\n");
         builder.append("\n\tsetApiUrl(url){\n\t\tapiUrl = url;\n\t},\n");
         queries.forEach(query -> builder.append(generateQueryFetcher(query)));
         builder.append("\n}");
         val finalContent = builder.toString();
         try {
-            Path path = Paths.get(fileName + ".js");
+            Path path = Paths.get(clientName());
             if(Files.exists(path)) Files.delete(path);
             Files.createFile(path);
             Files.write(path, finalContent.getBytes());
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    private String clientName(){
+        return isTypescriptMode ? "typedApifiClient.ts" : "apifiClient.js";
     }
 
     private String generateQueryFetcher(GraphQLQueryBuilder query) {

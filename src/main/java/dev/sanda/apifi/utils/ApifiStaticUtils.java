@@ -11,6 +11,8 @@ import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import lombok.val;
 import lombok.var;
 import org.atteo.evo.inflector.English;
@@ -18,6 +20,7 @@ import org.atteo.evo.inflector.English;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
@@ -32,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
@@ -44,6 +48,56 @@ public abstract class ApifiStaticUtils {
             }
         }
         return fields;
+    }
+
+    public static List<VariableElement> getNonIgnoredFields(TypeElement typeElement){
+        return getFields(typeElement)
+                .stream()
+                .filter(field -> field.getAnnotation(GraphQLIgnore.class) == null)
+                .collect(Collectors.toList());
+    }
+
+    public static LinkedHashMap<String, TypeMirror> getGraphQLFields(TypeElement typeElement){
+        val graphQlIgnoredFields = new HashSet<String>();
+        val methodQueryFields = typeElement
+                .getEnclosedElements()
+                .stream()
+                .filter(element -> element instanceof ExecutableElement)
+                .map(element -> (ExecutableElement) element)
+                .filter(element ->
+                        element.getSimpleName().toString().startsWith("get") ||
+                                element.getAnnotation(GraphQLQuery.class) != null)
+                .filter(executableElement -> !executableElement.getReturnType().toString().equals(void.class.getCanonicalName()))
+                .filter(executableElement -> {
+                    final boolean isIgnored = executableElement.getAnnotation(GraphQLIgnore.class) != null;
+                    if(isIgnored)
+                        graphQlIgnoredFields.add(getFieldName(executableElement));
+                    return !isIgnored;
+                })
+                .collect(Collectors.toMap(
+                        ApifiStaticUtils::getFieldName,
+                        ExecutableElement::getReturnType,
+                        (first, second) -> first,
+                        LinkedHashMap::new
+                ));
+        val fromFields = getNonIgnoredFields(typeElement)
+                .stream()
+                .filter(field -> !graphQlIgnoredFields.contains(field.getSimpleName().toString()))
+                .collect(Collectors.toMap(
+                    field -> field.getSimpleName().toString(),
+                    VariableElement::asType
+        ));
+        fromFields.forEach(methodQueryFields::putIfAbsent);
+        return methodQueryFields;
+    }
+
+    private static String getFieldName(Element element) {
+        final String name = element.getSimpleName().toString();
+        final GraphQLQuery queryAnnotation = element.getAnnotation(GraphQLQuery.class);
+        if (queryAnnotation != null && !queryAnnotation.name().equals(""))
+            return queryAnnotation.name();
+        else
+            return name.startsWith("get") ? toCamelCase(name.replaceFirst("get", "")) : name;
     }
 
     public static<T> T randomFrom(List<T> aList) {
@@ -366,6 +420,30 @@ public abstract class ApifiStaticUtils {
                                 processingEnv
                                         .getElementUtils()
                                         .getTypeElement("java.lang.Iterable")
+                                        .asType()
+                        );
+        return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
+    }
+
+    public static boolean isMap(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
+        TypeMirror iterableType =
+                processingEnv.getTypeUtils()
+                        .erasure(
+                                processingEnv
+                                        .getElementUtils()
+                                        .getTypeElement("java.util.Map")
+                                        .asType()
+                        );
+        return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
+    }
+
+    public static boolean isSet(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
+        TypeMirror iterableType =
+                processingEnv.getTypeUtils()
+                        .erasure(
+                                processingEnv
+                                        .getElementUtils()
+                                        .getTypeElement("java.util.Set")
                                         .asType()
                         );
         return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
