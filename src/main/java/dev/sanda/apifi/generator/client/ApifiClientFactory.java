@@ -1,7 +1,6 @@
 package dev.sanda.apifi.generator.client;
 
 import lombok.Data;
-import lombok.Setter;
 import lombok.val;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -32,8 +31,9 @@ public class ApifiClientFactory {
         builder.append("let apiUrl = location.origin + '/graphql';\n");
         builder.append("let bearerToken = undefined;\n\n");
         if(isTypescriptMode)
-            builder.append(TypescriptModelFactory.generateInterfaces(entities, enums, processingEnv));
-        builder.append("\n\nexport default{\n");
+            builder.append(TypescriptModelFactory.objectModel(entities, enums, processingEnv));
+        builder.append("\n\n// project specific client side API calls\n");
+        builder.append("\nexport default{\n");
         builder.append("\n\tsetBearerToken(token){\n\t\tbearerToken = token;\n\t},\n");
         builder.append("\n\tsetApiUrl(url){\n\t\tapiUrl = url;\n\t},\n");
         queries.forEach(query -> builder.append(generateQueryFetcher(query)));

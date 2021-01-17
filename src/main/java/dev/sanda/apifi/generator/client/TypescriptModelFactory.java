@@ -2,6 +2,9 @@ package dev.sanda.apifi.generator.client;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
+import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
+import dev.sanda.datafi.dto.Page;
+import dev.sanda.datafi.dto.PageRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.val;
@@ -27,7 +30,7 @@ public class TypescriptModelFactory {
     private ProcessingEnvironment processingEnv;
     private Map<String, TypeElement> typeElementMap;
 
-    public static String generateInterfaces(
+    public static String objectModel(
             Set<TypeElement> entitiesSet,
             Set<TypeElement> enumsSet,
             ProcessingEnvironment processingEnv){
@@ -45,34 +48,37 @@ public class TypescriptModelFactory {
         val interfaces = entitiesSet
                 .stream()
                 .map(factoryInstance::generateInterface)
-                .collect(Collectors.joining(System.lineSeparator() + System.lineSeparator()));
+                .collect(Collectors.joining(NEW_LINE + NEW_LINE));
         val enums =
-                System.lineSeparator() +
+                NEW_LINE +
                  enumsSet
                 .stream()
                 .map(factoryInstance::generateEnumClass)
-                .collect(Collectors.joining(System.lineSeparator() + System.lineSeparator()));
-        return interfaces + System.lineSeparator() + enums;
+                .collect(Collectors.joining(NEW_LINE + NEW_LINE));
+        return  "// project specific data model" + NEW_LINE + NEW_LINE +
+                interfaces + NEW_LINE +
+                enums + NEW_LINE + NEW_LINE +
+                apifiObjectModel();
     }
 
     private String generateEnumClass(TypeElement enumTypeElement) {
         return String.format(
                 "export enum %s{%s%s%s}",
                 enumTypeElement.getSimpleName().toString(),
-                System.lineSeparator(),
-                String.join("," + System.lineSeparator(), getEnumValues(enumTypeElement)),
-                System.lineSeparator());
+                NEW_LINE,
+                String.join("," + NEW_LINE, getEnumValues(enumTypeElement)),
+                NEW_LINE);
     }
 
     private String generateInterface(TypeElement typeElement) {
         val fields =
-                System.lineSeparator() +
+                NEW_LINE +
                 getGraphQLFields(typeElement)
                 .entrySet()
                 .stream()
                 .map(this::generateField)
-                .collect(Collectors.joining(System.lineSeparator())) +
-                System.lineSeparator();
+                .collect(Collectors.joining(NEW_LINE)) +
+                NEW_LINE;
         return String.format("export interface %s{%s}", typeElement.getSimpleName().toString(), fields);
     }
 
@@ -137,4 +143,48 @@ public class TypescriptModelFactory {
                 .map(element -> "\t" + element.getSimpleName().toString())
                 .collect(Collectors.toList());
     }
+
+    private static String apifiObjectModel(){
+        return  "// Apifi object model" + NEW_LINE + NEW_LINE +
+                PAGE_TYPE + NEW_LINE + NEW_LINE +
+                PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
+                FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
+                SORT_DIRECTION_ENUM_TYPE + NEW_LINE + NEW_LINE +
+                GRAPHQL_RESULT_TYPE;
+    }
+
+    private static final String PAGE_TYPE =
+            "export interface Page<T>{" + NEW_LINE +
+            "   content?: Array<T>;" + NEW_LINE +
+            "   totalPagesCount?: number;" + NEW_LINE +
+            "   totalItemsCount?: number;" + NEW_LINE +
+            "   pageNumber?: number;" + NEW_LINE +
+            "   customValues?: Map<string, any>;" + NEW_LINE +
+            "}";
+
+    private static final String PAGE_REQUEST_TYPE =
+            "export interface PageRequest<T>{" + NEW_LINE +
+            "   pageNumber?: number;" + NEW_LINE +
+            "   sortBy?: string;" + NEW_LINE +
+            "   pageSize?: number;" + NEW_LINE +
+            "   sortDirection?: SortDirection;" + NEW_LINE +
+            "   fetchAll?: boolean;" + NEW_LINE +
+            "}";
+
+    private static final String FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE =
+            "export interface FreeTextSearchPageRequest<T> extends PageRequest<T>{" + NEW_LINE +
+            "   searchTerm: string;" + NEW_LINE +
+            "}";
+
+    private static final String SORT_DIRECTION_ENUM_TYPE =
+            "export enum SortDirection{" + NEW_LINE +
+            "   ASC = 'ASC'," + NEW_LINE +
+            "   DESC = 'DESC'" + NEW_LINE +
+            "}";
+
+    private static final String GRAPHQL_RESULT_TYPE =
+            "export interface GraphQLResult<T>{" + NEW_LINE +
+            "   data?: T;" + NEW_LINE +
+            "   errors?: Array<string>;" + NEW_LINE +
+            "}";
 }

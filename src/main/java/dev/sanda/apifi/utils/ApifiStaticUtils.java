@@ -57,6 +57,8 @@ public abstract class ApifiStaticUtils {
                 .collect(Collectors.toList());
     }
 
+    public static final String NEW_LINE = System.lineSeparator();
+
     public static LinkedHashMap<String, TypeMirror> getGraphQLFields(TypeElement typeElement){
         val graphQlIgnoredFields = new HashSet<String>();
         val methodQueryFields = typeElement
