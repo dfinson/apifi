@@ -407,12 +407,47 @@ public abstract class ApifiStaticUtils {
                 .replaceAll(">", "");
     }
 
+    public static String getCollectionTypeSimpleName(VariableElement element){
+        val fullName = element
+                .asType()
+                .toString()
+                .replaceAll("^.+<", "")
+                .replaceAll(">", "");
+        val lastDot = fullName.lastIndexOf(".");
+        return fullName.substring(lastDot + 1);
+    }
+
+    public static String getTypeScriptElementCollectionType(VariableElement element, Set<String> enumTypes){
+        val type = toSimpleName(getCollectionType(element));
+        return resolveTypescriptType(type, enumTypes);
+    }
+
+    public static String resolveTypescriptType(String type, Set<String> entityTypes){
+        if(numberTypes.contains(type.toLowerCase()))
+            return "number";
+        else if(type.equalsIgnoreCase("string") || type.equalsIgnoreCase("boolean"))
+            return type.toLowerCase();
+        else if(entityTypes.contains(type.toLowerCase()))
+            return type;
+        else if(type.equals("Date") || type.equals("DateTime"))
+            return "Date";
+        else
+            return "any";
+    }
+
+    public static final Set<String> numberTypes =
+            new HashSet<>(Arrays.asList("byte", "short", "int", "integer", "long", "float", "double"));
+
     public static String getMapKeyType(VariableElement element){
         return element
                 .asType()
                 .toString()
                 .replaceAll("^.+<", "")
                 .replaceAll(",.+", "");
+    }
+
+    public static String toSimpleName(String name){
+        return name.substring(name.lastIndexOf(".") + 1);
     }
 
     public static boolean isIterable(TypeMirror typeMirror, ProcessingEnvironment processingEnv){

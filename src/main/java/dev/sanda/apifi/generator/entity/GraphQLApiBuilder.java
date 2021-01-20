@@ -2,6 +2,7 @@ package dev.sanda.apifi.generator.entity;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
+import dev.sanda.apifi.generator.client.ClientSideReturnType;
 import dev.sanda.apifi.generator.client.GraphQLQueryBuilder;
 import dev.sanda.apifi.service.*;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
@@ -34,6 +35,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static dev.sanda.apifi.generator.client.ClientSideReturnType.*;
 import static dev.sanda.apifi.generator.client.GraphQLQueryType.MUTATION;
 import static dev.sanda.apifi.generator.client.GraphQLQueryType.QUERY;
 import static dev.sanda.apifi.generator.entity.ElementCollectionEndpointType.ADD_TO;
@@ -55,8 +57,31 @@ public class GraphQLApiBuilder {
         private Map<String, TypeElement> entitiesMap;
         private Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap;
         private ApifiClientFactory clientFactory;
-        public GraphQLApiBuilder(TypeElement entity, Map<String, TypeElement> entitiesMap, List<CRUDEndpoints> crudResolvers){
+        private String entityName;
+        private Set<String> enumTypes;
+        private Set<String> allEntityTypesSimpleNames;
+
+        public GraphQLApiBuilder(TypeElement entity,
+                                 Map<String, TypeElement> entitiesMap,
+                                 List<CRUDEndpoints> crudResolvers,
+                                 Set<TypeElement> enumTypes){
+            this.enumTypes = enumTypes
+                    .stream()
+                    .map(TypeElement::getSimpleName)
+                    .map(Objects::toString)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+            this.allEntityTypesSimpleNames = new HashSet<>(this.enumTypes);
+            this.allEntityTypesSimpleNames.addAll(entitiesMap
+                            .values()
+                            .stream()
+                            .map(TypeElement::getSimpleName)
+                            .map(Objects::toString)
+                            .map(String::toLowerCase)
+                            .collect(Collectors.toSet())
+            );
             this.entity = entity;
+            this.entityName = entity.getSimpleName().toString();
             this.crudResolvers = crudResolvers.stream().collect(Collectors.toMap(cr -> cr, cr -> true));
             this.entitiesMap = entitiesMap;
             this.fields = entity
@@ -132,7 +157,7 @@ public class GraphQLApiBuilder {
 
             //GET_PAGINATED_BATCH
             if (crudResolvers.containsKey(GET_PAGINATED_BATCH)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, entityName);
                 serviceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetPaginatedBatch(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -140,7 +165,7 @@ public class GraphQLApiBuilder {
 
             //GET_TOTAL_NON_ARCHIVED_COUNT
             if (crudResolvers.containsKey(GET_TOTAL_COUNT)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), NUMBER, "number");
                 serviceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalNonArchivedCount(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -148,7 +173,7 @@ public class GraphQLApiBuilder {
 
             //GET_TOTAL_ARCHIVED_COUNT
             if (crudResolvers.containsKey(GET_TOTAL_ARCHIVED_COUNT)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), NUMBER, "number");
                 serviceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetTotalArchivedCount(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -156,91 +181,91 @@ public class GraphQLApiBuilder {
 
             //GET_BY_ID
             if (crudResolvers.containsKey(GET_BY_ID)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetById(processingEnv, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //GET_BATCH_BY_IDS
             if (crudResolvers.containsKey(GET_BATCH_BY_IDS)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetBatchByIds(processingEnv, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //CREATE
             if (crudResolvers.containsKey(CREATE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genCreate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //BATCH_CREATE
             if (crudResolvers.containsKey(BATCH_CREATE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchCreate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //UPDATE
             if (crudResolvers.containsKey(UPDATE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genUpdate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //BATCH_UPDATE
             if (crudResolvers.containsKey(BATCH_UPDATE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchUpdate(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //DELETE
             if (crudResolvers.containsKey(DELETE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDelete(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //BATCH_DELETE
             if (crudResolvers.containsKey(BATCH_DELETE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDelete(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //ARCHIVE
             if (crudResolvers.containsKey(ARCHIVE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //BATCH_ARCHIVE
             if (crudResolvers.containsKey(BATCH_ARCHIVE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //DE_ARCHIVE
             if (crudResolvers.containsKey(DE_ARCHIVE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
                 serviceBuilder.addMethod(genDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genDeArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //BATCH_DE_ARCHIVE
             if (crudResolvers.containsKey(BATCH_DE_ARCHIVE)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 serviceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genBatchDeArchive(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             //GET_ARCHIVED_PAGINATED_BATCH
             if (crudResolvers.containsKey(GET_ARCHIVED_PAGINATED_BATCH)) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, entityName);
                 serviceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetArchivedPaginatedBatch(clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -254,6 +279,7 @@ public class GraphQLApiBuilder {
                             val config = fk.getAnnotation(EntityCollectionApi.class);
                             val resolvers = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<EntityCollectionEndpointType>();
                             addApiHooksIfPresent(fk, testableServiceBuilder, serviceBuilder, config);
+                            val fkTargetType = resolveTypescriptType(getCollectionTypeSimpleName(fk), allEntityTypesSimpleNames);
 
                             //read
                             if (!isGraphQLIgnored(fk)) {
@@ -263,15 +289,17 @@ public class GraphQLApiBuilder {
                             }
                             //associate
                             if (resolvers.contains(ASSOCIATE_WITH)) {
-                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
                                 final MethodSpec associateWithEntityCollection = genAssociateWithEntityCollection(fk, clientQueryBuilder);
                                 serviceBuilder.addMethod(associateWithEntityCollection);
                                 testableServiceBuilder.addMethod(associateWithEntityCollection);
                                 clientFactory.addQuery(clientQueryBuilder);
                             }
                             //update
-                            if (resolvers.contains(EntityCollectionEndpointType.UPDATE_IN)) {
-                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                            if (resolvers.contains(UPDATE_IN)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
                                 final MethodSpec updateInEntityCollection = genUpdateInEntityCollection(fk, clientQueryBuilder);
                                 serviceBuilder.addMethod(updateInEntityCollection);
                                 testableServiceBuilder.addMethod(updateInEntityCollection);
@@ -279,19 +307,22 @@ public class GraphQLApiBuilder {
                             }
                             //remove
                             if (resolvers.contains(REMOVE_FROM)) {
-                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
                                 serviceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genRemoveFromEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
                             }
                             if (resolvers.contains(GET_PAGINATED__BATCH)) {
-                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, fkTargetType);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
                                 serviceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genGetPaginatedBatchInEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
                             }
                             if (resolvers.contains(PAGINATED__FREE_TEXT_SEARCH)) {
-                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, fkTargetType);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
                                 serviceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
                                 testableServiceBuilder.addMethod(genGetPaginatedFreeTextSearchInEntityCollection(fk, clientQueryBuilder));
                                 clientFactory.addQuery(clientQueryBuilder);
@@ -320,9 +351,11 @@ public class GraphQLApiBuilder {
                     .stream()
                     .anyMatch(this::isFreeTextSearchAnnotated);
             if (hasFreeTextSearchFields) {
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
-                serviceBuilder.addMethod(genFreeTextSearchBy(clientQueryBuilder));
-                testableServiceBuilder.addMethod(genFreeTextSearchBy(clientQueryBuilder));
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, entityName);
+                
+                val freeTextSearchBy = genFreeTextSearchBy(clientQueryBuilder);
+                serviceBuilder.addMethod(freeTextSearchBy);
+                testableServiceBuilder.addMethod(freeTextSearchBy);
                 clientFactory.addQuery(clientQueryBuilder);
             }
 
@@ -340,28 +373,38 @@ public class GraphQLApiBuilder {
             return new ServiceAndTestableService(serviceBuilder.build(), testableServiceBuilder.build());
         }
 
-        private void generateElementCollectionMethods(ApifiClientFactory clientFactory, TypeSpec.Builder testableServiceBuilder, TypeSpec.Builder serviceBuilder, VariableElement elemCollection, ElementCollectionApi config) {
+        private void generateElementCollectionMethods(
+                ApifiClientFactory clientFactory,
+                TypeSpec.Builder testableServiceBuilder,
+                TypeSpec.Builder serviceBuilder,
+                VariableElement elemCollection,
+                ElementCollectionApi config) {
             val endpoints = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<ElementCollectionEndpointType>();
+            val fkTargetType = getTypeScriptElementCollectionType(elemCollection, enumTypes);
             if(endpoints.contains(ADD_TO)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genAddToElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genAddToElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(REMOVE__FROM)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genRemoveFromElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genRemoveFromElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(ElementCollectionEndpointType.PAGINATED__BATCH_)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, fkTargetType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genGetPaginatedBatchInElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetPaginatedBatchInElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(ElementCollectionEndpointType.PAGINATED__FREE__TEXT_SEARCH)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, fkTargetType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genFreeTextSearchInElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genFreeTextSearchInElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -371,28 +414,36 @@ public class GraphQLApiBuilder {
         private void generateMapElementCollectionMethods(ApifiClientFactory clientFactory,
                                                          TypeSpec.Builder testableServiceBuilder,
                                                          TypeSpec.Builder serviceBuilder,
-                                                         VariableElement elemCollection, MapElementCollectionApi config) {
+                                                         VariableElement elemCollection,
+                                                         MapElementCollectionApi config) {
             val endpoints = config != null ? Arrays.asList(config.endpoints()) : new ArrayList<MapElementCollectionEndpointType>();
+            val mapKeyType = resolveTypescriptType(toSimpleName(getMapKeyType(elemCollection)), allEntityTypesSimpleNames);
+            val mapValueType = resolveTypescriptType(toSimpleName(getMapValueType(elemCollection)), allEntityTypesSimpleNames);
+            val typeScriptReturnType = mapKeyType + ", " + mapValueType;
             if(endpoints.contains(PUT_ALL)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), MAP, typeScriptReturnType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genAddToMapElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genAddToMapElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(REMOVE_ALL)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), MAP, typeScriptReturnType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genRemoveFromMapElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genRemoveFromMapElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(PAGINATED__BATCH__)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, typeScriptReturnType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genGetPaginatedBatchInMapElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genGetPaginatedBatchInMapElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
             }
             if(endpoints.contains(PAGINATED__FREE__TEXT__SEARCH)){
-                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), PAGE, typeScriptReturnType);
+                clientQueryBuilder.setOwnerEntityType(entityName);
                 serviceBuilder.addMethod(genFreeTextSearchInMapElementCollection(elemCollection, clientQueryBuilder));
                 testableServiceBuilder.addMethod(genFreeTextSearchInMapElementCollection(elemCollection, clientQueryBuilder));
                 clientFactory.addQuery(clientQueryBuilder);
@@ -1142,7 +1193,7 @@ public class GraphQLApiBuilder {
             final String inputTypeSimpleName = getInputTypeSimpleName(field.getSimpleName().toString(), field.asType().toString());
 
             if(apiFindByAnnotation != null) {
-                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 final String name = "find" + toPlural(pascalCaseNameOf(entity)) + "By" + fieldPascalCaseName;
                 val apiFindBy = MethodSpec
                         .methodBuilder(name)
@@ -1161,7 +1212,8 @@ public class GraphQLApiBuilder {
                 }});
                 clientFactory.addQuery(clientBuilder);
             } else if(apiFindByUniqueAnnotation != null) {
-                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
+                clientBuilder.setFindByUniqueFieldType(resolveTypescriptType(toSimpleName(fieldType.toString()), allEntityTypesSimpleNames));
                 final String name = "find" + pascalCaseNameOf(entity) + "ByUnique" + fieldPascalCaseName;
                 methodsToAdd.add(MethodSpec
                     .methodBuilder(name)
@@ -1181,7 +1233,7 @@ public class GraphQLApiBuilder {
             }
 
             if(apiFindAllByAnnotation != null) {
-                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values());
+                val clientBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
                 final String name = "find" + toPlural(pascalCaseNameOf(entity)) + "By" + toPlural(fieldPascalCaseName);
                 methodsToAdd.add(MethodSpec
                         .methodBuilder(name)

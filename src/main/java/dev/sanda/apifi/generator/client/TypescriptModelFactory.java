@@ -126,13 +126,12 @@ public class TypescriptModelFactory {
             result = "string";
         else if(typeName.equals("boolean"))
             result = "boolean";
+        else if(typeName.startsWith("date"))
+            result = "Date";
         else if(typeElementMap.containsKey(typeName))
             result = typeElementMap.get(typeName).getSimpleName().toString();
         return result;
     }
-
-    private static final Set<String> numberTypes =
-            new HashSet<>(Arrays.asList("byte", "short", "int", "integer", "long", "float", "double"));
 
     private static List<String> getEnumValues(TypeElement enumTypeElement) {
         Preconditions.checkArgument(enumTypeElement.getKind() == ElementKind.ENUM);
@@ -145,12 +144,13 @@ public class TypescriptModelFactory {
     }
 
     private static String apifiObjectModel(){
-        return  "// Apifi object model" + NEW_LINE + NEW_LINE +
+        return  "// Apifi utils object model" + NEW_LINE + NEW_LINE +
                 PAGE_TYPE + NEW_LINE + NEW_LINE +
                 PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 SORT_DIRECTION_ENUM_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_TYPE;
+                GRAPHQL_RESULT_TYPE + NEW_LINE + NEW_LINE +
+                DICTIONARY_TYPE;
     }
 
     private static final String PAGE_TYPE =
@@ -163,7 +163,7 @@ public class TypescriptModelFactory {
             "}";
 
     private static final String PAGE_REQUEST_TYPE =
-            "export interface PageRequest<T>{" + NEW_LINE +
+            "export interface PageRequest{" + NEW_LINE +
             "   pageNumber?: number;" + NEW_LINE +
             "   sortBy?: string;" + NEW_LINE +
             "   pageSize?: number;" + NEW_LINE +
@@ -172,7 +172,7 @@ public class TypescriptModelFactory {
             "}";
 
     private static final String FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE =
-            "export interface FreeTextSearchPageRequest<T> extends PageRequest<T>{" + NEW_LINE +
+            "export interface FreeTextSearchPageRequest extends PageRequest{" + NEW_LINE +
             "   searchTerm: string;" + NEW_LINE +
             "}";
 
@@ -186,5 +186,10 @@ public class TypescriptModelFactory {
             "export interface GraphQLResult<T>{" + NEW_LINE +
             "   data?: T;" + NEW_LINE +
             "   errors?: Array<string>;" + NEW_LINE +
+            "}";
+
+    private static final String DICTIONARY_TYPE =
+            "export interface Dictionary<T>{" + NEW_LINE +
+            "   [Key: string]: T;" + NEW_LINE +
             "}";
 }

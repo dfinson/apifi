@@ -46,17 +46,18 @@ public class AnnotationProcessor extends AbstractProcessor {
                         Collectors.toMap(type -> type.getQualifiedName().toString(), type -> type)
                 );
         List<String> services;
+        val enums = extractEnums(roundEnvironment.getRootElements());
         Map<String, ClassName> collectionsTypes = new HashMap<>();
         services = entities
                 .stream()
-                .map(entity -> generateApiForEntity(entity, entitiesMap, clientFactory, collectionsTypes))
+                .map(entity -> generateApiForEntity(entity, entitiesMap, clientFactory, collectionsTypes, enums))
                 .collect(Collectors.toList());
         if(!services.isEmpty()){
             val controller = GraphQLControllerFactory.generate(services);
             writeControllerToFile(controller);
             clientFactory.setProcessingEnv(processingEnv);
             clientFactory.setEntities((Set<TypeElement>) entities);
-            clientFactory.setEnums(extractEnums(roundEnvironment.getRootElements()));
+            clientFactory.setEnums(enums);
             clientFactory.setTypescriptMode(false);
             clientFactory.generate();
             clientFactory.setTypescriptMode(true);
@@ -84,9 +85,14 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap, ApifiClientFactory clientFactory, Map<String, ClassName> collectionsTypes) {
+    private String generateApiForEntity(
+            TypeElement entity,
+            Map<String, TypeElement> entitiesMap,
+            ApifiClientFactory clientFactory,
+            Map<String, ClassName> collectionsTypes,
+            Set<TypeElement> enumTypes) {
         List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
-        var apiBuilder = new GraphQLApiBuilder(entity, entitiesMap, crudResolvers);
+        var apiBuilder = new GraphQLApiBuilder(entity, entitiesMap, crudResolvers, enumTypes);
         var serviceAndTest = apiBuilder.build(processingEnv, clientFactory, collectionsTypes);
         writeServiceAndTestToJavaFiles(serviceAndTest);
         return basePackage + ".service." + serviceAndTest.getService().name;
