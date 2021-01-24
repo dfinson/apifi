@@ -6,7 +6,6 @@ import javax.lang.model.element.TypeElement;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
@@ -14,9 +13,12 @@ import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 @Data
 public class GraphQLQueryBuilder {
 
-    private GraphQLQueryBuilder(){}
-
-    public GraphQLQueryBuilder(Collection<TypeElement> typeElements){
+    public GraphQLQueryBuilder(
+            Collection<TypeElement> typeElements,
+            ClientSideReturnType clientSideReturnType,
+            String returnType){
+        this.entityReturnType = returnType;
+        this.clientSideReturnType = clientSideReturnType;
         entityTypes = typeElements
                 .stream()
                 .map(type -> type.getSimpleName().toString() + "Input")
@@ -30,14 +32,38 @@ public class GraphQLQueryBuilder {
     private GraphQLQueryType queryType;
     private LinkedHashMap<String, String> vars = new LinkedHashMap<>();
     private boolean isPrimitiveReturnType = false;
+    private ClientSideReturnType clientSideReturnType;
+    private boolean isTypescriptMode;
+    private String entityReturnType;
+    private String ownerEntityType;
+    private String findByUniqueFieldType;
 
     public String args(){
         val builder = new StringBuilder();
         if(vars.isEmpty()) return "";
-        vars.forEach((varName, varType) -> builder.append(varName).append(", "));
+        vars.forEach((varName, varType) -> builder.append(varName).append(resolveVarTypescriptType(varName)).append(", "));
         if(!isPrimitiveReturnType)
-            builder.append("expectedReturn");
+            builder.append("expectedReturn").append(expectedReturnType());
         return builder.append(", ").toString();
+    }
+
+    private String resolveVarTypescriptType(String varName) {
+        if(!isTypescriptMode) return "";
+        if(varName.equals("owner"))
+            return ": " + this.ownerEntityType;
+        if(queryName.contains("ByUnique"))
+            return ": " + findByUniqueFieldType;
+        switch (clientSideReturnType){
+            case PAGE: return ": " + (isFreeTextSearchQuery() ? "FreeTextSearchPageRequest" : "PageRequest");
+            case NUMBER:return "";
+            case INSTANCE: return ": " + entityReturnType;
+            case ARRAY: return ": Array<" + entityReturnType + ">";
+            case SET: return ": Set<" + entityReturnType + ">";
+            case MAP: return queryName.startsWith("add")
+                            ? ": Map<" + entityReturnType + ">"
+                            : ": Array<" + entityReturnType.substring(0, entityReturnType.indexOf(",")) + ">";
+        }
+        return ": any";
     }
 
     private String varsDef(){
@@ -98,7 +124,7 @@ public class GraphQLQueryBuilder {
                 "variables" +
                 ": {\n\t\t\t\t\t" +
                 builder +
-                "\n\t\t\t\t\t}, ";
+                "\n\t\t\t\t\t}";
     }
 
     public String buildQueryString(){
@@ -108,11 +134,18 @@ public class GraphQLQueryBuilder {
                         queryType.toString() + " " +
                         queryName + varsDef() + " { " + queryName +
                         varsArgs() + expectedResultString() + ", " +
-                        varsVals()  +
-                    "\n\t\t\t\t\t" + "operationName" + ": " + inQuotes(queryName) + "\n\t\t\t";
+                        varsVals()  + "\n\t\t\t";
     }
 
     private String expectedResultString() {
         return isPrimitiveReturnType ? " }`" : "${expectedReturn} }`";
+    }
+
+    private boolean isFreeTextSearchQuery() {
+        return vars.getOrDefault("input", "").equals("FreeTextSearchPageRequestInput");
+    }
+
+    private String expectedReturnType(){
+        return isTypescriptMode ? ": string" : "";
     }
 }

@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 
 @FindByUnique
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 public @interface ApiFindByUnique {
     String secured() default "";
     String[] rolesAllowed() default "";

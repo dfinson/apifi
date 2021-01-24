@@ -16,7 +16,7 @@
     </parent>
 
     <properties>
-        <datafi.version>0.1.0.BETA</datafi.version>
+        <datafi.version>0.1.0</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
         <mockeri.version>0.0.2</mockeri.version>
@@ -44,6 +44,12 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
             <version>${spring-security-web.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <!-- graphql api -->

@@ -86,7 +86,7 @@ public class GraphQLControllerFactory {
         List<Object> args = new ArrayList<>(Arrays.asList(val.class, GraphQLSchemaGenerator.class));
         for(val service : services){
             code
-                    .append(".withOperationsFromSingleton(")
+                    .append("\t.withOperationsFromSingleton(")
                     .append(toSimpleCamelcaseName(service)).append(", ")
                     .append("$T").append(".class")
                     .append(")\n");
@@ -95,10 +95,10 @@ public class GraphQLControllerFactory {
         code.append(".generate();\n");
         val schemaInit = CodeBlock.builder().add(code.toString(), args.toArray()).build();
         val graphQlInstanceInit = CodeBlock.builder().add(
-                "graphQLInstance = $T\n" +
-                        ".newGraphQL(schema)\n" +
-                        ".queryExecutionStrategy(new $T())\n" +
-                        ".instrumentation(new $T(maxQueryDepth))\n" +
+                "graphQLInstance = $T\n\t" +
+                        ".newGraphQL(schema)\n\t" +
+                        ".queryExecutionStrategy(new $T())\n\t" +
+                        ".instrumentation(new $T(maxQueryDepth))\n\t" +
                         ".build();\n",
                 GraphQL.class,
                 BatchedExecutionStrategy.class,

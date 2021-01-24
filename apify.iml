@@ -37,7 +37,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: dev.sanda:datafi:0.0.5.3" level="project" />
-    <orderEntry type="library" name="Maven: dev.sanda:datafi:0.1.0-BETA" level="project" />
+    <orderEntry type="library" name="Maven: dev.sanda:datafi:0.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-data-jpa:2.4.1" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-aop:2.4.1" level="project" />
     <orderEntry type="library" name="Maven: org.aspectj:aspectjweaver:1.9.6" level="project" />
@@ -91,6 +91,7 @@
     <orderEntry type="library" name="Maven: org.springframework:spring-core:5.3.2" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-jcl:5.3.2" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-expression:5.3.2" level="project" />
+    <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.18.16" level="project" />
     <orderEntry type="library" name="Maven: io.leangen.graphql:spqr:0.10.1" level="project" />
     <orderEntry type="library" name="Maven: net.dongliu:gson-java8-datatype:1.1.0" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.11.3" level="project" />
@@ -139,7 +140,6 @@
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot:2.4.1" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-test:5.1.8.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: joda-time:joda-time:2.10.6" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.18.16" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.google.auto.service:auto-service:1.0-rc6" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.google.auto.service:auto-service-annotations:1.0-rc6" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.google.auto:auto-common:0.10" level="project" />

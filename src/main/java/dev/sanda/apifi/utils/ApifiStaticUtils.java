@@ -4,13 +4,18 @@ import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.ElementCollectionApi;
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.annotations.MapElementCollectionApi;
+import dev.sanda.apifi.generator.entity.element_api_spec.EntityGraphQLApiSpec;
 import dev.sanda.apifi.service.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.NullElementCollectionApiHooks;
 import dev.sanda.apifi.service.NullEntityCollectionApiHooks;
+import dev.sanda.datafi.annotations.EntityApiSpec;
+import dev.sanda.datafi.code_generator.annotated_element_specs.EntityDalSpec;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import lombok.val;
 import lombok.var;
 import org.atteo.evo.inflector.English;
@@ -18,6 +23,7 @@ import org.atteo.evo.inflector.English;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
@@ -32,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
@@ -46,8 +53,98 @@ public abstract class ApifiStaticUtils {
         return fields;
     }
 
+    public static List<VariableElement> getNonIgnoredFields(TypeElement typeElement){
+        return getFields(typeElement)
+                .stream()
+                .filter(field -> field.getAnnotation(GraphQLIgnore.class) == null)
+                .collect(Collectors.toList());
+    }
+
+    public static final String NEW_LINE = System.lineSeparator();
+
+    public static LinkedHashMap<String, TypeMirror> getGraphQLFields(TypeElement typeElement){
+        val graphQlIgnoredFields = new HashSet<String>();
+        val methodQueryFields = typeElement
+                .getEnclosedElements()
+                .stream()
+                .filter(element -> element instanceof ExecutableElement)
+                .map(element -> (ExecutableElement) element)
+                .filter(element ->
+                        element.getSimpleName().toString().startsWith("get") ||
+                                element.getAnnotation(GraphQLQuery.class) != null)
+                .filter(executableElement -> !executableElement.getReturnType().toString().equals(void.class.getCanonicalName()))
+                .filter(executableElement -> {
+                    final boolean isIgnored = executableElement.getAnnotation(GraphQLIgnore.class) != null;
+                    if(isIgnored)
+                        graphQlIgnoredFields.add(getFieldName(executableElement));
+                    return !isIgnored;
+                })
+                .collect(Collectors.toMap(
+                        ApifiStaticUtils::getFieldName,
+                        ExecutableElement::getReturnType,
+                        (first, second) -> first,
+                        LinkedHashMap::new
+                ));
+        val fromFields = getNonIgnoredFields(typeElement)
+                .stream()
+                .filter(field -> !graphQlIgnoredFields.contains(field.getSimpleName().toString()))
+                .collect(Collectors.toMap(
+                    field -> field.getSimpleName().toString(),
+                    VariableElement::asType
+        ));
+        fromFields.forEach(methodQueryFields::putIfAbsent);
+        return methodQueryFields;
+    }
+
+    private static String getFieldName(Element element) {
+        final String name = element.getSimpleName().toString();
+        final GraphQLQuery queryAnnotation = element.getAnnotation(GraphQLQuery.class);
+        if (queryAnnotation != null && !queryAnnotation.name().equals(""))
+            return queryAnnotation.name();
+        else
+            return name.startsWith("get") ? toCamelCase(name.replaceFirst("get", "")) : name;
+    }
+
     public static<T> T randomFrom(List<T> aList) {
         return aList.get(ThreadLocalRandom.current().nextInt(aList.size()));
+    }
+
+    public static List<EntityGraphQLApiSpec> getGraphQLApiSpecs(
+            RoundEnvironment roundEnvironment,
+            ProcessingEnvironment processingEnv) {
+        Set<TypeElement> entities = new HashSet<>();
+        entities.addAll((Collection<? extends TypeElement>) roundEnvironment.getElementsAnnotatedWith(Entity.class));
+        entities.addAll((Collection<? extends TypeElement>) roundEnvironment.getElementsAnnotatedWith(Table.class));
+        Map<TypeElement, TypeElement> extensionsMap =
+                ((Set<TypeElement>)
+                        roundEnvironment
+                                .getElementsAnnotatedWith(EntityApiSpec.class))
+                        .stream()
+                        .collect(Collectors.toMap(
+                                Function.identity(),
+                                typeElement ->
+                                        (TypeElement) processingEnv
+                                                .getTypeUtils()
+                                                .asElement(typeElement.getSuperclass()))
+                        )
+                        .entrySet()
+                        .stream()
+                        .filter(entry ->
+                                entry.getValue().getAnnotation(Table.class) != null ||
+                                        entry.getValue().getAnnotation(Entity.class) != null)
+                        .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+        entities.forEach(entity -> extensionsMap.putIfAbsent(entity, null));
+        Map<TypeElement, TypeElement> temp = new HashMap<>();
+        for (Map.Entry<TypeElement, TypeElement> typeElementTypeElementEntry : extensionsMap.entrySet()) {
+                extractReferencedEntities(typeElementTypeElementEntry.getKey(), processingEnv)
+                        .forEach(entityReference -> temp.putIfAbsent(entityReference, null));
+            }
+        temp.forEach(extensionsMap::putIfAbsent);
+        return extensionsMap
+                .entrySet()
+                .stream()
+                .map(entry -> new EntityGraphQLApiSpec(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 
     public static void argsToResolver(String resolverParams, MethodSpec.Builder builder) {
@@ -57,7 +154,7 @@ public abstract class ApifiStaticUtils {
         builder.addStatement(block.build());
     }
 
-    public static Set<? extends TypeElement> getGraphQLApiEntities(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
+    public static Set<? extends TypeElement> getGraphQLApiEntities(RoundEnvironment roundEnvironment) {
         return getEntitiesSet(roundEnvironment);
     }
 
@@ -351,12 +448,47 @@ public abstract class ApifiStaticUtils {
                 .replaceAll(">", "");
     }
 
+    public static String getCollectionTypeSimpleName(VariableElement element){
+        val fullName = element
+                .asType()
+                .toString()
+                .replaceAll("^.+<", "")
+                .replaceAll(">", "");
+        val lastDot = fullName.lastIndexOf(".");
+        return fullName.substring(lastDot + 1);
+    }
+
+    public static String getTypeScriptElementCollectionType(VariableElement element, Set<String> enumTypes){
+        val type = toSimpleName(getCollectionType(element));
+        return resolveTypescriptType(type, enumTypes);
+    }
+
+    public static String resolveTypescriptType(String type, Set<String> entityTypes){
+        if(numberTypes.contains(type.toLowerCase()))
+            return "number";
+        else if(type.equalsIgnoreCase("string") || type.equalsIgnoreCase("boolean"))
+            return type.toLowerCase();
+        else if(entityTypes.contains(type.toLowerCase()))
+            return type;
+        else if(type.equals("Date") || type.equals("DateTime"))
+            return "Date";
+        else
+            return "any";
+    }
+
+    public static final Set<String> numberTypes =
+            new HashSet<>(Arrays.asList("byte", "short", "int", "integer", "long", "float", "double"));
+
     public static String getMapKeyType(VariableElement element){
         return element
                 .asType()
                 .toString()
                 .replaceAll("^.+<", "")
                 .replaceAll(",.+", "");
+    }
+
+    public static String toSimpleName(String name){
+        return name.substring(name.lastIndexOf(".") + 1);
     }
 
     public static boolean isIterable(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
@@ -366,6 +498,30 @@ public abstract class ApifiStaticUtils {
                                 processingEnv
                                         .getElementUtils()
                                         .getTypeElement("java.lang.Iterable")
+                                        .asType()
+                        );
+        return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
+    }
+
+    public static boolean isMap(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
+        TypeMirror iterableType =
+                processingEnv.getTypeUtils()
+                        .erasure(
+                                processingEnv
+                                        .getElementUtils()
+                                        .getTypeElement("java.util.Map")
+                                        .asType()
+                        );
+        return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);
+    }
+
+    public static boolean isSet(TypeMirror typeMirror, ProcessingEnvironment processingEnv){
+        TypeMirror iterableType =
+                processingEnv.getTypeUtils()
+                        .erasure(
+                                processingEnv
+                                        .getElementUtils()
+                                        .getTypeElement("java.util.Set")
                                         .asType()
                         );
         return processingEnv.getTypeUtils().isAssignable(typeMirror, iterableType);

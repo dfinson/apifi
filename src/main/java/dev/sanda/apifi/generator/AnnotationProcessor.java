@@ -7,20 +7,25 @@ import com.squareup.javapoet.TypeSpec;
 import dev.sanda.apifi.annotations.WithCRUDEndpoints;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
-import dev.sanda.apifi.generator.entity.EntityApiGenerator;
+import dev.sanda.apifi.generator.entity.GraphQLApiBuilder;
 import dev.sanda.apifi.generator.entity.ServiceAndTestableService;
+import dev.sanda.apifi.generator.entity.element_api_spec.EntityGraphQLApiSpec;
+import dev.sanda.datafi.annotations.TransientModule;
+import dev.sanda.datafi.code_generator.annotated_element_specs.AnnotatedElementSpec;
 import lombok.val;
 import lombok.var;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiEntities;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiSpecs;
 import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
 
 
@@ -34,27 +39,46 @@ public class AnnotationProcessor extends AbstractProcessor {
     private String basePackage;
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
+        if(!roundEnvironment.getElementsAnnotatedWith(TransientModule.class).isEmpty())
+            return false;
         basePackage = getBasePackage(roundEnvironment);
         val clientFactory = new ApifiClientFactory();
-        Set<? extends TypeElement> entities = getGraphQLApiEntities(annotations, roundEnvironment);
-        Map<String, TypeElement> entitiesMap =
-                entities
-                .stream()
-                .collect(
-                        Collectors.toMap(type -> type.getQualifiedName().toString(), type -> type)
-                );
-        List<String> services = new ArrayList<>();
+        List<EntityGraphQLApiSpec> entityGraphQLApiSpecs = getGraphQLApiSpecs(roundEnvironment, processingEnv);
+        //Set<? extends TypeElement> entities = getGraphQLApiEntities(roundEnvironment);
+        Map<String, TypeElement> entitiesMap = getEntitiesMap(entityGraphQLApiSpecs);
+        List<String> services;
+        val enums = extractEnums(roundEnvironment.getRootElements());
         Map<String, ClassName> collectionsTypes = new HashMap<>();
-        entities.forEach(entity -> {
-            val service = generateApiForEntity(entity, entitiesMap, clientFactory, collectionsTypes);
-            services.add(service);
-        });
+        services = entityGraphQLApiSpecs
+                .stream()
+                .map(graphQLApiSpec -> generateApiForEntity(graphQLApiSpec, entitiesMap, clientFactory, collectionsTypes, enums))
+                .collect(Collectors.toList());
         if(!services.isEmpty()){
             val controller = GraphQLControllerFactory.generate(services);
             writeControllerToFile(controller);
+            clientFactory.setProcessingEnv(processingEnv);
+            clientFactory.setEntities(new HashSet<>(entitiesMap.values()));
+            clientFactory.setEnums(enums);
+            clientFactory.setTypescriptMode(false);
+            clientFactory.generate();
+            clientFactory.setTypescriptMode(true);
             clientFactory.generate();
         }
         return false;
+    }
+
+    private Map<String, TypeElement> getEntitiesMap(List<EntityGraphQLApiSpec> entityGraphQLApiSpecs) {
+        return entityGraphQLApiSpecs
+                .stream()
+                .collect(Collectors.toMap(type -> type.getElement().getQualifiedName().toString(), AnnotatedElementSpec::getElement));
+    }
+
+    private Set<TypeElement> extractEnums(Set<? extends Element> rootElements) {
+        return rootElements
+                .stream()
+                .filter(element -> element.getKind() == ElementKind.ENUM)
+                .map(element -> (TypeElement)element)
+                .collect(Collectors.toSet());
     }
 
 
@@ -68,10 +92,14 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private String generateApiForEntity(TypeElement entity, Map<String, TypeElement> entitiesMap, ApifiClientFactory clientFactory, Map<String, ClassName> collectionsTypes) {
-        List<CRUDEndpoints> crudResolvers = getCrudResolversOf(entity);
-        var apiBuilder = new EntityApiGenerator.GraphQLApiBuilder(entity, entitiesMap);
-        apiBuilder.setCrudResolvers(crudResolvers);
+    private String generateApiForEntity(
+            EntityGraphQLApiSpec entityGraphQLApiSpec,
+            Map<String, TypeElement> entitiesMap,
+            ApifiClientFactory clientFactory,
+            Map<String, ClassName> collectionsTypes,
+            Set<TypeElement> enumTypes) {
+        List<CRUDEndpoints> crudResolvers = entityGraphQLApiSpec.getMergedCrudEndpoints();
+        var apiBuilder = new GraphQLApiBuilder(entityGraphQLApiSpec, entitiesMap, crudResolvers, enumTypes);
         var serviceAndTest = apiBuilder.build(processingEnv, clientFactory, collectionsTypes);
         writeServiceAndTestToJavaFiles(serviceAndTest);
         return basePackage + ".service." + serviceAndTest.getService().name;
@@ -92,11 +120,5 @@ public class AnnotationProcessor extends AbstractProcessor {
         } catch (IOException e) {
            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.toString());
         }
-    }
-
-    private List<CRUDEndpoints> getCrudResolversOf(TypeElement entity) {
-        val withCrudResolversAnnotation = entity.getAnnotation(WithCRUDEndpoints.class);
-        if(withCrudResolversAnnotation == null) return new ArrayList<>();
-        return Arrays.asList(withCrudResolversAnnotation.value());
     }
 }
