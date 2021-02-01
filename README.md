@@ -1,4 +1,5 @@
   
+  [![Gitter](https://badges.gitter.im/Apifi-framework/community.svg)](https://gitter.im/Apifi-framework/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
   <img src='https://github.com/sanda-dev/apifi/blob/master/readme%20images/apifi-logo.png' width='470' alt='Apifi Logo' />
   
 # Apifi   
@@ -24,14 +25,16 @@
  * [GraphQL Client](#graphql-client)  
    + [Overview](#overview-1)  
    + [What it looks like](#what-it-looks-like)  
- * [Logs](#logs)  
+ * [Logs](#logs)
  * [Upcoming](#upcoming)  
  * [Known issues](#known-issues)  
  * [Credit](#credit)  
  * [License](#license)  
+
   
 ## Introduction 
 Apifi is a Java 8+ annotation processing framework which auto generates GraphQL APIs for JPA based data models. It spans the full API stack; from data access to client side consumption. Apifi is centered around one simple goal: To eliminate the need for generic CRUD related boilerplate *without* compromising on control and customizability.  
+
 ### Getting started  
 #### Installation  
 ```xml  
