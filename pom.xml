@@ -24,6 +24,7 @@
         <lombok-maven-plugin.version>0.11.6.0</lombok-maven-plugin.version>
         <delombok.output>target/classes</delombok.output>
         <joda-time.version>2.10.6</joda-time.version>
+        <spring-boot-starter-websocket.version>2.4.2</spring-boot-starter-websocket.version>
     </properties>
 
     <dependencies>
@@ -33,10 +34,17 @@
             <version>${datafi.version}</version>
         </dependency>
 
+
         <!-- web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <version>${spring-boot-starter-websocket.version}</version>
         </dependency>
 
          <!--security-->

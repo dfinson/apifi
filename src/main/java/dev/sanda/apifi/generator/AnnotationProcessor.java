@@ -4,7 +4,6 @@ import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
-import dev.sanda.apifi.annotations.WithCRUDEndpoints;
 import dev.sanda.apifi.generator.client.ApifiClientFactory;
 import dev.sanda.apifi.generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.generator.entity.GraphQLApiBuilder;
@@ -54,8 +53,8 @@ public class AnnotationProcessor extends AbstractProcessor {
                 .map(graphQLApiSpec -> generateApiForEntity(graphQLApiSpec, entitiesMap, clientFactory, collectionsTypes, enums))
                 .collect(Collectors.toList());
         if(!services.isEmpty()){
-            val controller = GraphQLControllerFactory.generate(services);
-            writeControllerToFile(controller);
+            val graphQLServiceImplementation = GraphQLServiceImplementationFactory.generate(services);
+            writeGraphQLServiceImplementationToFile(graphQLServiceImplementation);
             clientFactory.setProcessingEnv(processingEnv);
             clientFactory.setEntities(new HashSet<>(entitiesMap.values()));
             clientFactory.setEnums(enums);
@@ -81,10 +80,9 @@ public class AnnotationProcessor extends AbstractProcessor {
                 .collect(Collectors.toSet());
     }
 
-
-    private void writeControllerToFile(TypeSpec controller) {
+    private void writeGraphQLServiceImplementationToFile(TypeSpec graphQLServiceType) {
         try {
-            val file = JavaFile.builder(basePackage + ".controller", controller).build();
+            val file = JavaFile.builder(basePackage + ".graphql", graphQLServiceType).build();
             file.writeTo(System.out);
             file.writeTo(processingEnv.getFiler());
         } catch (IOException e) {
