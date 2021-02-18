@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.val;
 
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.function.Function;
@@ -32,7 +31,6 @@ public class EntityGraphQLApiSpec extends AnnotatedElementSpec<TypeElement> {
             addAnnotations(apiSpecExtension);
         setFieldGraphQlApiSpecs(entity, apiSpecExtension);
         setMergedCrudEndpoints(entity, apiSpecExtension);
-        this.setHasExtensionElement(apiSpecExtension != null);
     }
 
     private void setMergedCrudEndpoints(TypeElement entity, TypeElement apiSpecExtension) {
@@ -60,11 +58,6 @@ public class EntityGraphQLApiSpec extends AnnotatedElementSpec<TypeElement> {
         fieldGraphQLApiSpecs = fields.stream()
                 .map(field -> new FieldGraphQLApiSpec(field, gettersByFieldName.get(toCamelCase(field.getSimpleName().toString()))))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    protected void setHasExtensionElement(boolean hasExtensionElement) {
-        this.hasExtensionElement = hasExtensionElement;
     }
 
     @Override

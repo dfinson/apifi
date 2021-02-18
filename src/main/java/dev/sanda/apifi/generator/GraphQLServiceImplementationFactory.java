@@ -1,6 +1,7 @@
 package dev.sanda.apifi.generator;
 
 import com.squareup.javapoet.*;
+import dev.sanda.apifi.service.custom_endpoints.CustomEndpointsAggregator;
 import dev.sanda.apifi.service.graphql.GraphQLService;
 import graphql.GraphQL;
 import graphql.analysis.MaxQueryDepthInstrumentation;
@@ -14,19 +15,27 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.RoundEnvironment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.toSimpleCamelcaseName;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 public class GraphQLServiceImplementationFactory {
-    private static final GraphQLServiceImplementationFactory instance = new GraphQLServiceImplementationFactory();
-    public static TypeSpec generate(List<String> services){
-        return instance.generateGraphQLService(services);
+    public GraphQLServiceImplementationFactory(RoundEnvironment roundEnvironment, ProcessingEnvironment processingEnvironment) {
+        this.customEndpointServices = new CustomEndpointsAggregator(roundEnvironment, processingEnvironment).customEndpointServices();
     }
+
+    public TypeSpec generate(List<String> services){
+        return generateGraphQLService(services);
+    }
+
+    private Set<FieldSpec> customEndpointServices;
 
     private TypeSpec generateGraphQLService(List<String> services) {
         val controller = TypeSpec.classBuilder("GraphQLServiceImplementation")
@@ -64,6 +73,14 @@ public class GraphQLServiceImplementationFactory {
                     .append(")\n");
             args.add(ClassName.bestGuess(service));
         }
+        for(val customServiceField : customEndpointServices){
+            code
+                    .append("\t\t.withOperationsFromSingleton(")
+                    .append(customServiceField.name).append(", ")
+                    .append("$T").append(".class")
+                    .append(")\n");
+            args.add(customServiceField.type);
+        }
         code.append("\t\t.generate();\n");
         val schemaInit = CodeBlock.builder().add(code.toString(), args.toArray()).build();
         val graphQlInstanceInit = CodeBlock.builder().add(
@@ -90,6 +107,7 @@ public class GraphQLServiceImplementationFactory {
                     .build();
             fieldSpecs.add(field);
         }
+        fieldSpecs.addAll(customEndpointServices);
         val maxQueryDepthField = FieldSpec.builder(Integer.class, "maxQueryDepth", PRIVATE)
                 .addAnnotation(AnnotationSpec.builder(Value.class)
                         .addMember("value", "$S",
