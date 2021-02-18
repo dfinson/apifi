@@ -5,19 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_boot_spring_boot_starter_websocket_2_4_2.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_spring_messaging_5_3_2.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_spring_websocket_5_3_2.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql/ApiController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql/GraphQLService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql/HttpGraphQLExecutor.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql/WebSocketsGraphQLExecutor.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/GraphQLService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/custom_endpoints/CustomEndpointsAggregator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLControllerFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLServiceImplementationFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/GraphQLRequestExecutor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql/GraphQLRequestExecutor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLServiceImplementationFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLServiceImplementationFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/EntityGraphQLApiSpec.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/EntityGraphQLApiSpec.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/FieldGraphQLApiSpec.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/FieldGraphQLApiSpec.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,9 +29,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="AnnotationType" />
         <option value="Enum" />
         <option value="Interface" />
+        <option value="AnnotationType" />
         <option value="Class" />
       </list>
     </option>
@@ -106,15 +101,13 @@
     </key>
   </component>
   <component name="RunManager" selected="Remote JVM Debug.AnnotationParserDebug">
-    <configuration default="true" type="ArquillianTestNG" factoryName="" nameIsGenerated="true">
+    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
       <option name="arquillianRunConfiguration">
         <value>
           <option name="containerStateName" value="" />
         </value>
       </option>
-      <option name="TEST_OBJECT" value="CLASS" />
-      <properties />
-      <listeners />
+      <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>

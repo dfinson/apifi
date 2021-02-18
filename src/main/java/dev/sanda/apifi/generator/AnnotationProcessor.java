@@ -53,7 +53,9 @@ public class AnnotationProcessor extends AbstractProcessor {
                 .map(graphQLApiSpec -> generateApiForEntity(graphQLApiSpec, entitiesMap, clientFactory, collectionsTypes, enums))
                 .collect(Collectors.toList());
         if(!services.isEmpty()){
-            val graphQLServiceImplementation = GraphQLServiceImplementationFactory.generate(services);
+            val graphQLServiceImplementation =
+                    new GraphQLServiceImplementationFactory(roundEnvironment, processingEnv)
+                    .generate(services);
             writeGraphQLServiceImplementationToFile(graphQLServiceImplementation);
             clientFactory.setProcessingEnv(processingEnv);
             clientFactory.setEntities(new HashSet<>(entitiesMap.values()));

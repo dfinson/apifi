@@ -14,12 +14,6 @@ public class FieldGraphQLApiSpec extends AnnotatedElementSpec<VariableElement> {
         super(field);
         if(getter != null)
             addAnnotations(getter);
-        this.setHasExtensionElement(getter != null);
-    }
-
-    @Override
-    protected void setHasExtensionElement(boolean hasExtensionElement) {
-        this.hasExtensionElement = hasExtensionElement;
     }
 
     @Override
