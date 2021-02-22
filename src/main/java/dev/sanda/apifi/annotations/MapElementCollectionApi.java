@@ -1,10 +1,8 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.generator.entity.MapElementCollectionEndpointType;
-import dev.sanda.apifi.service.ElementCollectionApiHooks;
-import dev.sanda.apifi.service.MapElementCollectionApiHooks;
-import dev.sanda.apifi.service.NullElementCollectionApiHooks;
-import dev.sanda.apifi.service.NullMapElementCollectionApiHooks;
+import dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType;
+import dev.sanda.apifi.service.api_hooks.MapElementCollectionApiHooks;
+import dev.sanda.apifi.service.api_hooks.NullMapElementCollectionApiHooks;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
