@@ -5,6 +5,7 @@ import dev.sanda.apifi.dto.GraphQLRequest;
 import dev.sanda.apifi.service.graphql_config.GraphQLRequestExecutor;
 import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloMessage;
 import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloPayloadMessage;
+import dev.sanda.apifi.web.ApiController;
 import graphql.ExecutionResult;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -29,7 +30,7 @@ import static dev.sanda.apifi.service.graphql_subcriptions.ApolloMessageFactory.
 public class ApolloProtocolHandler extends TextWebSocketHandler implements ApolloSubProtocolCapable {
 
     private final GraphQLRequestExecutor<WebSocketSession> executor;
-    private final SubscriptionsHandler subscriptionsHandler;
+    //private final SubscriptionsHandler subscriptionsHandler;
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
@@ -52,12 +53,12 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         session.close();
     }
     private void handleStop(ApolloMessage apolloMessage) {
-        val toStop = subscriptionsHandler.getSubscription(apolloMessage.getId());
+        /*val toStop = subscriptionsHandler.getSubscription(apolloMessage.getId());
         if (toStop != null) {
             log.info("Stopping Apollo Protocol GraphQLSubscription #" + toStop.getApolloId());
             toStop.getSubscriber().getSubscription().cancel();
             subscriptionsHandler.removeSubscription(apolloMessage.getId());
-        }
+        }*/
     }
     private void handleStart(WebSocketSession session, ApolloMessage apolloMessage) {
         log.info("Starting Apollo Protocol GraphQLSubscription in WebSocketSession #" + session.getId() + " with message: " + apolloMessage.toString());
@@ -72,7 +73,8 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         val publisher = (Publisher<ExecutionResult>)result.getData();
         val subscriber = new ApolloSubscriber(id, session);
         publisher.subscribe(subscriber);
-        subscriptionsHandler.addSubscription(id, subscriber, publisher);
+        ApiController.sessions.add(session);
+        //subscriptionsHandler.addSubscription(id, subscriber, publisher);
     }
     @SneakyThrows
     private void handleQueryOrMutation(String id, ExecutionResult result, WebSocketSession session) {
