@@ -1,6 +1,6 @@
 package dev.sanda.apifi.service.graphql_config;
 
-import dev.sanda.apifi.service.graphql_subcriptions.ApolloProtocolHandler;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.ApolloProtocolHandler;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

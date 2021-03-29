@@ -1,24 +1,27 @@
-package dev.sanda.apifi.service.graphql_subcriptions;
+package dev.sanda.apifi.service.graphql_subcriptions.apollo_ws;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloMessage;
-import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloPayloadMessage;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloMessage;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloPayloadMessage;
 import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class ApolloMessageFactory {
 
     //Client messages
@@ -44,7 +47,8 @@ public class ApolloMessageFactory {
 
     private static ObjectMapper mapper;
 
-    public static void initMapper(){
+    @PostConstruct
+    private void initMapper(){
         mapper = new ObjectMapper();
         val module = new SimpleModule();
         module.addDeserializer(apolloMessageClass, new JsonDeserializer<ApolloMessage>() {

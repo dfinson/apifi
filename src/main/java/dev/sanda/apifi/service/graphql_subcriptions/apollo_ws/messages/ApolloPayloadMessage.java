@@ -1,4 +1,4 @@
-package dev.sanda.apifi.service.graphql_subcriptions.messages;
+package dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages;
 
 import lombok.Getter;
 

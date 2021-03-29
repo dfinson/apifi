@@ -1,4 +1,4 @@
-package dev.sanda.apifi.service.graphql_subcriptions;
+package dev.sanda.apifi.service.graphql_subcriptions.apollo_ws;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

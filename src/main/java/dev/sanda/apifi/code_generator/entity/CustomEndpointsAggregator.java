@@ -2,7 +2,7 @@ package dev.sanda.apifi.code_generator.entity;
 
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.TypeName;
-import dev.sanda.apifi.annotations.GraphQLService;
+import dev.sanda.apifi.annotations.GraphQLComponent;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,7 +25,7 @@ public class CustomEndpointsAggregator {
 
     public Set<FieldSpec> customEndpointServices(){
         return roundEnvironment
-                .getElementsAnnotatedWith(GraphQLService.class)
+                .getElementsAnnotatedWith(GraphQLComponent.class)
                 .stream()
                 .map(this::toFieldSpec).collect(Collectors.toSet());
     }
@@ -47,7 +47,7 @@ public class CustomEndpointsAggregator {
             logCompilationError(
                     processingEnvironment,
                     element,
-                    GraphQLService.class.getSimpleName() + " inapplicable to element of type " + element.asType().toString()
+                    GraphQLComponent.class.getSimpleName() + " inapplicable to element of type " + element.asType().toString()
             );
             return null;
         }

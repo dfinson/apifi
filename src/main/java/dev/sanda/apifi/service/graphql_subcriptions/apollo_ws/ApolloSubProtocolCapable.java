@@ -1,4 +1,4 @@
-package dev.sanda.apifi.service.graphql_subcriptions;
+package dev.sanda.apifi.service.graphql_subcriptions.apollo_ws;
 
 import org.springframework.web.socket.SubProtocolCapable;
 

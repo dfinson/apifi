@@ -1,11 +1,10 @@
-package dev.sanda.apifi.service.graphql_subcriptions;
+package dev.sanda.apifi.service.graphql_subcriptions.apollo_ws;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.sanda.apifi.dto.GraphQLRequest;
 import dev.sanda.apifi.service.graphql_config.GraphQLRequestExecutor;
-import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloMessage;
-import dev.sanda.apifi.service.graphql_subcriptions.messages.ApolloPayloadMessage;
-import dev.sanda.apifi.web.ApiController;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloMessage;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloPayloadMessage;
 import graphql.ExecutionResult;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -19,10 +18,9 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 
-import static dev.sanda.apifi.service.graphql_subcriptions.ApolloMessageFactory.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.ApolloMessageFactory.*;
 
 @Slf4j
 @Component
@@ -30,7 +28,7 @@ import static dev.sanda.apifi.service.graphql_subcriptions.ApolloMessageFactory.
 public class ApolloProtocolHandler extends TextWebSocketHandler implements ApolloSubProtocolCapable {
 
     private final GraphQLRequestExecutor<WebSocketSession> executor;
-    //private final SubscriptionsHandler subscriptionsHandler;
+    private final ApolloSubscriptionsHandler subscriptionsHandler;
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
@@ -53,12 +51,12 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         session.close();
     }
     private void handleStop(ApolloMessage apolloMessage) {
-        /*val toStop = subscriptionsHandler.getSubscription(apolloMessage.getId());
+        val toStop = subscriptionsHandler.getSubscription(apolloMessage.getId());
         if (toStop != null) {
             log.info("Stopping Apollo Protocol GraphQLSubscription #" + toStop.getApolloId());
             toStop.getSubscriber().getSubscription().cancel();
             subscriptionsHandler.removeSubscription(apolloMessage.getId());
-        }*/
+        }
     }
     private void handleStart(WebSocketSession session, ApolloMessage apolloMessage) {
         log.info("Starting Apollo Protocol GraphQLSubscription in WebSocketSession #" + session.getId() + " with message: " + apolloMessage.toString());
@@ -73,8 +71,7 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         val publisher = (Publisher<ExecutionResult>)result.getData();
         val subscriber = new ApolloSubscriber(id, session);
         publisher.subscribe(subscriber);
-        ApiController.sessions.add(session);
-        //subscriptionsHandler.addSubscription(id, subscriber, publisher);
+        subscriptionsHandler.addSubscription(id, subscriber, publisher);
     }
     @SneakyThrows
     private void handleQueryOrMutation(String id, ExecutionResult result, WebSocketSession session) {
@@ -100,10 +97,5 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
             session.close(CloseStatus.SESSION_NOT_RELIABLE);
         } catch (Exception ignored) {}
         log.warn(String.format("WebSocket session %s (%s) closed due to an exception", session.getId(), session.getRemoteAddress()), exception);
-    }
-
-    @PostConstruct
-    private void init(){
-        ApolloMessageFactory.initMapper();
     }
 }
