@@ -25,6 +25,8 @@
         <delombok.output>target/classes</delombok.output>
         <joda-time.version>2.10.6</joda-time.version>
         <spring-boot-starter-websocket.version>2.4.2</spring-boot-starter-websocket.version>
+        <reactor-core.version>3.4.2</reactor-core.version>
+        <spring-boot-starter-amqp.version>2.3.9.RELEASE</spring-boot-starter-amqp.version>
     </properties>
 
     <dependencies>
@@ -46,6 +48,21 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>${spring-boot-starter-websocket.version}</version>
         </dependency>
+
+        <!-- reactive -->
+
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>${reactor-core.version}</version>
+        </dependency>
+
+        <!-- messaging / AMQP -->
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+            <version>${spring-boot-starter-amqp.version}</version>
+        </dependency>-->
 
          <!--security-->
         <dependency>

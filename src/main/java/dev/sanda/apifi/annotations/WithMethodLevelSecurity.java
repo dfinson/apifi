@@ -1,6 +1,6 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
 
 import java.lang.annotation.*;
 

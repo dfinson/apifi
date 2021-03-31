@@ -1,6 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
 
-import dev.sanda.apifi.service.ApiFreeTextSearchByImpl;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.dto.PageRequest;

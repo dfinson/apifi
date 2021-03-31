@@ -1,17 +1,23 @@
 package dev.sanda.apifi.service.api_logic;
-import dev.sanda.apifi.service.*;
+import dev.sanda.apifi.service.api_hooks.ApiHooks;
+import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
+import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
+import dev.sanda.apifi.service.api_hooks.MapElementCollectionApiHooks;
+import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
-import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
-import lombok.*;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -19,19 +25,23 @@ import java.util.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public final class ApiLogic<T> {
 
-    @Value("#{new Boolean('${datafi.logging-enabled:false}')}")
-    private Boolean datafiLoggingEnabled;
+    @NonNull
+    private final ConfigValues configValues;
     @NonNull
     private final CrudService<T> crudService;
     @NonNull
     private final BatchedCrudService<T> batchedCrudService;
     @NonNull
     private final CollectionsCrudService<T> collectionsCrudService;
+    @NonNull
+    private final SubscriptionsLogicService<T> subscriptionsLogicService;
 
     public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks){
+        val datafiLoggingEnabled = configValues.getDatafiLoggingEnabled();
         this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled);
         this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
         this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
+        this.subscriptionsLogicService.init(dataManager, apiHooks, datafiLoggingEnabled);
     }
 
     public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
