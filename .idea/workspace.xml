@@ -5,14 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/annotations/GraphQLService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/custom_endpoints/CustomEndpointsAggregator.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/InMemoryPubSubMessagingService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/PubSubMessagingService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/PubSubTopicHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/AnnotationProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLServiceImplementationFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/GraphQLServiceImplementationFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/EntityGraphQLApiSpec.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/EntityGraphQLApiSpec.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/FieldGraphQLApiSpec.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/generator/entity/element_api_spec/FieldGraphQLApiSpec.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/SubscriptionsRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/SubscriptionsService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,9 +28,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="AnnotationType" />
         <option value="Enum" />
         <option value="Interface" />
-        <option value="AnnotationType" />
         <option value="Class" />
       </list>
     </option>
@@ -81,7 +80,7 @@
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="settings.editor.selected.configurable" value="spring.boot" />
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RecentsManager">
@@ -94,6 +93,9 @@
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src" />
+    </key>
+    <key name="ExtractSuperBase.RECENT_KEYS">
+      <recent name="dev.sanda.apifi.service.graphql_subcriptions" />
     </key>
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="dev.sanda.testifi" />
@@ -310,6 +312,9 @@
       <workItem from="1611816792831" duration="62000" />
       <workItem from="1611816875030" duration="18172000" />
       <workItem from="1612792611795" duration="2400000" />
+      <workItem from="1613655978833" duration="23456000" />
+      <workItem from="1615219414226" duration="4345000" />
+      <workItem from="1617013031334" duration="20386000" />
     </task>
     <servers />
   </component>
@@ -330,5 +335,9 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>
