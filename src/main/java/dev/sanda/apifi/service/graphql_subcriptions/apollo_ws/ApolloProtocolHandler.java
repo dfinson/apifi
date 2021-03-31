@@ -19,6 +19,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.ApolloMessageFactory.*;
 
@@ -28,7 +30,6 @@ import static dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.ApolloMessa
 public class ApolloProtocolHandler extends TextWebSocketHandler implements ApolloSubProtocolCapable {
 
     private final GraphQLRequestExecutor<WebSocketSession> executor;
-    private final ApolloSubscriptionsHandler subscriptionsHandler;
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
@@ -51,11 +52,11 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         session.close();
     }
     private void handleStop(ApolloMessage apolloMessage) {
-        val toStop = subscriptionsHandler.getSubscription(apolloMessage.getId());
+        val toStop = subscriptions.get(apolloMessage.getId());
         if (toStop != null) {
             log.info("Stopping Apollo Protocol GraphQLSubscription #" + toStop.getApolloId());
             toStop.getSubscriber().getSubscription().cancel();
-            subscriptionsHandler.removeSubscription(apolloMessage.getId());
+            subscriptions.remove(apolloMessage.getId());
         }
     }
     private void handleStart(WebSocketSession session, ApolloMessage apolloMessage) {
@@ -71,7 +72,7 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
         val publisher = (Publisher<ExecutionResult>)result.getData();
         val subscriber = new ApolloSubscriber(id, session);
         publisher.subscribe(subscriber);
-        subscriptionsHandler.addSubscription(id, subscriber, publisher);
+        addSubscription(id, subscriber, publisher);
     }
     @SneakyThrows
     private void handleQueryOrMutation(String id, ExecutionResult result, WebSocketSession session) {
@@ -94,8 +95,15 @@ public class ApolloProtocolHandler extends TextWebSocketHandler implements Apoll
     }
     public static void fatalError(WebSocketSession session, Exception exception) {
         try {
+            log.error("Encountered fatal error during session \"" + session.getId() + "\" - closing the session with status 'SESSION_NOT_RELIABLE'");
+            log.error("See exception stacktrace: \n", exception);
             session.close(CloseStatus.SESSION_NOT_RELIABLE);
         } catch (Exception ignored) {}
         log.warn(String.format("WebSocket session %s (%s) closed due to an exception", session.getId(), session.getRemoteAddress()), exception);
+    }
+
+    private final Map<String, ApolloSubscription> subscriptions = new ConcurrentHashMap<>();
+    private void addSubscription(String apolloId, ApolloSubscriber subscriber, Publisher<ExecutionResult> publisher){
+        subscriptions.put(apolloId, new ApolloSubscription(apolloId, subscriber, publisher));
     }
 }
