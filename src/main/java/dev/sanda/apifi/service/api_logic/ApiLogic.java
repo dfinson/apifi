@@ -1,4 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
+
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
@@ -14,6 +15,8 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,10 +41,10 @@ public final class ApiLogic<T> {
 
     public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks){
         val datafiLoggingEnabled = configValues.getDatafiLoggingEnabled();
-        this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled);
-        this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
-        this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
-        this.subscriptionsLogicService.init(dataManager, apiHooks, datafiLoggingEnabled);
+        this.subscriptionsLogicService.init(dataManager);
+        this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
+        this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
+        this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
     }
 
     public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
@@ -269,5 +272,28 @@ public final class ApiLogic<T> {
                         entityCollectionApiHooks
                 );
     }
+
+    // subscriptions
+
+    public Flux<List<T>> onCreateSubscription(FluxSink.OverflowStrategy backPressure){
+        return subscriptionsLogicService.onCreateSubscription(backPressure);
+    }
+
+    public Flux<T> onUpdateSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
+        return subscriptionsLogicService.onUpdateSubscription(toObserve, backPressure);
+    }
+
+    public Flux<T> onDeleteSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
+        return subscriptionsLogicService.onDeleteSubscription(toObserve, backPressure);
+    }
+
+    public Flux<T> onArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
+        return subscriptionsLogicService.onArchiveSubscription(toObserve, backPressure);
+    }
+
+    public Flux<T> onDeArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
+        return subscriptionsLogicService.onDeArchiveSubscription(toObserve, backPressure);
+    }
+
 }
 

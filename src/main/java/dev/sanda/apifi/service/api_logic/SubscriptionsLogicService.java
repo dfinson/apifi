@@ -2,6 +2,8 @@ package dev.sanda.apifi.service.api_logic;
 
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionType;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
+import dev.sanda.datafi.service.DataManager;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -20,13 +22,27 @@ import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
 
 @Service
 @Scope("prototype")
-public class SubscriptionsLogicService<T> extends BaseCrudService<T> {
+public class SubscriptionsLogicService<T>{
 
 
     @Autowired
     private SubscriptionsService subscriptionsService;
+    @Autowired
+    private ReflectionCache reflectionCache;
+
+    private DataManager<T> dataManager;
+    private String entityName;
+    private String idFieldName;
+
+    public void init(DataManager<T> dataManager){
+        this.dataManager = dataManager;
+        this.entityName = dataManager.getClazzSimpleName();
+        this.idFieldName = reflectionCache.getEntitiesCache().get(entityName).getIdField().getName();
+    }
 
     public final static FluxSink.OverflowStrategy DEFAULT_OVERFLOW_STRATEGY = BUFFER;
+
+
 
 
     private <E> Flux<E> generatePublisher(List<String> topics, FluxSink.OverflowStrategy backPressure){
@@ -35,7 +51,7 @@ public class SubscriptionsLogicService<T> extends BaseCrudService<T> {
                     subscriber.onDispose(
                             () -> topics.forEach(topic -> subscriptionsService.removeSubscriber(topic, subscriber))
                     );
-                    topics.forEach(topic -> subscriptionsService.registerSubscriber(topic, subscriber));
+                    topics.forEach(topic -> subscriptionsService.registerSubscriber(topic, subscriber, dataManager));
                 }
         , backPressure);
     }
