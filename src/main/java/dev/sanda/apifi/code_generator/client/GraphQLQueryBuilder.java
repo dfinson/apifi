@@ -43,7 +43,7 @@ public class GraphQLQueryBuilder {
         if(vars.isEmpty()) return "";
         vars.forEach((varName, varType) -> builder.append(varName).append(resolveVarTypescriptType(varName)).append(", "));
         if(!isPrimitiveReturnType)
-            builder.append("expectedReturn").append(expectedReturnType());
+            builder.append("selectionGraph").append(selectionGraphType());
         return builder.append(", ").toString();
     }
 
@@ -138,14 +138,14 @@ public class GraphQLQueryBuilder {
     }
 
     private String expectedResultString() {
-        return isPrimitiveReturnType ? " }`" : "${expectedReturn} }`";
+        return isPrimitiveReturnType ? " }`" : "${selectionGraph} }`";
     }
 
     private boolean isFreeTextSearchQuery() {
         return vars.getOrDefault("input", "").equals("FreeTextSearchPageRequestInput");
     }
 
-    private String expectedReturnType(){
+    private String selectionGraphType(){
         return isTypescriptMode ? ": string" : "";
     }
 }

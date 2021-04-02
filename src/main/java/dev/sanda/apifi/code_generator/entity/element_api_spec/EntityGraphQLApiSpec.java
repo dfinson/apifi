@@ -1,10 +1,8 @@
 package dev.sanda.apifi.code_generator.entity.element_api_spec;
 
-import dev.sanda.apifi.annotations.WithApiFreeTextSearchByFields;
-import dev.sanda.apifi.annotations.WithCRUDEndpoints;
-import dev.sanda.apifi.annotations.WithMethodLevelSecurity;
-import dev.sanda.apifi.annotations.WithServiceLevelSecurity;
+import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints;
 import dev.sanda.datafi.code_generator.annotated_element_specs.AnnotatedElementSpec;
 import lombok.Getter;
 import lombok.val;
@@ -25,12 +23,29 @@ public class EntityGraphQLApiSpec extends AnnotatedElementSpec<TypeElement> {
     @Getter
     private List<CRUDEndpoints> mergedCrudEndpoints;
 
+    @Getter
+    private List<SubscriptionEndpoints> mergedSubscriptionEndpoints;
+
     public EntityGraphQLApiSpec(TypeElement entity, TypeElement apiSpecExtension) {
         super(entity);
         if(apiSpecExtension != null)
             addAnnotations(apiSpecExtension);
         setFieldGraphQlApiSpecs(entity, apiSpecExtension);
         setMergedCrudEndpoints(entity, apiSpecExtension);
+        setMergedSubscriptionEndpoints(entity, apiSpecExtension);
+    }
+
+    private void setMergedSubscriptionEndpoints(TypeElement entity, TypeElement apiSpecExtension) {
+        WithSubscriptionEndpoints entitySubscriptionEndpoints = entity.getAnnotation(WithSubscriptionEndpoints.class);
+        WithSubscriptionEndpoints apiSpecExtensionSubscriptionEndpoints = null;
+        if(apiSpecExtension != null)
+            apiSpecExtensionSubscriptionEndpoints = apiSpecExtension.getAnnotation(WithSubscriptionEndpoints.class);
+        Set<SubscriptionEndpoints> subscriptionEndpoints = new HashSet<>();
+        if(entitySubscriptionEndpoints != null)
+            subscriptionEndpoints.addAll(Arrays.asList(entitySubscriptionEndpoints.value()));
+        if(apiSpecExtensionSubscriptionEndpoints != null)
+            subscriptionEndpoints.addAll(Arrays.asList(apiSpecExtensionSubscriptionEndpoints.value()));
+        this.mergedSubscriptionEndpoints = new ArrayList<>(subscriptionEndpoints);
     }
 
     private void setMergedCrudEndpoints(TypeElement entity, TypeElement apiSpecExtension) {
@@ -66,7 +81,8 @@ public class EntityGraphQLApiSpec extends AnnotatedElementSpec<TypeElement> {
                 WithApiFreeTextSearchByFields.class,
                 WithCRUDEndpoints.class,
                 WithMethodLevelSecurity.class,
-                WithServiceLevelSecurity.class
+                WithServiceLevelSecurity.class,
+                WithSubscriptionEndpoints.class
         };
     }
 }

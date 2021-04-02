@@ -29,6 +29,7 @@ public class ApifiClientFactory {
     public void generate(){
         StringBuilder builder = new StringBuilder();
         builder.append("let apiUrl = location.origin + '/graphql';\n");
+        builder.append("let apiWsUrl = apiUrl.replace('http', 'ws');\n");
         builder.append(String.format("let bearerToken%s;\n\n", isTypescriptMode ? ": string" : ""));
         if(isTypescriptMode)
             builder.append(TypescriptModelFactory.objectModel(entities, enums, processingEnv));
@@ -88,8 +89,9 @@ public class ApifiClientFactory {
                 "\n\t},\n";
     }
 
+    // TODO - resolve return type for subscriptions
     private String queryFetcherReturnType(GraphQLQueryBuilder query) {
-        return isTypescriptMode ? ": Promise<GraphQLResult<" + resolveQueryPromiseType(query) + ">>" : "";
+        return isTypescriptMode ? ": Promise<ExecutionResult<" + resolveQueryPromiseType(query) + ">>" : "";
     }
 
     private String resolveQueryPromiseType(GraphQLQueryBuilder query) {

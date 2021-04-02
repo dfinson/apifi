@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum SubscriptionType {
+public enum SubscriptionEndpoints {
     ON_CREATE("Create"),
     ON_UPDATE("Update"),
     ON_DELETE("Delete"),

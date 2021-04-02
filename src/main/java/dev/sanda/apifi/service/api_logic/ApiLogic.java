@@ -275,24 +275,24 @@ public final class ApiLogic<T> {
 
     // subscriptions
 
-    public Flux<List<T>> onCreateSubscription(FluxSink.OverflowStrategy backPressure){
-        return subscriptionsLogicService.onCreateSubscription(backPressure);
+    public Flux<List<T>> onCreateSubscription(FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onCreateSubscription(backPressureStrategy);
     }
 
-    public Flux<T> onUpdateSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
-        return subscriptionsLogicService.onUpdateSubscription(toObserve, backPressure);
+    public Flux<T> onUpdateSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onUpdateSubscription(toObserve, backPressureStrategy);
     }
 
-    public Flux<T> onDeleteSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
-        return subscriptionsLogicService.onDeleteSubscription(toObserve, backPressure);
+    public Flux<T> onDeleteSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onDeleteSubscription(toObserve, backPressureStrategy);
     }
 
-    public Flux<T> onArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
-        return subscriptionsLogicService.onArchiveSubscription(toObserve, backPressure);
+    public Flux<T> onArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onArchiveSubscription(toObserve, backPressureStrategy);
     }
 
-    public Flux<T> onDeArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressure){
-        return subscriptionsLogicService.onDeArchiveSubscription(toObserve, backPressure);
+    public Flux<T> onDeArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onDeArchiveSubscription(toObserve, backPressureStrategy);
     }
 
 }

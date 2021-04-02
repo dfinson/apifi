@@ -939,7 +939,7 @@ export default {
         apiUrl = url;
     },
     
-    async getUserById(input, expectedReturn, customHeaders) {
+    async getUserById(input, selectionGraph, customHeaders) {
         let requestHeaders = {
             "Content-Type": "application/json"
         }
@@ -950,7 +950,7 @@ export default {
             credentials: "include",
             headers: requestHeaders,
             body: JSON.stringify({
-                query: `query getUserById($input: Int!) { getUserById(input: $input)${expectedReturn} }`,
+                query: `query getUserById($input: Int!) { getUserById(input: $input)${selectionGraph} }`,
                 variables: {
                     "input": input
                 },
@@ -960,7 +960,7 @@ export default {
         return await (await fetch(apiUrl, opts)).json();
     },
     
-    async createUser(input, expectedReturn, customHeaders) {
+    async createUser(input, selectionGraph, customHeaders) {
         let requestHeaders = {
             "Content-Type": "application/json"
         }
@@ -971,7 +971,7 @@ export default {
             credentials: "include",
             headers: requestHeaders,
             body: JSON.stringify({
-                query: `mutation createUser($input: UserInput) { createUser(input: $input)${expectedReturn} }`,
+                query: `mutation createUser($input: UserInput) { createUser(input: $input)${selectionGraph} }`,
                 variables: {
                     "input": input
                 },

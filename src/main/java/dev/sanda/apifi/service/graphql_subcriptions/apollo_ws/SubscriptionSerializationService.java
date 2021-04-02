@@ -26,7 +26,7 @@ public class SubscriptionSerializationService {
         module.addSerializer(Publisher.class, new JsonSerializer<Publisher>() {
             @SneakyThrows
             @Override
-            public void serialize(// {"source":{},"backpressure":"BUFFER","createMode":"PUSH_PULL"}
+            public void serialize(// {"source":{},"backpressureStrategy":"BUFFER","createMode":"PUSH_PULL"}
                     Publisher publisher,
                     JsonGenerator gen,
                     SerializerProvider serializerProvider) throws IOException {

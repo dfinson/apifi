@@ -11,7 +11,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -143,9 +145,10 @@ public class TypescriptModelFactory {
                 PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 SORT_DIRECTION_ENUM_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
+                FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE + NEW_LINE + NEW_LINE +
+                EXECUTION_RESULT_TYPE + NEW_LINE + NEW_LINE +
+                EXECUTION_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
+                EXECUTION_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
                 DICTIONARY_TYPE;
     }
 
@@ -178,22 +181,31 @@ public class TypescriptModelFactory {
             "   DESC = 'DESC'" + NEW_LINE +
             "}";
 
-    private static final String GRAPHQL_RESULT_TYPE =
-            "export interface GraphQLResult<T>{" + NEW_LINE +
+    private static final String FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE =
+            "export enum FluxSinkOverflowStrategy{" + NEW_LINE +
+                    "   IGNORE = 'IGNORE'," + NEW_LINE +
+                    "   ERROR = 'ERROR'" + NEW_LINE +
+                    "   DROP = 'DROP'," + NEW_LINE +
+                    "   LATEST = 'LATEST'" + NEW_LINE +
+                    "   BUFFER = 'BUFFER'" + NEW_LINE +
+                    "}";
+
+    private static final String EXECUTION_RESULT_TYPE =
+            "export interface ExecutionResult<T>{" + NEW_LINE +
             "   data?: T;" + NEW_LINE +
-            "   errors?: Array<GraphQLResultError>;" + NEW_LINE +
+            "   errors?: Array<ExecutionResultError>;" + NEW_LINE +
             "}";
 
-    private static final String GRAPHQL_RESULT_ERROR_TYPE =
-            "export interface GraphQLResultError{" + NEW_LINE +
+    private static final String EXECUTION_RESULT_ERROR_TYPE =
+            "export interface ExecutionResultError{" + NEW_LINE +
                     "   message: string;" + NEW_LINE +
                     "   path?: Array<string>;" + NEW_LINE +
-                    "   locations?: Array<GraphQLResultErrorLocation>;" + NEW_LINE +
+                    "   locations?: Array<ExecutionResultErrorLocation>;" + NEW_LINE +
                     "   extensions?: Map<string, any>;" + NEW_LINE +
                     "}";
 
-    private static final String GRAPHQL_RESULT_ERROR_TYPE_LOCATIONS =
-            "export interface GraphQLResultErrorLocation{" + NEW_LINE +
+    private static final String EXECUTION_RESULT_ERROR_TYPE_LOCATIONS =
+            "export interface ExecutionResultErrorLocation{" + NEW_LINE +
                     "   line: number;" + NEW_LINE +
                     "   column: number;" + NEW_LINE +
                     "}";

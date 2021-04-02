@@ -11,4 +11,8 @@ public class ConfigValues {
     private Boolean datafiLoggingEnabled;
     @Value("${apifi.subscriptions.ws-endpoint:/graphql}")
     private String wsEndpoint;
+    @Value("#{new Long('${apifi.subscriptions.pending-transaction-retry-interval:50}')}")
+    private Long pendingTransactionRetryInterval;
+    @Value("#{new Long('${apifi.subscriptions.pending-transaction-timeout:500}')}")
+    private Long pendingTransactionTimeout;
 }

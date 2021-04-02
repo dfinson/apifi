@@ -1,5 +1,6 @@
 package dev.sanda.apifi.service.graphql_subcriptions.pubsub;
 
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 
@@ -36,6 +37,7 @@ public class InMemoryPubSubMessagingService implements PubSubMessagingService {
     }
 
     @Override
+    @SneakyThrows
     @Transactional
     public void publishToTopic(String topic, Object payload) {
         if(isRegisteredTopic(topic)){

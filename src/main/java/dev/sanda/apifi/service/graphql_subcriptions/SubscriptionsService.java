@@ -2,6 +2,7 @@ package dev.sanda.apifi.service.graphql_subcriptions;
 
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.PubSubMessagingService;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.PubSubTopicHandler;
+import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,8 @@ public class SubscriptionsService {
     private PubSubMessagingService pubSubMessagingService;
     @Autowired
     private ReflectionCache reflectionCache;
+    @Autowired
+    private ConfigValues configValues;
 
     private final Set<String> localTopicHandlers = new HashSet<>();
 
@@ -92,7 +95,7 @@ public class SubscriptionsService {
         synchronized (this.localTopicHandlers){
             val id = UUID.randomUUID().toString();
             localTopicHandlers.add(id);
-            return new PubSubTopicHandler(id, downStreamSubscriber, dataManager, reflectionCache);
+            return new PubSubTopicHandler(id, downStreamSubscriber, dataManager, reflectionCache, configValues);
         }
     }
 }
