@@ -27,9 +27,11 @@ public class ApifiClientFactory {
     }
 
     public void generate(){
+        // generate url vars + url vars setters
         StringBuilder builder = new StringBuilder();
         builder.append("let apiUrl = location.origin + '/graphql';\n");
         builder.append("let apiWsUrl = apiUrl.replace('http', 'ws');\n");
+        builder.append("let apiSseUrl = apiUrl + '/sse';\n");
         builder.append(String.format("let bearerToken%s;\n\n", isTypescriptMode ? ": string" : ""));
         if(isTypescriptMode)
             builder.append(TypescriptModelFactory.objectModel(entities, enums, processingEnv));
@@ -45,6 +47,17 @@ public class ApifiClientFactory {
                 .append(")")
                 .append(isTypescriptMode ? ": void" : "")
                 .append("{\n\t\tapiUrl = url;\n\t},\n");
+        builder.append("\n\tsetApiWsUrl(url")
+                .append(isTypescriptMode ? ": string" : "")
+                .append(")")
+                .append(isTypescriptMode ? ": void" : "")
+                .append("{\n\t\tapiWsUrl = url;\n\t},\n");
+        builder.append("\n\tsetApiSseUrl(url")
+                .append(isTypescriptMode ? ": string" : "")
+                .append(")")
+                .append(isTypescriptMode ? ": void" : "")
+                .append("{\n\t\tapiSseUrl = url;\n\t},\n");
+        // generate actual query methods for each operation
         queries.forEach(query -> builder.append(generateQueryFetcher(query)));
         builder.append("\n}");
         val finalContent = builder.toString();
