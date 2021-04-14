@@ -5,24 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/KeepAliveScheduler.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/messages/PayloadMessage.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/sse/SseSubscriber.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/sse/SseSubscription.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/sse/SseSubscriptionsHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/TypescriptModelFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/TypescriptModelFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/entity/GraphQLApiBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/entity/GraphQLApiBuilder.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_config/WebSocketConfiguration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_config/WebSocketConfiguration.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/ApolloMessageFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/MessagingFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/ApolloProtocolHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/ApolloProtocolHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/ApolloSubscriber.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/ApolloSubscriber.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/SubscriptionSerializationService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/messages/ApolloMessage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/messages/OperationMessage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/apollo_ws/messages/ApolloPayloadMessage.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/AsyncExecutorService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/AsyncExecutorService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ConfigValues.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ConfigValues.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/web/ApiController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/web/ApiController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -333,7 +318,7 @@
       <workItem from="1617013031334" duration="51843000" />
       <workItem from="1617476952708" duration="3815000" />
       <workItem from="1617480781566" duration="8307000" />
-      <workItem from="1617894267726" duration="15795000" />
+      <workItem from="1617894267726" duration="20132000" />
     </task>
     <servers />
   </component>
@@ -354,26 +339,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <condition expression="query.getQueryName().equals(&quot;onUsersCreated&quot;)" language="JAVA" />
-          <url>file://$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java</url>
-          <line>68</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java</url>
-          <line>47</line>
-          <properties>
-            <option name="lambda-ordinal" value="-1" />
-          </properties>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

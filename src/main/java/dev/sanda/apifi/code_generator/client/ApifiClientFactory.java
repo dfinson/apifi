@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.SUBSCRIPTION;
+
 @Data
 public class ApifiClientFactory {
 
@@ -79,15 +81,42 @@ public class ApifiClientFactory {
     }
 
     private String generateQueryFetcher(GraphQLQueryBuilder query) {
+        if(query.getQueryType().equals(SUBSCRIPTION))
+            return generateSubscriptionFetcher(query);
+        else
+            return generateQueryOrMutationFetcher(query);
+    }
+
+    private String generateSubscriptionFetcher(GraphQLQueryBuilder query) {
         query.setTypescriptMode(isTypescriptMode);
         return "\n\tasync " +
                 query.getQueryName() +
                 "(" +
-                    query.args() +
-                    "customHeaders" +
-                    customHeadersType() +
+                query.args() +
                 ")" +
-                queryFetcherReturnType(query) +
+                (isTypescriptMode ? ": void" : "") +
+                "{\n" +
+                "\t\t\tif(bearerToken) requestHeaders[\"Authorization\"] = bearerToken;\n" +
+                "\t\t\tconst requestInit" + (isTypescriptMode ? ": RequestInit" : "") + " = {\n" +
+                "\t\t\t\tmethod: \"POST\",\n" +
+                "\t\t\t\tcredentials: 'include',\n" +
+                "\t\t\t\theaders: requestHeaders,\n" +
+                "\t\t\t\tbody: JSON.stringify({" + query.buildQueryString() + "\t})" +
+                "\n\t\t\t};\n" +
+                "\t\t\treturn await (await fetch(apiUrl, requestInit)).json();" +
+                "\n\t},\n";
+    }
+
+    private String generateQueryOrMutationFetcher(GraphQLQueryBuilder query){
+        query.setTypescriptMode(isTypescriptMode);
+        return "\n\tasync " +
+                query.getQueryName() +
+                "(" +
+                query.args() +
+                "customHeaders" +
+                customHeadersType() +
+                ")" +
+                queryOrMutationFetcherReturnType(query) +
                 "{\n" +
                 "\t\t\tlet requestHeaders = { \"Content-Type\": \"application/json\" }\n" +
                 "\t\t\tif(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);\n" +
@@ -102,8 +131,7 @@ public class ApifiClientFactory {
                 "\n\t},\n";
     }
 
-    // TODO - resolve return type for subscriptions
-    private String queryFetcherReturnType(GraphQLQueryBuilder query) {
+    private String queryOrMutationFetcherReturnType(GraphQLQueryBuilder query) {
         return isTypescriptMode ? ": Promise<ExecutionResult<" + resolveQueryPromiseType(query) + ">>" : "";
     }
 
