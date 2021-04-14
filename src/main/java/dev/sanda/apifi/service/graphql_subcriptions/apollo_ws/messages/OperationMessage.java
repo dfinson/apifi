@@ -5,11 +5,11 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ApolloMessage {
+public class OperationMessage {
     private String id;
     private String type;
 
-    public ApolloMessage(String type){
+    public OperationMessage(String type){
         this.type = type;
     }
 }

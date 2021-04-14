@@ -182,11 +182,11 @@ public class TypescriptModelFactory {
             "}";
 
     private static final String FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE =
-            "export enum FluxSinkOverflowStrategy{" + NEW_LINE +
+            "export enum OverflowStrategy{" + NEW_LINE +
                     "   IGNORE = 'IGNORE'," + NEW_LINE +
-                    "   ERROR = 'ERROR'" + NEW_LINE +
+                    "   ERROR = 'ERROR'," + NEW_LINE +
                     "   DROP = 'DROP'," + NEW_LINE +
-                    "   LATEST = 'LATEST'" + NEW_LINE +
+                    "   LATEST = 'LATEST'," + NEW_LINE +
                     "   BUFFER = 'BUFFER'" + NEW_LINE +
                     "}";
 
