@@ -841,7 +841,7 @@ public class GraphQLApiBuilder {
             clientQueryBuilder.setQueryType(SUBSCRIPTION);
             clientQueryBuilder.setQueryName(subscriptionName);
             clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
-                put("backPressureStrategy", "OverflowStrategy");
+                put("input", "BaseSubscriptionRequestInput<T>");
             }});
             return builder.build();
         }

@@ -51,7 +51,7 @@ public class TypescriptModelFactory {
                 .stream()
                 .map(factoryInstance::generateEnumClass)
                 .collect(Collectors.joining(NEW_LINE + NEW_LINE));
-        return  "// project specific data model" + NEW_LINE + NEW_LINE +
+        return  NEW_LINE + NEW_LINE + "// project specific data model" + NEW_LINE + NEW_LINE +
                 interfaces + NEW_LINE +
                 enums + NEW_LINE + NEW_LINE +
                 apifiObjectModel();
@@ -149,7 +149,10 @@ public class TypescriptModelFactory {
                 EXECUTION_RESULT_TYPE + NEW_LINE + NEW_LINE +
                 EXECUTION_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
                 EXECUTION_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
-                ON_CREATE_SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
+                BASE_SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
+                SSE_EVENT_TYPE + NEW_LINE + NEW_LINE +
+                SSE_OPERATION_EVENT_TYPE + NEW_LINE + NEW_LINE +
+                SSE_PAYLOAD_EVENT_TYPE + NEW_LINE + NEW_LINE +
                 SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
                 DICTIONARY_TYPE;
     }
@@ -220,20 +223,43 @@ public class TypescriptModelFactory {
                     "   column: number;" + NEW_LINE +
                     "}";
 
-    private static final String ON_CREATE_SUBSCRIPTION_REQUEST_INPUT_TYPE =
-            "// for GraphQLSubscription only - consists of the SSE event callback functions"  + NEW_LINE +
-            "export interface OnCreateSubscriptionRequestInput<T>{" + NEW_LINE +
+    private static final String BASE_SUBSCRIPTION_REQUEST_INPUT_TYPE =
+            "// GraphQLSubscription: consists of the SSE event callback functions and return value selection graph"  + NEW_LINE +
+            "export interface BaseSubscriptionRequestInput<T>{" + NEW_LINE +
+                    "   selectionGraph: string;" + NEW_LINE +
+                    "   timeout?: number;" + NEW_LINE +
+                    "   backPressureStrategy?: OverflowStrategy;" + NEW_LINE +
                     "   onExecutionResult: (result: ExecutionResult<T>) => void;" + NEW_LINE +
                     "   onComplete?: () => void;" + NEW_LINE +
                     "   onFatalError?: (message: string) => void;" + NEW_LINE +
                     "}";
 
+
     private static final String SUBSCRIPTION_REQUEST_INPUT_TYPE =
-            "// for GraphQLSubscription only - consists of the SSE event callback functions, "  + NEW_LINE +
+            "// GraphQLSubscription: consists of the SSE event callback functions, "  + NEW_LINE +
             "// as well as an array of objects which will be the tracked subjects of the subscription."  + NEW_LINE +
-            "export interface SubscriptionRequestInput<T> extends OnCreateSubscriptionRequestInput<T>{" + NEW_LINE +
+            "export interface SubscriptionRequestInput<T> extends BaseSubscriptionRequestInput<T>{" + NEW_LINE +
                     "   toObserve: Array<T>;" + NEW_LINE +
                     "}";
+
+    private static final String SSE_EVENT_TYPE =
+            "// GraphQLSubscription: wrapper around server sent events"  + NEW_LINE +
+                    "export interface SseEvent{" + NEW_LINE +
+                    "   id: string;" + NEW_LINE +
+                    "   name: string;" + NEW_LINE +
+                    "}";
+
+    private static final String SSE_PAYLOAD_EVENT_TYPE =
+            "// GraphQLSubscription: wrapper around server sent data events"  + NEW_LINE +
+            "export interface SsePayloadEvent<T> extends SseEvent{" + NEW_LINE +
+            "   data: ExecutionResult<T>;" + NEW_LINE +
+            "}";
+
+    private static final String SSE_OPERATION_EVENT_TYPE =
+            "// GraphQLSubscription: wrapper around server sent complete / error events"  + NEW_LINE +
+                "export interface SseOperationEvent extends SseEvent{" + NEW_LINE +
+                "   data: string;" + NEW_LINE +
+                "}";
 
     private static final String DICTIONARY_TYPE =
             "// for custom headers to attach to query or mutation HTTP requests"  + NEW_LINE +

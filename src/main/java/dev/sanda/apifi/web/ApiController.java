@@ -34,7 +34,7 @@ public class ApiController {
                 .toSpecification();
     }
 
-    @CrossOrigin("http://fiddle.jshell.net")
+    @CrossOrigin("*")
     @GetMapping("${apifi.subscriptions.sse-endpoint:/graphql/sse}")
     public SseEmitter sseEndpoint(
             @RequestParam String queryString,

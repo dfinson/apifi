@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.SUBSCRIPTION;
 import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 
 @Data
@@ -41,14 +42,30 @@ public class GraphQLQueryBuilder {
     public String args(){
         val builder = new StringBuilder();
         if(vars.isEmpty()) return "";
-        vars.forEach((varName, varType) -> builder.append(varName).append(resolveVarTypescriptType(varName)).append(", "));
-        if(!isPrimitiveReturnType)
+        vars.forEach((varName, varType) -> {
+            builder.append(varName).append(resolveVarTypescriptType(varName));
+            if(!isSubscription())
+                builder.append(", ");
+        });
+        if(!isPrimitiveReturnType && !isSubscription()) {
             builder.append("selectionGraph").append(selectionGraphType());
-        return builder.append(", ").toString();
+            builder.append(", ");
+        }
+        return builder.toString();
     }
 
     private String resolveVarTypescriptType(String varName) {
         if(!isTypescriptMode) return "";
+        return isSubscription() ? resolveSubscriptionVarTypescriptType(varName) : resolveQueryOrMutationVarTypescriptType(varName);
+    }
+
+    private String resolveSubscriptionVarTypescriptType(String varName) {
+        return  queryName.startsWith("on") && queryName.contains("Created")
+                ? String.format(": BaseSubscriptionRequestInput<Array<%s>>", entityReturnType)
+                : String.format(": BaseSubscriptionRequestInput<%s>", entityReturnType);
+    }
+
+    private String resolveQueryOrMutationVarTypescriptType(String varName) {
         if(varName.equals("owner"))
             return ": " + this.ownerEntityType;
         if(queryName.contains("ByUnique"))
@@ -60,25 +77,37 @@ public class GraphQLQueryBuilder {
             case ARRAY: return ": Array<" + entityReturnType + ">";
             case SET: return ": Set<" + entityReturnType + ">";
             case MAP: return queryName.startsWith("add")
-                            ? ": Map<" + entityReturnType + ">"
-                            : ": Array<" + entityReturnType.substring(0, entityReturnType.indexOf(",")) + ">";
+                    ? ": Map<" + entityReturnType + ">"
+                    : ": Array<" + entityReturnType.substring(0, entityReturnType.indexOf(",")) + ">";
         }
         return ": any";
     }
 
     private String varsDef(){
         if(vars.isEmpty()) return "";
+        return isSubscription() ? subscriptionVarsDef() : queryOrMutationVarsDef();
+    }
+
+    private String queryOrMutationVarsDef(){
         val builder = new StringBuilder();
         vars.forEach(
                 (varName, varType) ->
-                builder .append("$")
-                        .append(varName)
-                        .append(": ")
-                        .append(resolveVarType(varType))
-                        .append(", ")
+                        builder .append("$")
+                                .append(varName)
+                                .append(": ")
+                                .append(resolveVarType(varType))
+                                .append(", ")
         );
         builder.setLength(builder.length() - 2);
-        return "(" + builder.toString() + ")";
+        return "(" + builder + ")";
+    }
+
+    private String subscriptionVarsDef(){
+        val builder = new StringBuilder();
+        if(!isOnCreatedSubscriptionType())
+            builder.append("$toObserve: ").append(String.format("[%s]", entityReturnType)).append(", ");
+        builder.append("$backPressureStrategy: OverflowStrategy");
+        return "(" + builder + ")";
     }
 
     private String resolveVarType(String varType) {
@@ -96,6 +125,8 @@ public class GraphQLQueryBuilder {
 
     private String varsArgs() {
         if(vars.isEmpty()) return "";
+        if(isSubscription())
+            return subscriptionVarsArgs();
         val builder = new StringBuilder();
         vars.forEach(
                 (varName, varType) ->
@@ -105,11 +136,21 @@ public class GraphQLQueryBuilder {
                                 .append(", ")
         );
         builder.setLength(builder.length() - 2);
-        return "(" + builder.toString() + ")";
+        return "(" + builder + ")";
+    }
+
+    private String subscriptionVarsArgs() {
+        val builder = new StringBuilder();
+        if(!isOnCreatedSubscriptionType())
+            builder.append("toObserve: $toObserve, ");
+        builder.append("backPressureStrategy: $backPressureStrategy");
+        return "(" + builder + ")";
     }
 
     private String varsVals() {
         if(vars.isEmpty()) return "";
+        if(isSubscription())
+            return subscriptionVarsVals();
         val builder = new StringBuilder();
         vars.forEach(
                 (varName, varType) ->
@@ -119,6 +160,27 @@ public class GraphQLQueryBuilder {
                                 .append(varName)
                                 .append(", \n\t\t\t\t\t")
         );
+        builder.setLength(builder.length() - 8);
+        return "\n\t\t\t\t\t" +
+                "variables" +
+                ": {\n\t\t\t\t\t" +
+                builder +
+                "\n\t\t\t\t\t}";
+    }
+
+    private String subscriptionVarsVals() {
+        val builder = new StringBuilder();
+        if(!isOnCreatedSubscriptionType())
+            builder.append("\t")
+                    .append(inQuotes("toObserve"))
+                    .append(": ")
+                    .append("input.toObserve")
+                    .append(", \n\t\t\t\t\t");
+        builder.append("\t")
+                .append(inQuotes("backPressureStrategy"))
+                .append(": ")
+                .append("input.backPressureStrategy || 'BUFFER'")
+                .append(", \n\t\t\t\t\t");
         builder.setLength(builder.length() - 8);
         return "\n\t\t\t\t\t" +
                 "variables" +
@@ -138,7 +200,7 @@ public class GraphQLQueryBuilder {
     }
 
     private String expectedResultString() {
-        return isPrimitiveReturnType ? " }`" : "${selectionGraph} }`";
+        return isPrimitiveReturnType ? " }`" : String.format("${%sselectionGraph}", (isSubscription() ? "input." : "")) + " }`";
     }
 
     private boolean isFreeTextSearchQuery() {
@@ -147,5 +209,17 @@ public class GraphQLQueryBuilder {
 
     private String selectionGraphType(){
         return isTypescriptMode ? ": string" : "";
+    }
+
+    private boolean isSubscription(){
+        return queryType.equals(SUBSCRIPTION);
+    }
+
+    private boolean isOnCreatedSubscriptionType(){
+        return isSubscription() && queryName.endsWith("Created");
+    }
+
+    public String getSubscriptionReturnType() {
+        return isOnCreatedSubscriptionType() ? "Array<" + entityReturnType + ">" : entityReturnType;
     }
 }
