@@ -25,10 +25,12 @@ public class TypescriptModelFactory {
 
     private ProcessingEnvironment processingEnv;
     private Map<String, TypeElement> typeElementMap;
+    private boolean hasSubscriptions;
 
     public static String objectModel(
             Set<TypeElement> entitiesSet,
             Set<TypeElement> enumsSet,
+            boolean hasSubscriptions,
             ProcessingEnvironment processingEnv){
         val typeElementsMap = entitiesSet
                 .stream()
@@ -40,7 +42,7 @@ public class TypescriptModelFactory {
                         )
                 );
         enumsSet.forEach(typeElement -> typeElementsMap.put(typeElement.getSimpleName().toString().toLowerCase(), typeElement));
-        val factoryInstance = new TypescriptModelFactory(processingEnv, typeElementsMap);
+        val factoryInstance = new TypescriptModelFactory(processingEnv, typeElementsMap, hasSubscriptions);
         val interfaces = entitiesSet
                 .stream()
                 .map(factoryInstance::generateInterface)
@@ -54,7 +56,7 @@ public class TypescriptModelFactory {
         return  NEW_LINE + NEW_LINE + "// project specific data model" + NEW_LINE + NEW_LINE +
                 interfaces + NEW_LINE +
                 enums + NEW_LINE + NEW_LINE +
-                apifiObjectModel();
+                factoryInstance.apifiObjectModel();
     }
 
     private String generateEnumClass(TypeElement enumTypeElement) {
@@ -139,22 +141,28 @@ public class TypescriptModelFactory {
                 .collect(Collectors.toList());
     }
 
-    private static String apifiObjectModel(){
+    private String apifiObjectModel(){
         return  "// Apifi utils object model" + NEW_LINE + NEW_LINE +
                 PAGE_TYPE + NEW_LINE + NEW_LINE +
                 PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 SORT_DIRECTION_ENUM_TYPE + NEW_LINE + NEW_LINE +
-                FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE + NEW_LINE + NEW_LINE +
                 EXECUTION_RESULT_TYPE + NEW_LINE + NEW_LINE +
                 EXECUTION_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
                 EXECUTION_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
+                DICTIONARY_TYPE +
+                subscriptionsRelatedApifiObjectModel();
+    }
+
+    private String subscriptionsRelatedApifiObjectModel(){
+        if(!hasSubscriptions) return "";
+        return  NEW_LINE + NEW_LINE +
+                FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE + NEW_LINE + NEW_LINE +
                 BASE_SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
                 SSE_EVENT_TYPE + NEW_LINE + NEW_LINE +
-                SSE_OPERATION_EVENT_TYPE + NEW_LINE + NEW_LINE +
-                SSE_PAYLOAD_EVENT_TYPE + NEW_LINE + NEW_LINE +
                 SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
-                DICTIONARY_TYPE;
+                ENTITY_COLLECTION_SUBSCRIPTION_REQUEST_INPUT_TYPE;
+
     }
 
     private static final String PAGE_TYPE =
@@ -242,24 +250,19 @@ public class TypescriptModelFactory {
                     "   toObserve: Array<T>;" + NEW_LINE +
                     "}";
 
-    private static final String SSE_EVENT_TYPE =
-            "// GraphQLSubscription: wrapper around server sent events"  + NEW_LINE +
-                    "export interface SseEvent{" + NEW_LINE +
-                    "   id: string;" + NEW_LINE +
-                    "   name: string;" + NEW_LINE +
+    private static final String ENTITY_COLLECTION_SUBSCRIPTION_REQUEST_INPUT_TYPE =
+            "// GraphQLSubscription: consists of the SSE event callback functions, " + NEW_LINE +
+                    "export interface EntityCollectionSubscriptionRequestInput<TOwner, TCollection> extends BaseSubscriptionRequestInput<Array<TCollection>>{" + NEW_LINE +
+                    "   owner: TOwner;" + NEW_LINE +
                     "}";
 
-    private static final String SSE_PAYLOAD_EVENT_TYPE =
-            "// GraphQLSubscription: wrapper around server sent data events"  + NEW_LINE +
-            "export interface SsePayloadEvent<T> extends SseEvent{" + NEW_LINE +
-            "   data: ExecutionResult<T>;" + NEW_LINE +
-            "}";
-
-    private static final String SSE_OPERATION_EVENT_TYPE =
-            "// GraphQLSubscription: wrapper around server sent complete / error events"  + NEW_LINE +
-                "export interface SseOperationEvent extends SseEvent{" + NEW_LINE +
-                "   data: string;" + NEW_LINE +
-                "}";
+    private static final String SSE_EVENT_TYPE =
+            "// GraphQLSubscription: wrapper around server sent events"  + NEW_LINE +
+                    "export interface SseEvent extends Event{" + NEW_LINE +
+                    "   id: string;" + NEW_LINE +
+                    "   name: string;" + NEW_LINE +
+                    "   data: string;" + NEW_LINE +
+                    "}";
 
     private static final String DICTIONARY_TYPE =
             "// for custom headers to attach to query or mutation HTTP requests"  + NEW_LINE +

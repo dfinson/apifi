@@ -7,7 +7,6 @@ import graphql.GraphQL;
 import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.batched.BatchedExecutionStrategy;
 import io.leangen.graphql.GraphQLSchemaGenerator;
-import lombok.Getter;
 import lombok.val;
 import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +42,17 @@ public class GraphQLServiceImplementationFactory {
                 .addAnnotation(Component.class)
                 .addSuperinterface(GraphQLService.class)
                 .addFields(genGraphQLServiceFields(services))
-                .addMethod(genGraphQLServiceInit(services));
+                .addMethod(genGraphQLServiceInit(services))
+                .addMethod(graphQLInstanceGetter());
         return controller.build();
+    }
+
+    private MethodSpec graphQLInstanceGetter() {
+        return MethodSpec.methodBuilder("getGraphQLInstance")
+                .addModifiers(PUBLIC)
+                .returns(ClassName.get(GraphQL.class))
+                .addStatement("return graphQLInstanceBuilder.build()")
+                .build();
     }
 
     private MethodSpec genGraphQLServiceInit(List<String> services) {
@@ -84,11 +92,10 @@ public class GraphQLServiceImplementationFactory {
         code.append("\t\t.generate();\n");
         val schemaInit = CodeBlock.builder().add(code.toString(), args.toArray()).build();
         val graphQlInstanceInit = CodeBlock.builder().add(
-                "graphQLInstance = $T\n\t" +
+                "graphQLInstanceBuilder = $T\n\t" +
                         ".newGraphQL(schema)\n\t" +
                         ".queryExecutionStrategy(new $T())\n\t" +
-                        ".instrumentation(new $T(maxQueryDepth))\n\t" +
-                        ".build();\n",
+                        ".instrumentation(new $T(maxQueryDepth));\n",
                 GraphQL.class,
                 BatchedExecutionStrategy.class,
                 MaxQueryDepthInstrumentation.class).build();
@@ -96,8 +103,7 @@ public class GraphQLServiceImplementationFactory {
     }
 
     private List<FieldSpec> genGraphQLServiceFields(List<String> services) {
-        val graphQLInstanceField = FieldSpec.builder(GraphQL.class, "graphQLInstance", PRIVATE)
-                .addAnnotation(Getter.class)
+        val graphQLInstanceBuilderField = FieldSpec.builder(GraphQL.Builder.class, "graphQLInstanceBuilder", PRIVATE)
                 .build();
         List<FieldSpec> fieldSpecs = new ArrayList<>();
         for(val service : services){
@@ -114,7 +120,7 @@ public class GraphQLServiceImplementationFactory {
                                 "#{new Integer('${apifi.max-query-depth:15}')}")
                         .build())
                 .build();
-        fieldSpecs.add(graphQLInstanceField);
+        fieldSpecs.add(graphQLInstanceBuilderField);
         fieldSpecs.add(maxQueryDepthField);
         return fieldSpecs;
     }

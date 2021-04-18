@@ -295,5 +295,19 @@ public final class ApiLogic<T> {
         return subscriptionsLogicService.onDeArchiveSubscription(toObserve, backPressureStrategy);
     }
 
+    // entity collection API subscriptions
+
+    public <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onAssociateWithSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onUpdateInSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onRemoveFromSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
 }
 

@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.SUBSCRIPTION;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.COLLECTION_OWNER;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.LIST_TO_OBSERVE;
 import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 
 @Data
@@ -31,6 +33,7 @@ public class GraphQLQueryBuilder {
     private HashSet<String> entityTypes;
     private String queryName;
     private GraphQLQueryType queryType;
+    private SubscriptionObservableType subscriptionObservableType;
     private LinkedHashMap<String, String> vars = new LinkedHashMap<>();
     private boolean isPrimitiveReturnType = false;
     private ClientSideReturnType clientSideReturnType;
@@ -60,9 +63,12 @@ public class GraphQLQueryBuilder {
     }
 
     private String resolveSubscriptionVarTypescriptType(String varName) {
-        return  queryName.startsWith("on") && queryName.contains("Created")
-                ? String.format(": BaseSubscriptionRequestInput<Array<%s>>", entityReturnType)
-                : String.format(": BaseSubscriptionRequestInput<%s>", entityReturnType);
+        switch (subscriptionObservableType){
+            case LIST_TO_OBSERVE: return String.format(": SubscriptionRequestInput<%s>", entityReturnType);
+            case COLLECTION_OWNER: return String.format(": EntityCollectionSubscriptionRequestInput<%s, %s>", ownerEntityType, entityReturnType);
+            case ENTITY_TYPE: return String.format(": BaseSubscriptionRequestInput<Array<%s>>", entityReturnType);
+        }
+        throw new RuntimeException("This should not have happened...");
     }
 
     private String resolveQueryOrMutationVarTypescriptType(String varName) {
@@ -104,8 +110,10 @@ public class GraphQLQueryBuilder {
 
     private String subscriptionVarsDef(){
         val builder = new StringBuilder();
-        if(!isOnCreatedSubscriptionType())
-            builder.append("$toObserve: ").append(String.format("[%s]", entityReturnType)).append(", ");
+        switch (subscriptionObservableType){
+            case LIST_TO_OBSERVE: builder.append("$toObserve: ").append(String.format("[%s]", entityReturnType)).append(", "); break;
+            case COLLECTION_OWNER: builder.append("$owner: ").append(ownerEntityType).append(", "); break;
+        }
         builder.append("$backPressureStrategy: OverflowStrategy");
         return "(" + builder + ")";
     }
@@ -141,8 +149,10 @@ public class GraphQLQueryBuilder {
 
     private String subscriptionVarsArgs() {
         val builder = new StringBuilder();
-        if(!isOnCreatedSubscriptionType())
-            builder.append("toObserve: $toObserve, ");
+        switch (subscriptionObservableType){
+            case LIST_TO_OBSERVE: builder.append("toObserve: $toObserve, "); break;
+            case COLLECTION_OWNER: builder.append("owner: $owner, "); break;
+        }
         builder.append("backPressureStrategy: $backPressureStrategy");
         return "(" + builder + ")";
     }
@@ -170,11 +180,17 @@ public class GraphQLQueryBuilder {
 
     private String subscriptionVarsVals() {
         val builder = new StringBuilder();
-        if(!isOnCreatedSubscriptionType())
+        if(subscriptionObservableType.equals(LIST_TO_OBSERVE))
             builder.append("\t")
                     .append(inQuotes("toObserve"))
                     .append(": ")
                     .append("input.toObserve")
+                    .append(", \n\t\t\t\t\t");
+        else if(subscriptionObservableType.equals(COLLECTION_OWNER))
+            builder.append("\t")
+                    .append(inQuotes("owner"))
+                    .append(": ")
+                    .append("input.owner")
                     .append(", \n\t\t\t\t\t");
         builder.append("\t")
                 .append(inQuotes("backPressureStrategy"))
@@ -215,11 +231,7 @@ public class GraphQLQueryBuilder {
         return queryType.equals(SUBSCRIPTION);
     }
 
-    private boolean isOnCreatedSubscriptionType(){
-        return isSubscription() && queryName.endsWith("Created");
-    }
-
     public String getSubscriptionReturnType() {
-        return isOnCreatedSubscriptionType() ? "Array<" + entityReturnType + ">" : entityReturnType;
+        return subscriptionObservableType.equals(LIST_TO_OBSERVE) ? entityReturnType : "Array<" + entityReturnType + ">";
     }
 }

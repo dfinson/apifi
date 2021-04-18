@@ -1,6 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
 
-import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
@@ -15,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
 import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
 import static dev.sanda.datafi.DatafiStaticUtils.getId;
 import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
@@ -56,13 +56,13 @@ public class SubscriptionsLogicService<T>{
         , backPressureStrategy);
     }
 
-    private List<String> parseInputTopics(List<T> input, SubscriptionEndpoints subscriptionEndpoints){
+    private List<String> parseInputTopics(List<T> input, String subscriptionEndpoints){
         return   input
                 .stream()
                 .map(obj -> {
                     val id = getId(obj, reflectionCache);
                     dataManager.findById(id).orElseThrow(() -> new RuntimeException(String.format("Cannot find %s by id %s", entityName, id)));
-                    return String.format("%s(%s=%s)/%s", entityName, idFieldName, id, subscriptionEndpoints.getStringValue());
+                    return String.format("%s(%s=%s)/%s", entityName, idFieldName, id, subscriptionEndpoints);
                 })
                 .collect(Collectors.toList());
     }
@@ -78,47 +78,83 @@ public class SubscriptionsLogicService<T>{
     }
 
     public Flux<T> onUpdateSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
-        return generatePublisher(parseInputTopics(toObserve, ON_UPDATE), backPressureStrategy);
+        return generatePublisher(parseInputTopics(toObserve, ON_UPDATE.getStringValue()), backPressureStrategy);
     }
     public void onUpdateEvent(List<T> payload){
         payload.forEach(obj -> {
-            val topic = parseInputTopics(Collections.singletonList(obj), ON_UPDATE).get(0);
+            val topic = parseInputTopics(Collections.singletonList(obj), ON_UPDATE.getStringValue()).get(0);
             if(subscriptionsService.isRegisteredTopic(topic))
                 subscriptionsService.publish(topic, obj);
         });
     }
 
     public Flux<T> onDeleteSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
-        return generatePublisher(parseInputTopics(toObserve, ON_DELETE), backPressureStrategy);
+        return generatePublisher(parseInputTopics(toObserve, ON_DELETE.getStringValue()), backPressureStrategy);
     }
     public void onDeleteEvent(List<T> deleted){
         deleted.forEach(obj -> {
-            val topic = parseInputTopics(Collections.singletonList(obj), ON_DELETE).get(0);
+            val topic = parseInputTopics(Collections.singletonList(obj), ON_DELETE.getStringValue()).get(0);
             if(subscriptionsService.isRegisteredTopic(topic))
                 subscriptionsService.publish(topic, obj);
         });
     }
 
     public Flux<T> onArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
-        return generatePublisher(parseInputTopics(toObserve, ON_ARCHIVE), backPressureStrategy);
+        return generatePublisher(parseInputTopics(toObserve, ON_ARCHIVE.getStringValue()), backPressureStrategy);
     }
 
     public void onArchiveEvent(List<T> archived){
         archived.forEach(obj -> {
-            val topic = parseInputTopics(Collections.singletonList(obj), ON_ARCHIVE).get(0);
+            val topic = parseInputTopics(Collections.singletonList(obj), ON_ARCHIVE.getStringValue()).get(0);
             if(subscriptionsService.isRegisteredTopic(topic))
                 subscriptionsService.publish(topic, obj);
         });
     }
 
     public Flux<T> onDeArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
-        return generatePublisher(parseInputTopics(toObserve, ON_DE_ARCHIVE), backPressureStrategy);
+        return generatePublisher(parseInputTopics(toObserve, ON_DE_ARCHIVE.getStringValue()), backPressureStrategy);
     }
     public void onDeArchiveEvent(List<T> deArchived){
         deArchived.forEach(obj -> {
-            val topic = parseInputTopics(Collections.singletonList(obj), ON_DE_ARCHIVE).get(0);
+            val topic = parseInputTopics(Collections.singletonList(obj), ON_DE_ARCHIVE.getStringValue()).get(0);
             if(subscriptionsService.isRegisteredTopic(topic))
                 subscriptionsService.publish(topic, obj);
         });
     }
+
+    // entity collection API subscriptions
+
+    private List<String> parseEntityCollectionTopic(T owner, String collectionName, String subscriptionEndpoint){
+        return Collections.singletonList(
+                entityName + "(" + idFieldName + "=" + getId(owner, reflectionCache) + ")." + collectionName + "/" + subscriptionEndpoint
+        );
+    }
+
+    public <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return generatePublisher(parseEntityCollectionTopic(owner, collectionFieldName, ON_ASSOCIATE_WITH.getStringValue()), backPressureStrategy);
+    }
+    public <TCollection> void onAssociateWithEvent(T owner, String collectionFieldName, List<TCollection> payload){
+        val topic = parseEntityCollectionTopic(owner, collectionFieldName, ON_ASSOCIATE_WITH.getStringValue()).get(0);
+        if(subscriptionsService.isRegisteredTopic(topic))
+            subscriptionsService.publish(topic, payload);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return generatePublisher(parseEntityCollectionTopic(owner, collectionFieldName, ON_UPDATE_IN.getStringValue()), backPressureStrategy);
+    }
+    public <TCollection> void onUpdateInEvent(T owner, String collectionFieldName, List<TCollection> payload){
+        val topic = parseEntityCollectionTopic(owner, collectionFieldName, ON_UPDATE_IN.getStringValue()).get(0);
+        if(subscriptionsService.isRegisteredTopic(topic))
+            subscriptionsService.publish(topic, payload);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return generatePublisher(parseEntityCollectionTopic(owner, collectionFieldName, ON_REMOVE_FROM.getStringValue()), backPressureStrategy);
+    }
+    public <TCollection> void onRemoveFromEvent(T owner, String collectionFieldName, List<TCollection> payload){
+        val topic = parseEntityCollectionTopic(owner, collectionFieldName, ON_REMOVE_FROM.getStringValue()).get(0);
+        if(subscriptionsService.isRegisteredTopic(topic))
+            subscriptionsService.publish(topic, payload);
+    }
+
 }

@@ -11,7 +11,9 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 @Service
@@ -22,14 +24,15 @@ public class KeepAliveScheduler {
     private final AsyncExecutorService executorService;
     private final Map<String, ScheduledFuture> sessionScheduledKeepAliveTasks = new ConcurrentHashMap<>();
 
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     public void registerSessionKeepAlive(WebSocketSession session){
-        synchronized (sessionScheduledKeepAliveTasks){
-            sessionScheduledKeepAliveTasks.put(session.getId(), executorService.scheduleAsyncTask(
-                    keepAliveTask(session),
-                    configValues.getWsKeepAliveInterval(),
-                    true
-            ));
-        }
+        lock.writeLock().lock();
+        sessionScheduledKeepAliveTasks.put(session.getId(), executorService.scheduleAsyncTask(
+                keepAliveTask(session),
+                configValues.getWsKeepAliveInterval(),
+                true
+        ));
+        lock.writeLock().unlock();
     }
 
     public void cancelSessionKeepAlive(WebSocketSession session){

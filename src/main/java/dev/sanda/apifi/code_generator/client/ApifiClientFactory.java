@@ -75,7 +75,9 @@ public class ApifiClientFactory {
         builder.append(queryFetchersBuilder);
         builder.append("\n}");
         if(isTypescriptMode)
-            builder.append(TypescriptModelFactory.objectModel(entities, enums, processingEnv));
+            builder.append(TypescriptModelFactory.objectModel(entities, enums, hasSubscriptions, processingEnv));
+        if(hasSubscriptions)
+            builder.append(sseSubscriptionHandler());
 
         val finalContent = builder.toString();
         try {
@@ -115,32 +117,8 @@ public class ApifiClientFactory {
                 "\t\t\tconst queryParam = encodeURIComponent(\n\t\t\t\tJSON.stringify({" + query.buildQueryString() + "}));\n" +
                 "\t\t\tconst timeoutParam = input.timeout ? `&timeout=${input.timeout}` : '';\n" +
                 "\t\t\tconst eventSourceUrl = `${apiSseUrl}?queryString=${queryParam}${timeoutParam}`;\n" +
-                "\t\t\tconst eventSource = new EventSource(eventSourceUrl, { withCredentials: includeCredentials } );\n\n" +
-
-                "\t\t\teventSource.addEventListener('EXECUTION_RESULT', (event" + ssePayloadEventType(query) + ") => {\n" +
-                "\t\t\t\tinput.onExecutionResult(JSON.parse(event.data));\n" +
-                "\t\t\t}, false);\n\n" +
-
-                "\t\t\teventSource.addEventListener('COMPLETE', (event" + sseOperationEventType(query) + ") => {\n" +
-                "\t\t\t\tinput.onComplete && input.onComplete(); \n" +
-                "\t\t\t\tconsole.log('completed event stream - terminating connection'); \n" +
-                "\t\t\t\teventSource.close(); \n" +
-                "\t\t\t}, false);\n\n" +
-
-                "\t\t\teventSource.addEventListener('FATAL_ERROR', (event" + sseOperationEventType(query) + ") => {\n" +
-                "\t\t\t\tinput.onFatalError && input.onFatalError(event.data['MESSAGE']); \n" +
-                "\t\t\t\tconsole.log(`encountered fatal error: ${event.data['MESSAGE']} - terminating connection`); \n" +
-                "\t\t\t\teventSource.close(); \n" +
-                "\t\t\t}, false);" +
-                "\n\t},\n";
-    }
-
-    private String ssePayloadEventType(GraphQLQueryBuilder query) {
-        return isTypescriptMode ? ": SsePayloadEvent<" + query.getSubscriptionReturnType() + ">" : "";
-    }
-
-    private String sseOperationEventType(GraphQLQueryBuilder query) {
-        return isTypescriptMode ? ": SseOperationEvent" : "";
+                "\t\t\thandleSseSubscription" + (isTypescriptMode ? "<" + query.getSubscriptionReturnType() + ">" : "") + "(eventSourceUrl, input);\n" +
+                "\t},\n";
     }
 
     private String generateQueryOrMutationFetcher(GraphQLQueryBuilder query){
@@ -186,5 +164,30 @@ public class ApifiClientFactory {
 
     private String customHeadersType(){
         return isTypescriptMode ? "?: Dictionary<string>" : "";
+    }
+
+    private String sseSubscriptionHandler(){
+        return  "\n\nfunction handleSseSubscription"+ (isTypescriptMode ? "<T>" : "") +"(eventSourceUrl" + (isTypescriptMode ? ": string, " : ", ") +
+                                                   "handlers" + (isTypescriptMode ? ": BaseSubscriptionRequestInput<T>)" : ")") +
+                (isTypescriptMode ? ": void{" : "{") +
+
+        "\n\n\tconst eventSource = new EventSource(eventSourceUrl, { withCredentials: includeCredentials } );\n\n" +
+
+                "\teventSource.addEventListener('EXECUTION_RESULT', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onExecutionResult(JSON.parse(event.data));\n" +
+                "\t}, false);\n\n" +
+
+                "\teventSource.addEventListener('COMPLETE', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onComplete && handlers.onComplete(); \n" +
+                "\t\tconsole.log('completed event stream - terminating connection'); \n" +
+                "\t\teventSource.close(); \n" +
+                "\t}, false);\n\n" +
+
+                "\teventSource.addEventListener('FATAL_ERROR', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onFatalError && handlers.onFatalError(event.data['MESSAGE']); \n" +
+                "\t\tconsole.log(`encountered fatal error: ${event.data['MESSAGE']} - terminating connection`); \n" +
+                "\t\teventSource.close(); \n" +
+                "\t}, false);" +
+                "\n}\n";
     }
 }
