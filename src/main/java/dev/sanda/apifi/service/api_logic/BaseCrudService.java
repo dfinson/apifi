@@ -1,6 +1,7 @@
 package dev.sanda.apifi.service.api_logic;
 
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
+import dev.sanda.apifi.service.graphql_config.GraphQLInstanceFactory;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
@@ -20,6 +21,8 @@ public abstract class BaseCrudService<T> {
     protected ReflectionCache reflectionCache;
     @Autowired
     protected AsyncExecutorService asyncExecutorService;
+    @Autowired
+    protected GraphQLInstanceFactory graphQLInstanceFactory;
 
     protected DataManager<T> dataManager;
     protected ApiHooks<T> apiHooks;
@@ -43,8 +46,13 @@ public abstract class BaseCrudService<T> {
         throw exception;
     }
 
-    protected void runAsync(Runnable runnable){
+    private void runAsync(Runnable runnable){
         asyncExecutorService.executeAsync(runnable);
+    }
+
+    protected void fireSubscriptionEvent(Runnable runnable){
+        if(graphQLInstanceFactory.getHasSubscriptions())
+            runAsync(runnable);
     }
 
     private void log(String msg, boolean isError, Object... args){

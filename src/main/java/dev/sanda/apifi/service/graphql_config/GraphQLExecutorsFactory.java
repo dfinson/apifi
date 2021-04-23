@@ -12,15 +12,15 @@ import javax.servlet.http.HttpServletRequest;
 @AllArgsConstructor(onConstructor_ = @Autowired)
 public class GraphQLExecutorsFactory {
 
-    private final GraphQLService graphQLService;
+    private final GraphQLInstanceFactory graphQLInstanceFactory;
 
     @Bean
     public GraphQLRequestExecutor<HttpServletRequest> httpGraphQLRequestExecutor(){
-        return () -> graphQLService;
+        return () -> graphQLInstanceFactory;
     }
 
     @Bean
     public GraphQLRequestExecutor<WebSocketSession> webSocketGraphQLRequestExecutor(){
-        return () -> graphQLService;
+        return () -> graphQLInstanceFactory;
     }
 }

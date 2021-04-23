@@ -2,6 +2,7 @@ package dev.sanda.apifi.service.graphql_config;
 
 import graphql.GraphQL;
 
-public interface GraphQLService {
+public interface GraphQLInstanceFactory {
     GraphQL getGraphQLInstance();
+    Boolean getHasSubscriptions();
 }
