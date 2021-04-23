@@ -1,8 +1,10 @@
 package dev.sanda.apifi.service.graphql_subcriptions.pubsub;
 
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 
+import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,10 +37,12 @@ public class InMemoryPubSubMessagingService implements PubSubMessagingService {
     }
 
     @Override
+    @SneakyThrows
+    @Transactional
     public void publishToTopic(String topic, Object payload) {
         if(isRegisteredTopic(topic)){
             synchronized (topicHandlers.get(topic)){
-                topicHandlers.get(topic).forEach(pubSubTopicHandler -> pubSubTopicHandler.handleData(payload));
+                topicHandlers.get(topic).forEach(handler -> handler.handleDataInTransaction(payload));
             }
         }
     }

@@ -11,7 +11,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,10 +25,12 @@ public class TypescriptModelFactory {
 
     private ProcessingEnvironment processingEnv;
     private Map<String, TypeElement> typeElementMap;
+    private boolean hasSubscriptions;
 
     public static String objectModel(
             Set<TypeElement> entitiesSet,
             Set<TypeElement> enumsSet,
+            boolean hasSubscriptions,
             ProcessingEnvironment processingEnv){
         val typeElementsMap = entitiesSet
                 .stream()
@@ -38,7 +42,7 @@ public class TypescriptModelFactory {
                         )
                 );
         enumsSet.forEach(typeElement -> typeElementsMap.put(typeElement.getSimpleName().toString().toLowerCase(), typeElement));
-        val factoryInstance = new TypescriptModelFactory(processingEnv, typeElementsMap);
+        val factoryInstance = new TypescriptModelFactory(processingEnv, typeElementsMap, hasSubscriptions);
         val interfaces = entitiesSet
                 .stream()
                 .map(factoryInstance::generateInterface)
@@ -49,10 +53,10 @@ public class TypescriptModelFactory {
                 .stream()
                 .map(factoryInstance::generateEnumClass)
                 .collect(Collectors.joining(NEW_LINE + NEW_LINE));
-        return  "// project specific data model" + NEW_LINE + NEW_LINE +
+        return  NEW_LINE + NEW_LINE + "// project specific data model" + NEW_LINE + NEW_LINE +
                 interfaces + NEW_LINE +
                 enums + NEW_LINE + NEW_LINE +
-                apifiObjectModel();
+                factoryInstance.apifiObjectModel();
     }
 
     private String generateEnumClass(TypeElement enumTypeElement) {
@@ -137,19 +141,32 @@ public class TypescriptModelFactory {
                 .collect(Collectors.toList());
     }
 
-    private static String apifiObjectModel(){
+    private String apifiObjectModel(){
         return  "// Apifi utils object model" + NEW_LINE + NEW_LINE +
                 PAGE_TYPE + NEW_LINE + NEW_LINE +
                 PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE + NEW_LINE + NEW_LINE +
                 SORT_DIRECTION_ENUM_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
-                GRAPHQL_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
-                DICTIONARY_TYPE;
+                EXECUTION_RESULT_TYPE + NEW_LINE + NEW_LINE +
+                EXECUTION_RESULT_ERROR_TYPE + NEW_LINE + NEW_LINE +
+                EXECUTION_RESULT_ERROR_TYPE_LOCATIONS + NEW_LINE + NEW_LINE +
+                DICTIONARY_TYPE +
+                subscriptionsRelatedApifiObjectModel();
+    }
+
+    private String subscriptionsRelatedApifiObjectModel(){
+        if(!hasSubscriptions) return "";
+        return  NEW_LINE + NEW_LINE +
+                FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE + NEW_LINE + NEW_LINE +
+                BASE_SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
+                SSE_EVENT_TYPE + NEW_LINE + NEW_LINE +
+                SUBSCRIPTION_REQUEST_INPUT_TYPE + NEW_LINE + NEW_LINE +
+                ENTITY_COLLECTION_SUBSCRIPTION_REQUEST_INPUT_TYPE;
+
     }
 
     private static final String PAGE_TYPE =
+            "// represents a subset of the overall data, corresponding to server side JPA pagination" + NEW_LINE +
             "export interface Page<T>{" + NEW_LINE +
             "   content?: Array<T>;" + NEW_LINE +
             "   totalPagesCount?: number;" + NEW_LINE +
@@ -159,6 +176,7 @@ public class TypescriptModelFactory {
             "}";
 
     private static final String PAGE_REQUEST_TYPE =
+            "// input to specify desired pagination parameters"  + NEW_LINE +
             "export interface PageRequest{" + NEW_LINE +
             "   pageNumber?: number;" + NEW_LINE +
             "   sortBy?: string;" + NEW_LINE +
@@ -168,37 +186,86 @@ public class TypescriptModelFactory {
             "}";
 
     private static final String FREE_TEXT_SEARCH_PAGE_REQUEST_TYPE =
+            "// input to specify desired pagination parameters, as well as a string value for server side free text search"  + NEW_LINE +
             "export interface FreeTextSearchPageRequest extends PageRequest{" + NEW_LINE +
             "   searchTerm: string;" + NEW_LINE +
             "}";
 
     private static final String SORT_DIRECTION_ENUM_TYPE =
+            "// enum type to specify pagination sort ordering"  + NEW_LINE +
             "export enum SortDirection{" + NEW_LINE +
             "   ASC = 'ASC'," + NEW_LINE +
             "   DESC = 'DESC'" + NEW_LINE +
             "}";
 
-    private static final String GRAPHQL_RESULT_TYPE =
-            "export interface GraphQLResult<T>{" + NEW_LINE +
+    private static final String FLUX_SINK_OVERFLOW_STRATEGY_ENUM_TYPE =
+            "// for GraphQLSubscriptions only - denotes the server side backpressure strategy to be employed by reactive publisher"  + NEW_LINE +
+            "export enum OverflowStrategy{" + NEW_LINE +
+                    "   IGNORE = 'IGNORE'," + NEW_LINE +
+                    "   ERROR = 'ERROR'," + NEW_LINE +
+                    "   DROP = 'DROP'," + NEW_LINE +
+                    "   LATEST = 'LATEST'," + NEW_LINE +
+                    "   BUFFER = 'BUFFER'" + NEW_LINE +
+                    "}";
+
+    private static final String EXECUTION_RESULT_TYPE =
+            "// a wrapper around any return value from the GraphQL server"  + NEW_LINE +
+            "export interface ExecutionResult<T>{" + NEW_LINE +
             "   data?: T;" + NEW_LINE +
-            "   errors?: Array<GraphQLResultError>;" + NEW_LINE +
+            "   errors?: Array<ExecutionResultError>;" + NEW_LINE +
             "}";
 
-    private static final String GRAPHQL_RESULT_ERROR_TYPE =
-            "export interface GraphQLResultError{" + NEW_LINE +
+    private static final String EXECUTION_RESULT_ERROR_TYPE =
+            "// should be fairly self explanatory"  + NEW_LINE +
+            "export interface ExecutionResultError{" + NEW_LINE +
                     "   message: string;" + NEW_LINE +
                     "   path?: Array<string>;" + NEW_LINE +
-                    "   locations?: Array<GraphQLResultErrorLocation>;" + NEW_LINE +
+                    "   locations?: Array<ExecutionResultErrorLocation>;" + NEW_LINE +
                     "   extensions?: Map<string, any>;" + NEW_LINE +
                     "}";
 
-    private static final String GRAPHQL_RESULT_ERROR_TYPE_LOCATIONS =
-            "export interface GraphQLResultErrorLocation{" + NEW_LINE +
+    private static final String EXECUTION_RESULT_ERROR_TYPE_LOCATIONS =
+            "// should be fairly self explanatory"  + NEW_LINE +
+            "export interface ExecutionResultErrorLocation{" + NEW_LINE +
                     "   line: number;" + NEW_LINE +
                     "   column: number;" + NEW_LINE +
                     "}";
 
+    private static final String BASE_SUBSCRIPTION_REQUEST_INPUT_TYPE =
+            "// GraphQLSubscription: consists of the SSE event callback functions and return value selection graph"  + NEW_LINE +
+            "export interface BaseSubscriptionRequestInput<T>{" + NEW_LINE +
+                    "   selectionGraph: string;" + NEW_LINE +
+                    "   timeout?: number;" + NEW_LINE +
+                    "   backPressureStrategy?: OverflowStrategy;" + NEW_LINE +
+                    "   onExecutionResult: (result: ExecutionResult<T>) => void;" + NEW_LINE +
+                    "   onComplete?: () => void;" + NEW_LINE +
+                    "   onFatalError?: (message: string) => void;" + NEW_LINE +
+                    "}";
+
+
+    private static final String SUBSCRIPTION_REQUEST_INPUT_TYPE =
+            "// GraphQLSubscription: consists of the SSE event callback functions, "  + NEW_LINE +
+            "// as well as an array of objects which will be the tracked subjects of the subscription."  + NEW_LINE +
+            "export interface SubscriptionRequestInput<T> extends BaseSubscriptionRequestInput<T>{" + NEW_LINE +
+                    "   toObserve: Array<T>;" + NEW_LINE +
+                    "}";
+
+    private static final String ENTITY_COLLECTION_SUBSCRIPTION_REQUEST_INPUT_TYPE =
+            "// GraphQLSubscription: consists of the SSE event callback functions, " + NEW_LINE +
+                    "export interface EntityCollectionSubscriptionRequestInput<TOwner, TCollection> extends BaseSubscriptionRequestInput<Array<TCollection>>{" + NEW_LINE +
+                    "   owner: TOwner;" + NEW_LINE +
+                    "}";
+
+    private static final String SSE_EVENT_TYPE =
+            "// GraphQLSubscription: wrapper around server sent events"  + NEW_LINE +
+                    "export interface SseEvent extends Event{" + NEW_LINE +
+                    "   id: string;" + NEW_LINE +
+                    "   name: string;" + NEW_LINE +
+                    "   data: string;" + NEW_LINE +
+                    "}";
+
     private static final String DICTIONARY_TYPE =
+            "// for custom headers to attach to query or mutation HTTP requests"  + NEW_LINE +
             "export interface Dictionary<T>{" + NEW_LINE +
             "   [Key: string]: T;" + NEW_LINE +
             "}";

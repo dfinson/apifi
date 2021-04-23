@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,13 +42,11 @@ import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 public abstract class ApifiStaticUtils {
     public static List<VariableElement> getFields(TypeElement typeElement){
-        List<VariableElement> fields = new ArrayList<>();
-        for(Element element : typeElement.getEnclosedElements()){
-            if(element.getKind().isField()){
-                fields.add((VariableElement) element);
-            }
-        }
-        return fields;
+        return typeElement.getEnclosedElements()
+                .stream()
+                .filter(element -> element.getKind().isField())
+                .map(element -> (VariableElement)element)
+                .collect(Collectors.toList());
     }
 
     public static List<VariableElement> getNonIgnoredFields(TypeElement typeElement){
@@ -102,10 +99,6 @@ public abstract class ApifiStaticUtils {
             return queryAnnotation.name();
         else
             return name.startsWith("get") ? toCamelCase(name.replaceFirst("get", "")) : name;
-    }
-
-    public static<T> T randomFrom(List<T> aList) {
-        return aList.get(ThreadLocalRandom.current().nextInt(aList.size()));
     }
 
     public static List<EntityGraphQLApiSpec> getGraphQLApiSpecs(
