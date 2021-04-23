@@ -44,7 +44,7 @@ public class CrudService<T> extends BaseCrudService<T> {
         logInfo("create: Created {} with id #{}",
                 dataManager.getClazzSimpleName(),
                 getId(result, reflectionCache));
-        runAsync(() -> subscriptionsLogicService.onCreateEvent(Collections.singletonList(result)));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onCreateEvent(Collections.singletonList(result)));
         return result;
     }
 
@@ -62,7 +62,7 @@ public class CrudService<T> extends BaseCrudService<T> {
         val result = dataManager.save(toUpdate);
         if(apiHooks != null) apiHooks.postUpdate(input, toUpdate, result, dataManager);
         logInfo("update: Updated {} with id #{}", dataManager.getClazzSimpleName(), getId(result, reflectionCache));
-        runAsync(() -> subscriptionsLogicService.onUpdateEvent(Collections.singletonList(result)));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onUpdateEvent(Collections.singletonList(result)));
         return result;
     }
 
@@ -73,7 +73,7 @@ public class CrudService<T> extends BaseCrudService<T> {
         dataManager.deleteById(id);
         if(apiHooks != null) apiHooks.postDelete(input, toDelete, dataManager);
         logInfo("delete: deleted {} with id #{}", dataManager.getClazzSimpleName(), id);
-        runAsync(() -> subscriptionsLogicService.onDeleteEvent(Collections.singletonList(toDelete)));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onDeleteEvent(Collections.singletonList(toDelete)));
         return toDelete;
     }
 
@@ -86,7 +86,7 @@ public class CrudService<T> extends BaseCrudService<T> {
         val result = dataManager.save(toArchive);
         if(apiHooks != null) apiHooks.postArchive((T) input, result, dataManager);
         logInfo("archive: Archived {} with id: {}", dataManager.getClazzSimpleName(), id);
-        runAsync(() -> subscriptionsLogicService.onArchiveEvent(Collections.singletonList(result)));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onArchiveEvent(Collections.singletonList(result)));
         return result;
     }
 
@@ -99,7 +99,7 @@ public class CrudService<T> extends BaseCrudService<T> {
         val result = dataManager.save(toArchive);
         if(apiHooks != null) apiHooks.postDeArchive((T) input, result, dataManager);
         logInfo("deArchive: De-Archived {} with id: {}", dataManager.getClazzSimpleName(), id);
-        runAsync(() -> subscriptionsLogicService.onDeArchiveEvent(Collections.singletonList(result)));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onDeArchiveEvent(Collections.singletonList(result)));
         return result;
     }
 }

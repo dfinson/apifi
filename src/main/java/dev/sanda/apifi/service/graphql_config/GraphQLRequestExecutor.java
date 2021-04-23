@@ -27,5 +27,5 @@ public interface GraphQLRequestExecutor<R> {
                 .build());
     }
 
-    GraphQLService getGraphQLService();
+    GraphQLInstanceFactory getGraphQLService();
 }

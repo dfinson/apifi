@@ -2,11 +2,12 @@ package dev.sanda.apifi.code_generator;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.code_generator.entity.CustomEndpointsAggregator;
-import dev.sanda.apifi.service.graphql_config.GraphQLService;
+import dev.sanda.apifi.service.graphql_config.GraphQLInstanceFactory;
 import graphql.GraphQL;
 import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.batched.BatchedExecutionStrategy;
 import io.leangen.graphql.GraphQLSchemaGenerator;
+import lombok.Getter;
 import lombok.val;
 import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class GraphQLServiceImplementationFactory {
         val controller = TypeSpec.classBuilder("GraphQLServiceImplementation")
                 .addModifiers(PUBLIC)
                 .addAnnotation(Component.class)
-                .addSuperinterface(GraphQLService.class)
+                .addSuperinterface(GraphQLInstanceFactory.class)
                 .addFields(genGraphQLServiceFields(services))
                 .addMethod(genGraphQLServiceInit(services))
                 .addMethod(graphQLInstanceGetter());
@@ -65,6 +66,7 @@ public class GraphQLServiceImplementationFactory {
                         .addMember("value", "$S", "deprecation")
                         .build());
         builder.addCode(genInitGraphQLSchemaCodeBlock(services));
+        builder.addStatement("hasSubscriptions = schema.getSubscriptionType() != null");
         return builder.build();
     }
 
@@ -120,8 +122,14 @@ public class GraphQLServiceImplementationFactory {
                                 "#{new Integer('${apifi.max-query-depth:15}')}")
                         .build())
                 .build();
+
+        val hasSubscriptionsField = FieldSpec.builder(Boolean.class, "hasSubscriptions", PRIVATE)
+                .addAnnotation(Getter.class)
+                .build();
+
         fieldSpecs.add(graphQLInstanceBuilderField);
         fieldSpecs.add(maxQueryDepthField);
+        fieldSpecs.add(hasSubscriptionsField);
         return fieldSpecs;
     }
 }

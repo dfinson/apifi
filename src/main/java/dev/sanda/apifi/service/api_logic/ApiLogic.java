@@ -41,7 +41,7 @@ public final class ApiLogic<T> {
 
     public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks){
         val datafiLoggingEnabled = configValues.getDatafiLoggingEnabled();
-        this.subscriptionsLogicService.init(dataManager);
+        this.subscriptionsLogicService.init(dataManager, apiHooks);
         this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
         this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
         this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
@@ -141,8 +141,17 @@ public final class ApiLogic<T> {
             T owner,
             DataManager<TCollection> collectionDataManager,
             Collection<TCollection> toUpdate,
-            E entityCollectionApiHooks) {
-        return collectionsCrudService.updateEntityCollectionImpl(owner, collectionDataManager, toUpdate, entityCollectionApiHooks);
+            E entityCollectionApiHooks,
+            String collectionFieldName,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
+        return collectionsCrudService.updateEntityCollectionImpl(
+                        owner,
+                        collectionDataManager,
+                        toUpdate,
+                        entityCollectionApiHooks,
+                        collectionFieldName,
+                        collectionSubscriptionsLogicService
+                );
     }
 
 
@@ -210,9 +219,16 @@ public final class ApiLogic<T> {
             String fieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E entityCollectionApiHooks) {
-        return collectionsCrudService
-                .associateWithEntityCollectionImpl(input, fieldName, toAssociate, collectionDataManager, entityCollectionApiHooks);
+            E entityCollectionApiHooks,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
+        return collectionsCrudService.associateWithEntityCollectionImpl(
+                input,
+                fieldName,
+                toAssociate,
+                collectionDataManager,
+                entityCollectionApiHooks,
+                collectionSubscriptionsLogicService
+        );
     }
 
     public  <TCollection, E extends EntityCollectionApiHooks<TCollection, T>>
@@ -244,14 +260,16 @@ public final class ApiLogic<T> {
             String embeddedFieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E entityCollectionApiHooks) {
+            E entityCollectionApiHooks,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
         return collectionsCrudService
                 .associatePreExistingWithEntityCollectionImpl(
                         input,
                         embeddedFieldName,
                         toAssociate,
                         collectionDataManager,
-                        entityCollectionApiHooks
+                        entityCollectionApiHooks,
+                        collectionSubscriptionsLogicService
                 );
     }
 

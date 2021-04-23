@@ -122,7 +122,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
         logInfo("batchArchive: Batch archived {} with ids: [{}]",
                 toPlural(dataManager.getClazzSimpleName()),
                 ids.stream().map(Object::toString).collect(Collectors.joining(", ")));
-        runAsync(() -> subscriptionsLogicService.onArchiveEvent(result));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onArchiveEvent(result));
         return result;
     }
 
@@ -136,7 +136,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
         logInfo("batchDeArchive: Batch de-archived {} with ids [{}]",
                 toPlural(dataManager.getClazzSimpleName()),
                 ids.stream().map(Object::toString).collect(Collectors.joining(", ")));
-        runAsync(() -> subscriptionsLogicService.onDeArchiveEvent(result));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onDeArchiveEvent(result));
         return result;
     }
 
@@ -163,7 +163,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
                 result.size(),
                 toPlural(dataManager.getClazzSimpleName()),
                 getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
-        runAsync(() -> subscriptionsLogicService.onCreateEvent(result));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onCreateEvent(result));
         return result;
     }
 
@@ -176,7 +176,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
                 result.size(),
                 toPlural(dataManager.getClazzSimpleName()),
                 getIdList(result, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
-        runAsync(() -> subscriptionsLogicService.onUpdateEvent(result));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onUpdateEvent(result));
         return result;
     }
 
@@ -189,7 +189,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
                 toDelete.size(),
                 toPlural(dataManager.getClazzSimpleName()),
                 getIdList(toDelete, reflectionCache).stream().map(Object::toString).collect(Collectors.joining(", ")));
-        runAsync(() -> subscriptionsLogicService.onDeleteEvent(toDelete));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onDeleteEvent(toDelete));
         return toDelete;
     }
 }

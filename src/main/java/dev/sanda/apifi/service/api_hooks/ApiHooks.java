@@ -52,4 +52,16 @@ public interface ApiHooks<T> {
     default void postBatchArchive(List<T> originalInput, List<T> archived, DataManager<T> dataManager){}
     default void preBatchDeArchive(List<T> originalInput, List<T> toDeArchive, DataManager<T> dataManager){}
     default void postBatchDeArchive(List<T> originalInput, List<T> deArchived, DataManager<T> dataManager){}
+
+    // subscriptions
+    default void preOnCreate(List<T> payload, DataManager<T> dataManager, String topic){}
+    default void postOnCreate(List<T> payload, DataManager<T> dataManager, String topic){}
+    default void preOnUpdate(T payload, DataManager<T> dataManager, String topic){}
+    default void postOnUpdate(T payload, DataManager<T> dataManager, String topic){}
+    default void preOnDelete(T payload, DataManager<T> dataManager, String topic){}
+    default void postOnDelete(T payload, DataManager<T> dataManager, String topic){}
+    default void preOnArchive(T payload, DataManager<T> dataManager, String topic){}
+    default void postOnArchive(T payload, DataManager<T> dataManager, String topic){}
+    default void preOnDeArchive(T payload, DataManager<T> dataManager, String topic){}
+    default void postOnDeArchive(T payload, DataManager<T> dataManager, String topic){}
 }

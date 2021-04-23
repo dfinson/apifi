@@ -26,4 +26,11 @@ public interface EntityCollectionApiHooks<TCollection, T>{
     default void postAssociate(Collection<TCollection> toAssociateInput, Collection<TCollection> newlyAssociated,T ownerInstance, String fieldName, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
     default void preUpdate(Collection<TCollection> toUpdateInput, T ownerInstance, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
     default void postUpdate(Collection<TCollection> toUpdateInput, Collection<TCollection> updated, T ownerInstance, DataManager<TCollection> collectionDataManager, DataManager<T> ownerDataManager){}
+
+    default void preOnAssociate(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
+    default void postOnAssociate(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
+    default void preOnUpdateIn(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
+    default void postOnUpdateIn(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
+    default void preOnRemoveFrom(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
+    default void postOnRemoveFrom(List<TCollection> payload, DataManager<T> ownerDataManager, DataManager<TCollection> collectionDataManager, String topic){}
 }
