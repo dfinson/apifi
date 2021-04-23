@@ -41,7 +41,7 @@ public final class ApiLogic<T> {
 
     public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks){
         val datafiLoggingEnabled = configValues.getDatafiLoggingEnabled();
-        this.subscriptionsLogicService.init(dataManager);
+        this.subscriptionsLogicService.init(dataManager, apiHooks);
         this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
         this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
         this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
