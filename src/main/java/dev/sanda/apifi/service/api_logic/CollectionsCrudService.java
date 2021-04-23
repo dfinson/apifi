@@ -97,25 +97,29 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
             T owner,
             DataManager<TCollection> collectionDataManager,
             Collection<TCollection> toUpdate,
-            E entityCollectionApiHooks) {
-        var temp = dataManager
+            E entityCollectionApiHooks,
+            String collectionFieldName,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
+        val ownerLoaded = dataManager
                 .findById(getId(owner, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(owner, reflectionCache);
-        owner = temp;
+        if (ownerLoaded == null) throw_entityNotFound(owner, reflectionCache);
+        owner = ownerLoaded;
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.preUpdate(toUpdate, owner, collectionDataManager, dataManager);
         List<TCollection> entitiesToUpdate = collectionDataManager.findAllById(getIdList(toUpdate, reflectionCache));
         var result = collectionDataManager.cascadeUpdateCollection(entitiesToUpdate, toUpdate);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postUpdate(toUpdate, result, owner, collectionDataManager, dataManager);
+        fireSubscriptionEvent(() -> collectionSubscriptionsLogicService.onUpdateEvent(result));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onUpdateInEvent(ownerLoaded, collectionFieldName, result, collectionDataManager, entityCollectionApiHooks));
         return result;
     }
 
     public  <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection>
     addToElementCollectionImpl(T input, String fieldName, List<TCollection> toAdd, E elementCollectionApiHooks){
-        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        input = temp;
+        var ownerLoaded = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
+        input = ownerLoaded;
         if(elementCollectionApiHooks != null)
             elementCollectionApiHooks.preAdd(input, fieldName, toAdd, dataManager);
 
@@ -456,27 +460,28 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
             String fieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E entityCollectionApiHooks) {
+            E entityCollectionApiHooks,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
 
         //get collection owner
-        var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        input = temp;
+        var ownerLoaded = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
+        input = ownerLoaded;
         if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, fieldName, collectionDataManager, dataManager);
         Collection<TCollection> existingCollection = getEntityCollectionFrom(input, fieldName);
         if(existingCollection == null)
             existingCollection = initEntityCollection(fieldName, collectionDataManager);
-        var existingInstancesIds = toAssociate
+        var preExistingInstancesIds = toAssociate
                 .stream()
                 .filter(obj -> getId(obj, reflectionCache) != null)
                 .map(obj -> getId(obj, reflectionCache))
                 .collect(Collectors.toSet());
-        if(!existingInstancesIds.isEmpty()){
+        if(!preExistingInstancesIds.isEmpty()){
             val existingInstancesById = collectionDataManager
-                    .findAllById(existingInstancesIds)
+                    .findAllById(preExistingInstancesIds)
                     .stream()
                     .collect(Collectors.toMap(item -> getId(item, reflectionCache), Function.identity()));
-            if(existingInstancesById.size() != existingInstancesIds.size()){
+            if(existingInstancesById.size() != preExistingInstancesIds.size()){
                 throw new IllegalArgumentException("At least one inputted element contains a non-existent id");
             }
             toAssociate = toAssociate.stream().map(item -> {
@@ -510,10 +515,13 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
                         fieldName);
         val newlyAssociated = collectionDataManager.saveAll(toAssociate);
         var result = collectionDataManager.saveAll(extractFromCollection(added, newlyAssociated));
-        setBackpointersIfRelationshipIsBiDirectional(temp, result, fieldName);
+        setBackpointersIfRelationshipIsBiDirectional(ownerLoaded, result, fieldName);
         dataManager.save(t);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postAssociate(toAssociate, result, input, fieldName, collectionDataManager, dataManager);
+        if(preExistingInstancesIds.size() < result.size())
+            fireSubscriptionEvent(() -> collectionSubscriptionsLogicService.onCreateEvent(result.stream().filter(obj -> !preExistingInstancesIds.contains(getId(obj, reflectionCache))).collect(Collectors.toList())));
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onAssociateWithEvent(ownerLoaded, fieldName, result, collectionDataManager, entityCollectionApiHooks));
         return result;
     }
 
@@ -689,22 +697,23 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     List<TCollection>
     associatePreExistingWithEntityCollectionImpl(
             T input,
-            String embeddedFieldName,
+            String fieldName,
             List<TCollection> toAssociate,
             DataManager<TCollection> collectionDataManager,
-            E entityCollectionApiHooks) {
+            E entityCollectionApiHooks,
+            SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService) {
         //get collection owner
-        var temp  = dataManager.findById(getId(input, reflectionCache)).orElse(null);
-        if (temp == null) throw_entityNotFound(input, reflectionCache);
-        input = temp;
-        if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, embeddedFieldName, collectionDataManager, dataManager);
+        var ownerLoaded  = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+        if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
+        input = ownerLoaded;
+        if(entityCollectionApiHooks != null) entityCollectionApiHooks.preAssociate(toAssociate, input, fieldName, collectionDataManager, dataManager);
         //validate all candidates are pre-existing
         List<TCollection> toAssociateReloaded = collectionDataManager.findAllById(getIdList(toAssociate, reflectionCache));
         if (toAssociateReloaded.isEmpty() || toAssociateReloaded.size() != toAssociate.size())
             throw new IllegalArgumentException("illegal attempt made to indirectly add new strong entities");
-        Collection<TCollection> existingCollection = getEntityCollectionFrom(input, toCamelCase(embeddedFieldName));
+        Collection<TCollection> existingCollection = getEntityCollectionFrom(input, toCamelCase(fieldName));
         if(existingCollection == null)
-            existingCollection = initEntityCollection(embeddedFieldName, collectionDataManager);
+            existingCollection = initEntityCollection(fieldName, collectionDataManager);
         existingCollection.addAll(toAssociate);
         //update & save owner
         try {
@@ -712,7 +721,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
                     .getEntitiesCache()
                     .get(input.getClass().getSimpleName())
                     .getFields()
-                    .get(embeddedFieldName)
+                    .get(fieldName)
                     .getField()
                     .set(input, existingCollection);
         } catch (IllegalAccessException e) {
@@ -723,10 +732,11 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
         T updatedInputEntity = dataManager.saveAndFlush(owner);
         Collection<TCollection> newlyAssociated = getEntityCollectionFrom(
                 updatedInputEntity,
-                toCamelCase(embeddedFieldName));
+                toCamelCase(fieldName));
         var result = extractFromCollection(newlyAssociated, toAssociate);
         if(entityCollectionApiHooks != null)
-            entityCollectionApiHooks.postAssociate(toAssociate, result, owner, embeddedFieldName, collectionDataManager, dataManager);
+            entityCollectionApiHooks.postAssociate(toAssociate, result, owner, fieldName, collectionDataManager, dataManager);
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onAssociateWithEvent(ownerLoaded, fieldName, result, collectionDataManager, entityCollectionApiHooks));
         return result;
     }
 
@@ -739,10 +749,10 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
             DataManager<TCollection> collectionDataManager,
             EntityCollectionApiHooks<TCollection, T> entityCollectionApiHooks) {
         //get collection owner
-        val temp = dataManager
+        val ownerLoaded = dataManager
                 .findById(getId(owner, reflectionCache)).orElse(null);
-        if(temp == null) throw_entityNotFound(owner, reflectionCache);
-        owner = temp;
+        if(ownerLoaded == null) throw_entityNotFound(owner, reflectionCache);
+        owner = ownerLoaded;
         assert owner != null;
         Collection<TCollection> currentCollection = getEntityCollectionFrom(owner, toRemoveFieldName);
         if(currentCollection == null)
@@ -753,6 +763,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
         dataManager.save(owner);
         if(entityCollectionApiHooks != null)
             entityCollectionApiHooks.postRemove(toRemove, owner, collectionDataManager, dataManager);
+        fireSubscriptionEvent(() -> subscriptionsLogicService.onRemoveFromEvent(ownerLoaded, toRemoveFieldName, toRemove, collectionDataManager, entityCollectionApiHooks));
         return toRemove;
     }
 

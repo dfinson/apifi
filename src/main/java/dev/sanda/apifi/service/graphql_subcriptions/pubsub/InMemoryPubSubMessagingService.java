@@ -17,30 +17,15 @@ public class InMemoryPubSubMessagingService implements PubSubMessagingService {
     private final Map<String, Collection<PubSubTopicHandler>> topicHandlers = new ConcurrentHashMap<>();
 
     @Override
-    public boolean isRegisteredTopic(String topic) {
-        return topicHandlers.containsKey(topic);
-    }
-
-    @Override
-    public void registerTopic(String topic) {
-        topicHandlers.put(topic, new HashSet<>());
-    }
-
-    @Override
-    public void cancelTopic(String topic) {
-        if(topicHandlers.containsKey(topic)){
-            synchronized (topicHandlers.get(topic)){
-                topicHandlers.get(topic).forEach(PubSubTopicHandler::complete);
-                topicHandlers.remove(topic);
-            }
-        }
+    public Set<String> registeredTopics() {
+        return topicHandlers.keySet();
     }
 
     @Override
     @SneakyThrows
     @Transactional
     public void publishToTopic(String topic, Object payload) {
-        if(isRegisteredTopic(topic)){
+        if(topicHandlers.containsKey(topic)){
             synchronized (topicHandlers.get(topic)){
                 topicHandlers.get(topic).forEach(handler -> handler.handleDataInTransaction(payload));
             }
@@ -49,34 +34,18 @@ public class InMemoryPubSubMessagingService implements PubSubMessagingService {
 
     @Override
     public void registerTopicHandler(String topic, PubSubTopicHandler handler) {
-        if(!isRegisteredTopic(topic))
-            registerTopic(topic);
+        topicHandlers.putIfAbsent(topic, new HashSet<>());
         synchronized (topicHandlers.get(topic)){
             topicHandlers.get(topic).add(handler);
         }
     }
 
     @Override
-    public Collection<PubSubTopicHandler> topicListeners(String topic) {
-        return topicHandlers.get(topic);
-    }
-
-    @Override
     public void removeTopicHandler(String topic, FluxSink downStreamSubscriber) {
-        if(isRegisteredTopic(topic)){
+        try {
             synchronized (topicHandlers.get(topic)){
                 topicHandlers.get(topic).removeIf(handler -> handler.getDownStreamSubscriber().equals(downStreamSubscriber));
             }
-        }
-    }
-
-    @Override
-    public boolean hasRegisteredTopics() {
-        return !topicHandlers.isEmpty();
-    }
-
-    @Override
-    public Set<String> allTopics() {
-        return topicHandlers.keySet();
+        }catch (NullPointerException ignored){}
     }
 }

@@ -2,14 +2,15 @@ package dev.sanda.apifi.test_utils;
 
 import lombok.SneakyThrows;
 import lombok.val;
-import org.dom4j.IllegalAddException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
 public interface TestableGraphQLService<TEntity> {
+
     Map<String, Method> getMethodsMap();
+
     @SneakyThrows
     default <TReturn> TReturn invokeEndpoint(String methodName, Object... args){
         try {
