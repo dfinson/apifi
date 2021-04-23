@@ -3,6 +3,7 @@ package dev.sanda.apifi.annotations;
 import dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullEntityCollectionApiHooks;
+import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,6 +16,8 @@ public @interface EntityCollectionApi {
     Class<? extends EntityCollectionApiHooks> apiHooks() default NullEntityCollectionApiHooks.class;
     boolean associatePreExistingOnly() default false;
     EntityCollectionEndpointType[] endpoints();
+
+    EntityCollectionSubscriptionEndpoints[] subscriptions() default EntityCollectionSubscriptionEndpoints.NONE;
 
     String[] freeTextSearchFields() default "";
 

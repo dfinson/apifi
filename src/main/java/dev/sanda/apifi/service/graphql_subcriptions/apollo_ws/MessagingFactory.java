@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloMessage;
-import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.ApolloPayloadMessage;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.OperationMessage;
+import dev.sanda.apifi.service.graphql_subcriptions.apollo_ws.messages.PayloadMessage;
 import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class ApolloMessageFactory {
+public class MessagingFactory {
 
     //Client messages
     public static final String GRAPHQL_CONNECTION_INIT = "connection_init";
@@ -38,11 +38,11 @@ public class ApolloMessageFactory {
     public static final String GRAPHQL_ERROR = "error";
     public static final String GRAPHQL_COMPLETE = "complete";
 
-    public static final ApolloMessage CONNECTION_ACK = new ApolloMessage(GRAPHQL_CONNECTION_ACK);
-    public static final ApolloMessage KEEP_ALIVE = new ApolloMessage(GRAPHQL_CONNECTION_ACK);
+    public static final OperationMessage CONNECTION_ACK = new OperationMessage(GRAPHQL_CONNECTION_ACK);
+    public static final OperationMessage KEEP_ALIVE = new OperationMessage(GRAPHQL_CONNECTION_ACK);
 
-    private static final Class<ApolloPayloadMessage> apolloPayloadMessageClass = ApolloPayloadMessage.class;
-    private static final Class<ApolloMessage> apolloMessageClass = ApolloMessage.class;
+    private static final Class<PayloadMessage> PAYLOAD_MESSAGE_CLASS = PayloadMessage.class;
+    private static final Class<OperationMessage> OPERATION_MESSAGE_CLASS = OperationMessage.class;
 
 
     private static ObjectMapper mapper;
@@ -51,37 +51,37 @@ public class ApolloMessageFactory {
     private void initMapper(){
         mapper = new ObjectMapper();
         val module = new SimpleModule();
-        module.addDeserializer(apolloMessageClass, new JsonDeserializer<ApolloMessage>() {
+        module.addDeserializer(OPERATION_MESSAGE_CLASS, new JsonDeserializer<OperationMessage>() {
             @Override @SneakyThrows
-            public ApolloMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext){
+            public OperationMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext){
                 val node = (JsonNode) jsonParser.getCodec().readTree(jsonParser);
-                val apolloMessage = new ApolloMessage();
+                val apolloMessage = new OperationMessage();
                 apolloMessage.setId(node.has("id") ? node.get("id").asText() : null);
                 apolloMessage.setType(node.has("type") ? node.get("type").asText() : null);
                 return apolloMessage;
             }
-        }).addSerializer(apolloMessageClass, new JsonSerializer<ApolloMessage>() {
+        }).addSerializer(OPERATION_MESSAGE_CLASS, new JsonSerializer<OperationMessage>() {
             @Override @SneakyThrows
-            public void serialize(ApolloMessage apolloMessage, JsonGenerator gen, SerializerProvider serializerProvider) {
+            public void serialize(OperationMessage operationMessage, JsonGenerator gen, SerializerProvider serializerProvider) {
                 gen.writeStartObject();
                 gen.writeFieldName("id");
-                gen.writeString(apolloMessage.getId());
+                gen.writeString(operationMessage.getId());
                 gen.writeFieldName("type");
-                gen.writeString(apolloMessage.getType());
+                gen.writeString(operationMessage.getType());
                 gen.writeEndObject();
             }
-        }).addDeserializer(apolloPayloadMessageClass, new JsonDeserializer<ApolloPayloadMessage>() {
+        }).addDeserializer(PAYLOAD_MESSAGE_CLASS, new JsonDeserializer<PayloadMessage>() {
             @Override @SneakyThrows
-            public ApolloPayloadMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
+            public PayloadMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
                 val node = (JsonNode) jsonParser.getCodec().readTree(jsonParser);
-                val apolloPayloadMessage = new ApolloPayloadMessage<>((Object) node.get("payload"));
+                val apolloPayloadMessage = new PayloadMessage<>((Object) node.get("payload"));
                 apolloPayloadMessage.setId(node.has("id") ? node.get("id").asText() : null);
                 apolloPayloadMessage.setType(node.has("type") ? node.get("type").asText() : null);
                 return apolloPayloadMessage;
             }
-        }).addSerializer(apolloPayloadMessageClass, new JsonSerializer<ApolloPayloadMessage>() {
+        }).addSerializer(PAYLOAD_MESSAGE_CLASS, new JsonSerializer<PayloadMessage>() {
             @Override @SneakyThrows
-            public void serialize(ApolloPayloadMessage apolloPayloadMessage, JsonGenerator gen, SerializerProvider serializerProvider) {
+            public void serialize(PayloadMessage apolloPayloadMessage, JsonGenerator gen, SerializerProvider serializerProvider) {
                 gen.writeStartObject();
                 gen.writeFieldName("id");
                 gen.writeString(apolloPayloadMessage.getId());
@@ -94,10 +94,10 @@ public class ApolloMessageFactory {
         mapper.registerModule(module);
     }
 
-    public static ApolloMessage from(TextMessage message) throws IOException {
+    public static OperationMessage from(TextMessage message) throws IOException {
         return  message.getPayload().contains("\"payload\"")
-                ? mapper.readValue(message.getPayload(), apolloPayloadMessageClass)
-                : mapper.readValue(message.getPayload(), apolloMessageClass);
+                ? mapper.readValue(message.getPayload(), PAYLOAD_MESSAGE_CLASS)
+                : mapper.readValue(message.getPayload(), OPERATION_MESSAGE_CLASS);
     }
 
     public static TextMessage connectionAck() throws JsonProcessingException {
@@ -110,7 +110,7 @@ public class ApolloMessageFactory {
 
     public static TextMessage connectionError(final String message) throws JsonProcessingException {
         val errors = Collections.singletonMap("message", message);
-        return jsonMessage(new ApolloPayloadMessage<>(GRAPHQL_CONNECTION_ERROR, errors));
+        return jsonMessage(new PayloadMessage<>(GRAPHQL_CONNECTION_ERROR, errors));
     }
 
     public static TextMessage connectionError() throws JsonProcessingException {
@@ -118,11 +118,11 @@ public class ApolloMessageFactory {
     }
 
     public static TextMessage data(String id, ExecutionResult result) throws JsonProcessingException {
-        return jsonMessage(new ApolloPayloadMessage<>(id, GRAPHQL_DATA, result.toSpecification()));
+        return jsonMessage(new PayloadMessage<>(id, GRAPHQL_DATA, result.toSpecification()));
     }
 
     public static TextMessage complete(String id) throws JsonProcessingException {
-        return jsonMessage(new ApolloMessage(id, GRAPHQL_COMPLETE));
+        return jsonMessage(new OperationMessage(id, GRAPHQL_COMPLETE));
     }
 
     public static TextMessage error(String id, List<GraphQLError> errors) throws JsonProcessingException {
@@ -132,7 +132,7 @@ public class ApolloMessageFactory {
                 .filter(error -> !error.getErrorType().equals(ErrorType.DataFetchingException))
                 .map(GraphQLError::toSpecification)
                 .collect(Collectors.toList());
-        return jsonMessage(new ApolloPayloadMessage<>(id, GRAPHQL_ERROR, errorMap));
+        return jsonMessage(new PayloadMessage<>(id, GRAPHQL_ERROR, errorMap));
     }
 
     public static TextMessage error(String id, Throwable exception) throws JsonProcessingException {
@@ -141,10 +141,10 @@ public class ApolloMessageFactory {
 
     public static TextMessage error(String id, String message) throws JsonProcessingException {
         val errorMap = Collections.singletonList(Collections.singletonMap("message", message));
-        return jsonMessage(new ApolloPayloadMessage<>(id, GRAPHQL_ERROR, errorMap));
+        return jsonMessage(new PayloadMessage<>(id, GRAPHQL_ERROR, errorMap));
     }
 
-    private static TextMessage jsonMessage(ApolloMessage message) throws JsonProcessingException {
+    private static TextMessage jsonMessage(OperationMessage message) throws JsonProcessingException {
         return new TextMessage(mapper.writeValueAsString(message));
     }
 

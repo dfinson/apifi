@@ -28,21 +28,23 @@ public class ApolloSubscriber implements Subscriber<ExecutionResult> {
 
     @Override
     public void onNext(ExecutionResult executionResult) {
-        try {
-            if (executionResult.getErrors().isEmpty())
-                session.sendMessage(ApolloMessageFactory.data(apolloId, executionResult));
-            else
-                session.sendMessage(ApolloMessageFactory.error(apolloId, executionResult.getErrors()));
-        } catch (IOException e) {
-            fatalError(session, e);
+        synchronized (session){
+            try {
+                if (executionResult.getErrors().isEmpty())
+                    session.sendMessage(MessagingFactory.data(apolloId, executionResult));
+                else
+                    session.sendMessage(MessagingFactory.error(apolloId, executionResult.getErrors()));
+            } catch (IOException e) {
+                fatalError(session, e);
+            }
+            request();
         }
-        request();
     }
 
     @Override
     public void onError(Throwable error) {
         try {
-            session.sendMessage(ApolloMessageFactory.error(apolloId, error));
+            session.sendMessage(MessagingFactory.error(apolloId, error));
             subscription.cancel();
             session.close(CloseStatus.PROTOCOL_ERROR);
         } catch (IOException e) {
@@ -56,7 +58,7 @@ public class ApolloSubscriber implements Subscriber<ExecutionResult> {
     public void onComplete() {
         try {
             if(session.isOpen())
-                session.sendMessage(ApolloMessageFactory.complete(apolloId));
+                session.sendMessage(MessagingFactory.complete(apolloId));
             else
                 log.warn("Tried completing session \"" + session.getId() + "\" but the session was already closed. Did you force shutdown?");
             subscription.cancel();

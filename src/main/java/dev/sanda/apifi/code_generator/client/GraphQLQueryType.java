@@ -2,7 +2,8 @@ package dev.sanda.apifi.code_generator.client;
 
 public enum GraphQLQueryType {
     QUERY("query"),
-    MUTATION("mutation");
+    MUTATION("mutation"),
+    SUBSCRIPTION("subscription");
 
     private final String query;
     GraphQLQueryType(String query) {

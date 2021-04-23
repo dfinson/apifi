@@ -12,11 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.SUBSCRIPTION;
+
 @Data
 public class ApifiClientFactory {
 
     private List<GraphQLQueryBuilder> queries = new ArrayList<>();
     private boolean isTypescriptMode;
+    private boolean hasSubscriptions = false;
     private ProcessingEnvironment processingEnv;
     private Set<TypeElement> entities;
     private Set<TypeElement> enums;
@@ -27,11 +30,19 @@ public class ApifiClientFactory {
     }
 
     public void generate(){
+
+        // generate actual query methods for each operation
+        val queryFetchersBuilder = new StringBuilder();
+        queries.forEach(query -> queryFetchersBuilder.append(generateQueryFetcher(query)));
+        // generate url vars + url vars setters
         StringBuilder builder = new StringBuilder();
         builder.append("let apiUrl = location.origin + '/graphql';\n");
+        if(hasSubscriptions){
+            builder.append("let apiWsUrl = apiUrl.replace('http', 'ws');\n");
+            builder.append("let apiSseUrl = apiUrl + '/sse';\n");
+        }
+        builder.append("let includeCredentials = false;\n");
         builder.append(String.format("let bearerToken%s;\n\n", isTypescriptMode ? ": string" : ""));
-        if(isTypescriptMode)
-            builder.append(TypescriptModelFactory.objectModel(entities, enums, processingEnv));
         builder.append("\n\n// project specific client side API calls\n");
         builder.append("\nexport default{\n");
         builder.append("\n\tsetBearerToken(token")
@@ -44,8 +55,30 @@ public class ApifiClientFactory {
                 .append(")")
                 .append(isTypescriptMode ? ": void" : "")
                 .append("{\n\t\tapiUrl = url;\n\t},\n");
-        queries.forEach(query -> builder.append(generateQueryFetcher(query)));
+        if(hasSubscriptions){
+            builder.append("\n\tsetApiWsUrl(url")
+                    .append(isTypescriptMode ? ": string" : "")
+                    .append(")")
+                    .append(isTypescriptMode ? ": void" : "")
+                    .append("{\n\t\tapiWsUrl = url;\n\t},\n");
+            builder.append("\n\tsetApiSseUrl(url")
+                    .append(isTypescriptMode ? ": string" : "")
+                    .append(")")
+                    .append(isTypescriptMode ? ": void" : "")
+                    .append("{\n\t\tapiSseUrl = url;\n\t},\n");
+        }
+        builder.append("\n\tsetIncludeCredentials(value")
+                .append(isTypescriptMode ? ": boolean" : "")
+                .append(")")
+                .append(isTypescriptMode ? ": void" : "")
+                .append("{\n\t\tincludeCredentials = value;\n\t},\n");
+        builder.append(queryFetchersBuilder);
         builder.append("\n}");
+        if(isTypescriptMode)
+            builder.append(TypescriptModelFactory.objectModel(entities, enums, hasSubscriptions, processingEnv));
+        if(hasSubscriptions)
+            builder.append(sseSubscriptionHandler());
+
         val finalContent = builder.toString();
         try {
             Path dirPath = Paths.get("Apifi clients");
@@ -65,22 +98,46 @@ public class ApifiClientFactory {
     }
 
     private String generateQueryFetcher(GraphQLQueryBuilder query) {
+        if(query.getQueryType().equals(SUBSCRIPTION)) {
+            hasSubscriptions = true;
+            return generateSubscriptionFetcher(query);
+        } else
+            return generateQueryOrMutationFetcher(query);
+    }
+
+    private String generateSubscriptionFetcher(GraphQLQueryBuilder query) {
         query.setTypescriptMode(isTypescriptMode);
         return "\n\tasync " +
                 query.getQueryName() +
                 "(" +
-                    query.args() +
-                    "customHeaders" +
-                    customHeadersType() +
+                query.args() +
                 ")" +
-                queryFetcherReturnType(query) +
+                (isTypescriptMode ? ": Promise<void>" : "") +
+                "{\n" +
+                "\t\t\tconst queryParam = encodeURIComponent(\n\t\t\t\tJSON.stringify({" + query.buildQueryString() + "}));\n" +
+                "\t\t\tconst timeoutParam = input.timeout ? `&timeout=${input.timeout}` : '';\n" +
+                "\t\t\tconst eventSourceUrl = `${apiSseUrl}?queryString=${queryParam}${timeoutParam}`;\n" +
+                "\t\t\thandleSseSubscription" + (isTypescriptMode ? "<" + query.getSubscriptionReturnType() + ">" : "") + "(eventSourceUrl, input);\n" +
+                "\t},\n";
+    }
+
+    private String generateQueryOrMutationFetcher(GraphQLQueryBuilder query){
+        query.setTypescriptMode(isTypescriptMode);
+        return "\n\tasync " +
+                query.getQueryName() +
+                "(" +
+                query.args() +
+                "customHeaders" +
+                customHeadersType() +
+                ")" +
+                queryOrMutationFetcherReturnType(query) +
                 "{\n" +
                 "\t\t\tlet requestHeaders = { \"Content-Type\": \"application/json\" }\n" +
                 "\t\t\tif(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);\n" +
                 "\t\t\tif(bearerToken) requestHeaders[\"Authorization\"] = bearerToken;\n" +
                 "\t\t\tconst requestInit" + (isTypescriptMode ? ": RequestInit" : "") + " = {\n" +
                 "\t\t\t\tmethod: \"POST\",\n" +
-                "\t\t\t\tcredentials: 'include',\n" +
+                "\t\t\t\tcredentials: !!includeCredentials ? 'include' : 'omit',\n" +
                 "\t\t\t\theaders: requestHeaders,\n" +
                 "\t\t\t\tbody: JSON.stringify({" + query.buildQueryString() + "\t})" +
                 "\n\t\t\t};\n" +
@@ -88,8 +145,8 @@ public class ApifiClientFactory {
                 "\n\t},\n";
     }
 
-    private String queryFetcherReturnType(GraphQLQueryBuilder query) {
-        return isTypescriptMode ? ": Promise<GraphQLResult<" + resolveQueryPromiseType(query) + ">>" : "";
+    private String queryOrMutationFetcherReturnType(GraphQLQueryBuilder query) {
+        return isTypescriptMode ? ": Promise<ExecutionResult<" + resolveQueryPromiseType(query) + ">>" : "";
     }
 
     private String resolveQueryPromiseType(GraphQLQueryBuilder query) {
@@ -107,5 +164,30 @@ public class ApifiClientFactory {
 
     private String customHeadersType(){
         return isTypescriptMode ? "?: Dictionary<string>" : "";
+    }
+
+    private String sseSubscriptionHandler(){
+        return  "\n\nfunction handleSseSubscription"+ (isTypescriptMode ? "<T>" : "") +"(eventSourceUrl" + (isTypescriptMode ? ": string, " : ", ") +
+                                                   "handlers" + (isTypescriptMode ? ": BaseSubscriptionRequestInput<T>)" : ")") +
+                (isTypescriptMode ? ": void{" : "{") +
+
+        "\n\n\tconst eventSource = new EventSource(eventSourceUrl, { withCredentials: includeCredentials } );\n\n" +
+
+                "\teventSource.addEventListener('EXECUTION_RESULT', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onExecutionResult(JSON.parse(event.data));\n" +
+                "\t}, false);\n\n" +
+
+                "\teventSource.addEventListener('COMPLETE', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onComplete && handlers.onComplete(); \n" +
+                "\t\tconsole.log('completed event stream - terminating connection'); \n" +
+                "\t\teventSource.close(); \n" +
+                "\t}, false);\n\n" +
+
+                "\teventSource.addEventListener('FATAL_ERROR', (event" + (isTypescriptMode ? ": SseEvent" : "") + ") => {\n" +
+                "\t\thandlers.onFatalError && handlers.onFatalError(event.data['MESSAGE']); \n" +
+                "\t\tconsole.log(`encountered fatal error: ${event.data['MESSAGE']} - terminating connection`); \n" +
+                "\t\teventSource.close(); \n" +
+                "\t}, false);" +
+                "\n}\n";
     }
 }

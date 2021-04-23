@@ -1,19 +1,26 @@
 package dev.sanda.apifi.service.api_logic;
+
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.MapElementCollectionApiHooks;
+import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.service.DataManager;
-import lombok.*;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -21,19 +28,23 @@ import java.util.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public final class ApiLogic<T> {
 
-    @Value("#{new Boolean('${datafi.logging-enabled:false}')}")
-    private Boolean datafiLoggingEnabled;
+    @NonNull
+    private final ConfigValues configValues;
     @NonNull
     private final CrudService<T> crudService;
     @NonNull
     private final BatchedCrudService<T> batchedCrudService;
     @NonNull
     private final CollectionsCrudService<T> collectionsCrudService;
+    @NonNull
+    private final SubscriptionsLogicService<T> subscriptionsLogicService;
 
     public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks){
-        this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled);
-        this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
-        this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled);
+        val datafiLoggingEnabled = configValues.getDatafiLoggingEnabled();
+        this.subscriptionsLogicService.init(dataManager);
+        this.crudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
+        this.batchedCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
+        this.collectionsCrudService.init(dataManager, apiHooks, datafiLoggingEnabled, subscriptionsLogicService);
     }
 
     public Page<T> getPaginatedBatch(dev.sanda.datafi.dto.PageRequest request) {
@@ -261,5 +272,42 @@ public final class ApiLogic<T> {
                         entityCollectionApiHooks
                 );
     }
+
+    // subscriptions
+
+    public Flux<List<T>> onCreateSubscription(FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onCreateSubscription(backPressureStrategy);
+    }
+
+    public Flux<T> onUpdateSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onUpdateSubscription(toObserve, backPressureStrategy);
+    }
+
+    public Flux<T> onDeleteSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onDeleteSubscription(toObserve, backPressureStrategy);
+    }
+
+    public Flux<T> onArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onArchiveSubscription(toObserve, backPressureStrategy);
+    }
+
+    public Flux<T> onDeArchiveSubscription(List<T> toObserve, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onDeArchiveSubscription(toObserve, backPressureStrategy);
+    }
+
+    // entity collection API subscriptions
+
+    public <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onAssociateWithSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onUpdateInSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
+    public <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(T owner, String collectionFieldName, FluxSink.OverflowStrategy backPressureStrategy){
+        return subscriptionsLogicService.onRemoveFromSubscription(owner, collectionFieldName, backPressureStrategy);
+    }
+
 }
 

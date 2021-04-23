@@ -1,32 +1,32 @@
 package dev.sanda.apifi.code_generator.entity;
 
 import com.squareup.javapoet.*;
+import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
 import dev.sanda.apifi.code_generator.client.GraphQLQueryBuilder;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.FieldGraphQLApiSpec;
+import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullEntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullMapElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
+import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;
 import dev.sanda.apifi.test_utils.TestableGraphQLService;
-import dev.sanda.apifi.annotations.*;
-import dev.sanda.apifi.security.SecurityAnnotationsFactory;
+import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
-
 import graphql.execution.batched.Batched;
-import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.*;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -39,14 +39,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.MUTATION;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.QUERY;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
 import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
 import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -102,13 +104,13 @@ public class GraphQLApiBuilder {
             var serviceBuilder =
                     TypeSpec.classBuilder(apiSpec.getSimpleName() + "GraphQLApiService").addModifiers(PUBLIC)
                             .addAnnotation(Service.class).addAnnotation(Transactional.class);
-            val methodsMap = methodsMap();
             var testableServiceBuilder =
                     TypeSpec
                             .classBuilder("Testable" + apiSpec.getSimpleName() + "GraphQLApiService").addModifiers(PUBLIC)
                             .addSuperinterface(testableGraphQLServiceInterface())
                             .addAnnotation(Service.class)
-                            .addField(methodsMap());
+                            .addField(methodsMap())
+                            .addField(configValues());
             //generate fields:
 
             //fields 1,2 - ApiLogic & testLogic
@@ -270,6 +272,57 @@ public class GraphQLApiBuilder {
                 clientFactory.addQuery(clientQueryBuilder);
             }
 
+            // generate subscription endpoints
+            val subscriptionEndpoints = apiSpec.getAnnotation(WithSubscriptionEndpoints.class);
+            if(subscriptionEndpoints != null){
+                val subscriptionEndpointsSet = Arrays.stream(subscriptionEndpoints.value()).collect(Collectors.toSet());
+                // ON_CREATE
+                if(subscriptionEndpointsSet.contains(ON_CREATE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, entityName);
+                    clientQueryBuilder.setSubscriptionObservableType(ENTITY_TYPE);
+                    val onCreateSubscription = genOnCreateSubscription(clientQueryBuilder);
+                    serviceBuilder.addMethod(onCreateSubscription);
+                    testableServiceBuilder.addMethod(onCreateSubscription);
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                // ON_UPDATE
+                if(subscriptionEndpointsSet.contains(ON_UPDATE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
+                    clientQueryBuilder.setSubscriptionObservableType(LIST_TO_OBSERVE);
+                    val onUpdateSubscription = genOnUpdateSubscription(clientQueryBuilder);
+                    serviceBuilder.addMethod(onUpdateSubscription);
+                    testableServiceBuilder.addMethod(onUpdateSubscription);
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                // ON_DELETE
+                if(subscriptionEndpointsSet.contains(ON_DELETE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
+                    clientQueryBuilder.setSubscriptionObservableType(LIST_TO_OBSERVE);
+                    val onDeleteSubscription = genOnDeleteSubscription(clientQueryBuilder);
+                    serviceBuilder.addMethod(onDeleteSubscription);
+                    testableServiceBuilder.addMethod(onDeleteSubscription);
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                // ON_ARCHIVE
+                if(subscriptionEndpointsSet.contains(ON_ARCHIVE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
+                    clientQueryBuilder.setSubscriptionObservableType(LIST_TO_OBSERVE);
+                    val onArchiveSubscription = genOnArchiveSubscription(clientQueryBuilder);
+                    serviceBuilder.addMethod(onArchiveSubscription);
+                    testableServiceBuilder.addMethod(onArchiveSubscription);
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+                // ON_DE_ARCHIVE
+                if(subscriptionEndpointsSet.contains(ON_DE_ARCHIVE)){
+                    val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), INSTANCE, entityName);
+                    clientQueryBuilder.setSubscriptionObservableType(LIST_TO_OBSERVE);
+                    val onDeArchiveSubscription = genOnDeArchiveSubscription(clientQueryBuilder);
+                    serviceBuilder.addMethod(onDeArchiveSubscription);
+                    testableServiceBuilder.addMethod(onDeArchiveSubscription);
+                    clientFactory.addQuery(clientQueryBuilder);
+                }
+            }
+
             //generate foreign key endpoints
             fieldGraphQLApiSpecs
                     .stream()
@@ -336,6 +389,40 @@ public class GraphQLApiBuilder {
                                 testableServiceBuilder.addMethod(getPaginatedFreeTextSearchInEntityCollection);
                                 clientFactory.addQuery(clientQueryBuilder);
                             }
+
+                            val subscriptions = config != null ? Arrays.asList(config.subscriptions()) : new ArrayList<EntityCollectionSubscriptionEndpoints>();
+
+                            if (subscriptions.contains(ON_ASSOCIATE_WITH)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setSubscriptionObservableType(COLLECTION_OWNER);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
+                                val onAssociateWithSubscription = genOnAssociateWithSubscription(fieldApiSpec, clientQueryBuilder);
+                                serviceBuilder.addMethod(onAssociateWithSubscription);
+                                testableServiceBuilder.addMethod(onAssociateWithSubscription);
+                                clientFactory.addQuery(clientQueryBuilder);
+                            }
+
+                            if (subscriptions.contains(ON_UPDATE_IN)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setSubscriptionObservableType(COLLECTION_OWNER);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
+                                val onUpdateInSubscription = genOnUpdateInSubscription(fieldApiSpec, clientQueryBuilder);
+                                serviceBuilder.addMethod(onUpdateInSubscription);
+                                testableServiceBuilder.addMethod(onUpdateInSubscription);
+                                clientFactory.addQuery(clientQueryBuilder);
+                            }
+
+                            if (subscriptions.contains(ON_REMOVE_FROM)) {
+                                val clientQueryBuilder = new GraphQLQueryBuilder(entitiesMap.values(), ARRAY, fkTargetType);
+                                clientQueryBuilder.setSubscriptionObservableType(COLLECTION_OWNER);
+                                clientQueryBuilder.setOwnerEntityType(entityName);
+                                val onRemoveFromSubscription = genOnRemoveFromSubscription(fieldApiSpec, clientQueryBuilder);
+                                serviceBuilder.addMethod(onRemoveFromSubscription);
+                                testableServiceBuilder.addMethod(onRemoveFromSubscription);
+                                clientFactory.addQuery(clientQueryBuilder);
+                            }
+                            
+                            
                         } else {
                             val getEmbedded = genGetEmbedded(fieldApiSpec);
                             serviceBuilder.addMethod(getEmbedded);
@@ -383,7 +470,8 @@ public class GraphQLApiBuilder {
             return new ServiceAndTestableService(serviceBuilder.build(), testableServiceBuilder.build());
         }
 
-        private void generateElementCollectionMethods(
+
+    private void generateElementCollectionMethods(
                 ApifiClientFactory clientFactory,
                 TypeSpec.Builder testableServiceBuilder,
                 TypeSpec.Builder serviceBuilder,
@@ -797,7 +885,143 @@ public class GraphQLApiBuilder {
             }});
             return builder.build();
         }
-        private MethodSpec genFreeTextSearchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
+
+        private MethodSpec genOnCreateSubscription(GraphQLQueryBuilder clientQueryBuilder) {
+            val subscriptionName = "on" + toPlural(entityName) + "Created";
+            var builder = MethodSpec.methodBuilder(subscriptionName)
+                    .addModifiers(PUBLIC)
+                    .addAnnotation(GraphQLSubscription.class)
+                    .addParameter(subscriptionBackPressureStrategyParam())
+                    .addStatement("return apiLogic.onCreateSubscription(backPressureStrategy)")
+                    .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), listOf(apiSpec.getElement())));
+            clientQueryBuilder.setQueryType(SUBSCRIPTION);
+            clientQueryBuilder.setQueryName(subscriptionName);
+            clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+                put("input", "BaseSubscriptionRequestInput<T>");
+            }});
+            return builder.build();
+        }
+
+    private MethodSpec genOnUpdateSubscription(GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "on" + entityName + "Updated";
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ParameterSpec.builder(listOf(ClassName.get(apiSpec.getElement())), "toObserve").build())
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onUpdateSubscription(toObserve, backPressureStrategy)")
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), ClassName.get(apiSpec.getElement())));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnDeleteSubscription(GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "on" + entityName + "Deleted";
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ParameterSpec.builder(listOf(ClassName.get(apiSpec.getElement())), "toObserve").build())
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onDeleteSubscription(toObserve, backPressureStrategy)")
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), ClassName.get(apiSpec.getElement())));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnArchiveSubscription(GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "on" + entityName + "Archived";
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ParameterSpec.builder(listOf(ClassName.get(apiSpec.getElement())), "toObserve").build())
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onArchiveSubscription(toObserve, backPressureStrategy)")
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), ClassName.get(apiSpec.getElement())));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnDeArchiveSubscription(GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "on" + entityName + "DeArchived";
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ParameterSpec.builder(listOf(ClassName.get(apiSpec.getElement())), "toObserve").build())
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onDeArchiveSubscription(toObserve, backPressureStrategy)")
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), ClassName.get(apiSpec.getElement())));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnAssociateWithSubscription(FieldGraphQLApiSpec fieldApiSpec, GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "onAssociate" + toPascalCase(fieldApiSpec.getSimpleName()) + "With" + entityName;
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ClassName.get(apiSpec.getElement()), "owner")
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onAssociateWithSubscription(owner, $S, backPressureStrategy)", fieldApiSpec.getSimpleName())
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), listOf(collectionTypeName(fieldApiSpec.getElement()))));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnUpdateInSubscription(FieldGraphQLApiSpec fieldApiSpec, GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "onUpdate" + toPascalCase(fieldApiSpec.getSimpleName()) + "Of" + entityName;
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ClassName.get(apiSpec.getElement()), "owner")
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onUpdateInSubscription(owner, $S, backPressureStrategy)", fieldApiSpec.getSimpleName())
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), listOf(collectionTypeName(fieldApiSpec.getElement()))));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genOnRemoveFromSubscription(FieldGraphQLApiSpec fieldApiSpec, GraphQLQueryBuilder clientQueryBuilder) {
+        val subscriptionName = "onRemove" + toPascalCase(fieldApiSpec.getSimpleName()) + "From" + entityName;
+        var builder = MethodSpec.methodBuilder(subscriptionName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(GraphQLSubscription.class)
+                .addParameter(ClassName.get(apiSpec.getElement()), "owner")
+                .addParameter(subscriptionBackPressureStrategyParam())
+                .addStatement("return apiLogic.onRemoveFromSubscription(owner, $S, backPressureStrategy)", fieldApiSpec.getSimpleName())
+                .returns(ParameterizedTypeName.get(ClassName.get(Flux.class), listOf(collectionTypeName(fieldApiSpec.getElement()))));
+        clientQueryBuilder.setQueryType(SUBSCRIPTION);
+        clientQueryBuilder.setQueryName(subscriptionName);
+        clientQueryBuilder.setVars(new LinkedHashMap<String, String>(){{
+            put("input", "SubscriptionRequestInput<T>");
+        }});
+        return builder.build();
+    }
+
+    private MethodSpec genFreeTextSearchInElementCollection(VariableElement elemCollection, GraphQLQueryBuilder clientQueryBuilder) {
             val queryName = "freeTextSearch" + pascalCaseNameOf(elemCollection) + "Of" + pascalCaseNameOf(apiSpec.getElement());
             val config = elemCollection.getAnnotation(ElementCollectionApi.class);
             var builder = MethodSpec.methodBuilder(queryName)
@@ -1342,6 +1566,14 @@ public class GraphQLApiBuilder {
                     .build();
         }
 
+    private FieldSpec configValues(){
+        return FieldSpec.builder(ConfigValues.class, "configValues")
+                .addAnnotation(Getter.class)
+                .addAnnotation(Autowired.class)
+                .addModifiers(PRIVATE)
+                .build();
+    }
+
         //misc util methods
         private boolean isGraphQLIgnored(VariableElement fk) {
             val getter =
@@ -1436,5 +1668,14 @@ public class GraphQLApiBuilder {
                 }
             });
         }
+
+    private ParameterSpec subscriptionBackPressureStrategyParam() {
+        return ParameterSpec.builder(FluxSink.OverflowStrategy.class, "backPressureStrategy")
+                .addAnnotation(AnnotationSpec.builder(GraphQLArgument.class)
+                        .addMember("name", "$S", "backPressureStrategy")
+                        .addMember("defaultValue", "$S", "\"" + FluxSink.OverflowStrategy.BUFFER + "\"")
+                        .build())
+                .build();
+    }
 
     }
