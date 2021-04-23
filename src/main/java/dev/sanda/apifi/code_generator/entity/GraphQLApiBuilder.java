@@ -12,6 +12,7 @@ import dev.sanda.apifi.service.api_hooks.NullElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullEntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullMapElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
+import dev.sanda.apifi.service.api_logic.SubscriptionsLogicService;
 import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;
 import dev.sanda.apifi.test_utils.TestableGraphQLService;
 import dev.sanda.apifi.utils.ConfigValues;
@@ -137,6 +138,23 @@ public class GraphQLApiBuilder {
                     val typeDataManager = dataManager(type, dataManagerName(field));
                     serviceBuilder.addField(typeDataManager);
                     testableServiceBuilder.addField(typeDataManager);
+                }
+            });
+
+            //field(s) 4 - foreign key subscription logic services
+            fieldGraphQLApiSpecs.forEach(fieldGraphQLApiSpec -> {
+                val field = fieldGraphQLApiSpec.getElement();
+                String typeNameKey = isIterable(field.asType(), processingEnv) ? getCollectionType(field) : field.asType().toString();
+                val type = entitiesMap.get(typeNameKey);
+                if (type != null) {
+                    val typeSubscriptionLogicService = FieldSpec.builder(
+                            ParameterizedTypeName.get(ClassName.get(SubscriptionsLogicService.class), ClassName.get(type)),
+                            field.getSimpleName() + SubscriptionsLogicService.class.getSimpleName(),
+                            PRIVATE
+                    ).addAnnotation(Autowired.class)
+                     .build();
+                    serviceBuilder.addField(typeSubscriptionLogicService);
+                    testableServiceBuilder.addField(typeSubscriptionLogicService);
                 }
             });
 
@@ -1283,12 +1301,12 @@ public class GraphQLApiBuilder {
                     .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(apiSpec.getElement()), "owner").build())
                     .addParameter(input)
-                    .addStatement("return apiLogic.$L(owner, $S, input, $L, $L)",
+                    .addStatement("return apiLogic.$L(owner, $S, input, $L, $L, $L)",
                             apiLogicBackingMethod,
                             camelcaseNameOf(fkSpec.getElement()),
                             dataManagerName(fkSpec.getElement()),
-                            isCustomEntityCollectionApiHooks(config) ?
-                                    entityCollectionApiHooksName(fkSpec.getElement()) : "null")
+                            isCustomEntityCollectionApiHooks(config) ? entityCollectionApiHooksName(fkSpec.getElement()) : "null",
+                            fkSpec.getSimpleName() + SubscriptionsLogicService.class.getSimpleName())
                     .returns(listOf(collectionTypeName));
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "AssociateWith"))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "AssociateWith"));
@@ -1404,9 +1422,11 @@ public class GraphQLApiBuilder {
                     .addAnnotation(graphqlMutationAnnotation())
                     .addParameter(ParameterSpec.builder(ClassName.get(apiSpec.getElement()), "owner").build())
                     .addParameter(input)
-                    .addStatement("return apiLogic.updateEntityCollection(owner, $L, input, $L)",
+                    .addStatement("return apiLogic.updateEntityCollection(owner, $L, input, $L, $S, $L)",
                             dataManagerName(fkSpec.getElement()),
-                            hasApiHooks ? entityCollectionApiHooksName(fkSpec.getElement()) : "null")
+                            hasApiHooks ? entityCollectionApiHooksName(fkSpec.getElement()) : "null",
+                            fkSpec.getSimpleName(),
+                            fkSpec.getSimpleName() + SubscriptionsLogicService.class.getSimpleName())
                     .returns(listOf(collectionTypeName));
             if(SecurityAnnotationsFactory.areSecurityAnnotationsPresent(config, "", "UpdateIn"))
                 builder.addAnnotations(SecurityAnnotationsFactory.of(config, "", "UpdateIn"));
