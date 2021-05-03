@@ -14,27 +14,28 @@ import org.reactivestreams.Subscriber;
 @JsonSerialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ApolloSubscription implements GraphQLSubscriptionInstance {
-    private String apolloId;
-    private ApolloSubscriber subscriber;
-    private Publisher<ExecutionResult> publisher;
 
-    @Override
-    public String getId() {
-        return apolloId;
-    }
+  private String apolloId;
+  private ApolloSubscriber subscriber;
+  private Publisher<ExecutionResult> publisher;
 
-    @Override
-    public void setId(String id) {
-        this.apolloId = id;
-    }
+  @Override
+  public String getId() {
+    return apolloId;
+  }
 
-    @Override
-    public void setSubscriber(Subscriber<ExecutionResult> subscriber) {
-        this.subscriber = (ApolloSubscriber) subscriber;
-    }
+  @Override
+  public void setId(String id) {
+    this.apolloId = id;
+  }
 
-    @Override
-    public void cancel() {
-        subscriber.getSubscription().cancel();
-    }
+  @Override
+  public void setSubscriber(Subscriber<ExecutionResult> subscriber) {
+    this.subscriber = (ApolloSubscriber) subscriber;
+  }
+
+  @Override
+  public void cancel() {
+    subscriber.getSubscription().cancel();
+  }
 }

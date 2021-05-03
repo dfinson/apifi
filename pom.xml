@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>apifi</artifactId>
-    <version>0.1.1</version>
+    <version>1.0.0-BETA</version>
 
     <parent>
         <groupId>dev.sanda</groupId>
@@ -16,7 +16,7 @@
     </parent>
 
     <properties>
-        <datafi.version>0.1.1</datafi.version>
+        <datafi.version>0.2.1</datafi.version>
         <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
         <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
         <mockeri.version>0.0.2</mockeri.version>
@@ -26,7 +26,8 @@
         <joda-time.version>2.10.6</joda-time.version>
         <spring-boot-starter-websocket.version>2.4.2</spring-boot-starter-websocket.version>
         <reactor-core.version>3.4.2</reactor-core.version>
-        <spring-boot-starter-amqp.version>2.3.9.RELEASE</spring-boot-starter-amqp.version>
+        <lettuce-core.version>6.1.1.RELEASE</lettuce-core.version>
+        <spring-data-redis.version>2.5.0</spring-data-redis.version>
     </properties>
 
     <dependencies>
@@ -34,6 +35,7 @@
             <groupId>dev.sanda</groupId>
             <artifactId>datafi</artifactId>
             <version>${datafi.version}</version>
+            <optional>false</optional>
         </dependency>
 
 
@@ -57,7 +59,21 @@
             <version>${reactor-core.version}</version>
         </dependency>
 
-         <!--security-->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <version>${spring-data-redis.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>${lettuce-core.version}</version>
+            <optional>false</optional>
+        </dependency>
+
+
+        <!--security-->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>

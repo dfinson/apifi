@@ -6,10 +6,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OperationMessage {
-    private String id;
-    private String type;
 
-    public OperationMessage(String type){
-        this.type = type;
-    }
+  private String id;
+  private String type;
+
+  public OperationMessage(String type) {
+    this.type = type;
+  }
 }

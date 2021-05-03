@@ -6,22 +6,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+
 @Data
 @AllArgsConstructor
 public class SseSubscription implements GraphQLSubscriptionInstance {
 
-    private String id;
-    private SseSubscriber subscriber;
-    private Publisher<ExecutionResult> publisher;
+  private String id;
+  private SseSubscriber subscriber;
+  private Publisher<ExecutionResult> publisher;
 
+  @Override
+  public void setSubscriber(Subscriber<ExecutionResult> subscriber) {
+    this.subscriber = (SseSubscriber) subscriber;
+  }
 
-    @Override
-    public void setSubscriber(Subscriber<ExecutionResult> subscriber) {
-        this.subscriber = (SseSubscriber) subscriber;
-    }
-
-    @Override
-    public void cancel() {
-
-    }
+  @Override
+  public void cancel() {}
 }
