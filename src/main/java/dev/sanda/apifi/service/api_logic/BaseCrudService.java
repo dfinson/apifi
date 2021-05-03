@@ -1,5 +1,7 @@
 package dev.sanda.apifi.service.api_logic;
 
+import static dev.sanda.datafi.DatafiStaticUtils.getId;
+
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.graphql_config.GraphQLInstanceFactory;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
@@ -10,62 +12,80 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
-import static dev.sanda.datafi.DatafiStaticUtils.getId;
-
 @Slf4j
 @Component
 @DependsOn("ApiLogic")
 public abstract class BaseCrudService<T> {
 
-    @Autowired
-    protected ReflectionCache reflectionCache;
-    @Autowired
-    protected AsyncExecutorService asyncExecutorService;
-    @Autowired
-    protected GraphQLInstanceFactory graphQLInstanceFactory;
+  @Autowired
+  protected ReflectionCache reflectionCache;
 
-    protected DataManager<T> dataManager;
-    protected ApiHooks<T> apiHooks;
-    protected String entityName;
-    protected String idFieldName;
-    protected SubscriptionsLogicService<T> subscriptionsLogicService;
+  @Autowired
+  protected AsyncExecutorService asyncExecutorService;
 
-    public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks, boolean datafiLoggingEnabled, SubscriptionsLogicService<T> subscriptionsLogicService){
-        this.dataManager = dataManager;
-        this.dataManager.setLoggingEnabled(datafiLoggingEnabled);
-        this.apiHooks = apiHooks;
-        this.entityName = dataManager.getClazzSimpleName();
-        this.idFieldName = reflectionCache.getEntitiesCache().get(dataManager.getClazzSimpleName()).getIdField().getName();
-        this.subscriptionsLogicService = subscriptionsLogicService;
-    }
+  @Autowired
+  protected GraphQLInstanceFactory graphQLInstanceFactory;
 
-    protected void throw_entityNotFound(Object input, ReflectionCache reflectionCache) {
-        final RuntimeException exception = new RuntimeException(
-                "Cannot find Entity " + input.getClass().getSimpleName() + " with id " + getId(input, reflectionCache));
-        logError(exception.toString());
-        throw exception;
-    }
+  protected DataManager<T> dataManager;
+  protected ApiHooks<T> apiHooks;
+  protected String entityName;
+  protected String idFieldName;
+  protected SubscriptionsLogicService<T> subscriptionsLogicService;
 
-    private void runAsync(Runnable runnable){
-        asyncExecutorService.executeAsync(runnable);
-    }
+  public void init(
+    DataManager<T> dataManager,
+    ApiHooks<T> apiHooks,
+    boolean datafiLoggingEnabled,
+    SubscriptionsLogicService<T> subscriptionsLogicService
+  ) {
+    this.dataManager = dataManager;
+    this.dataManager.setLoggingEnabled(datafiLoggingEnabled);
+    this.apiHooks = apiHooks;
+    this.entityName = dataManager.getClazzSimpleName();
+    this.idFieldName =
+      reflectionCache
+        .getEntitiesCache()
+        .get(dataManager.getClazzSimpleName())
+        .getIdField()
+        .getName();
+    this.subscriptionsLogicService = subscriptionsLogicService;
+  }
 
-    protected void fireSubscriptionEvent(Runnable runnable){
-        if(graphQLInstanceFactory.getHasSubscriptions())
-            runAsync(runnable);
-    }
+  protected void throw_entityNotFound(
+    Object input,
+    ReflectionCache reflectionCache
+  ) {
+    final RuntimeException exception = new RuntimeException(
+      "Cannot find Entity " +
+      input.getClass().getSimpleName() +
+      " with id " +
+      getId(input, reflectionCache)
+    );
+    logError(exception.toString());
+    throw exception;
+  }
 
-    private void log(String msg, boolean isError, Object... args){
-        runAsync(() -> {
-            if (isError) log.error(msg, args);
-            else log.info(msg, args);
-        });
-    }
-    protected void logInfo(String msg, Object... args){
-        log(msg, false, args);
-    }
-    protected void logError(String msg, Object... args) {
-        log(msg, true, args);
-    }
+  private void runAsync(Runnable runnable) {
+    asyncExecutorService.executeAsync(runnable);
+  }
 
+  protected void fireSubscriptionEvent(Runnable runnable) {
+    if (graphQLInstanceFactory.getHasSubscriptions()) runAsync(runnable);
+  }
+
+  private void log(String msg, boolean isError, Object... args) {
+    runAsync(
+      () -> {
+        if (isError) log.error(msg, args); else log.info(msg, args);
+      }
+    );
+  }
+
+  protected void logInfo(String msg, Object... args) {
+    log(msg, false, args);
+  }
+
+  protected void logError(String msg, Object... args) {
+    log(msg, true, args);
+  }
 }

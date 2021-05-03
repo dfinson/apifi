@@ -9,8 +9,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GraphQLConfig {
-    @Bean
-    public ExtensionProvider<GeneratorConfiguration, TypeMapper> jodaMapper() {
-        return (conf, current) -> current.insertAfter(IdAdapter.class, new JodaScalarMapper());
-    }
+
+  @Bean
+  public ExtensionProvider<GeneratorConfiguration, TypeMapper> jodaMapper() {
+    return (conf, current) ->
+      current.insertAfter(IdAdapter.class, new JodaScalarMapper());
+  }
 }

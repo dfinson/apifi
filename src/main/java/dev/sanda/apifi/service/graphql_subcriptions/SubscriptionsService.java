@@ -10,31 +10,42 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.FluxSink;
 
-import java.util.UUID;
-
 @Slf4j
 @Component
 public class SubscriptionsService {
 
-    @Autowired
-    private PubSubMessagingService pubSubMessagingService;
-    @Autowired
-    private ReflectionCache reflectionCache;
-    @Autowired
-    private ConfigValues configValues;
+  @Autowired
+  private PubSubMessagingService pubSubMessagingService;
 
-    public void registerTopicSubscriber(String topic, FluxSink downStreamSubscriber, DataManager dataManager){
-        pubSubMessagingService.registerTopicHandler(
-                topic,
-                new PubSubTopicHandler(UUID.randomUUID().toString(), downStreamSubscriber, dataManager, reflectionCache, configValues)
-        );
-    }
+  @Autowired
+  private ReflectionCache reflectionCache;
 
-    public void removeTopicSubscriber(String topic, FluxSink downStreamSubscriber){
-        pubSubMessagingService.removeTopicHandler(topic, downStreamSubscriber);
-    }
+  @Autowired
+  private ConfigValues configValues;
 
-    public void publishToTopic(String topic, Object payload){
-        pubSubMessagingService.publishToTopic(topic, payload);
-    }
+  public void registerTopicSubscriber(
+    String topic,
+    String id,
+    FluxSink downStreamSubscriber,
+    DataManager dataManager
+  ) {
+    pubSubMessagingService.registerTopicHandler(
+      topic,
+      new PubSubTopicHandler(
+        id,
+        downStreamSubscriber,
+        dataManager,
+        reflectionCache,
+        configValues
+      )
+    );
+  }
+
+  public void removeTopicSubscriber(String topic, String id) {
+    pubSubMessagingService.removeTopicHandler(topic, id);
+  }
+
+  public void publishToTopic(String topic, Object payload) {
+    pubSubMessagingService.publishToTopic(topic, payload);
+  }
 }

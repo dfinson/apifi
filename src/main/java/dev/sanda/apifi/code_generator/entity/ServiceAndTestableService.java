@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ServiceAndTestableService {
-    private TypeSpec service;
-    private TypeSpec testableService;
+
+  private TypeSpec service;
+  private TypeSpec testableService;
 }

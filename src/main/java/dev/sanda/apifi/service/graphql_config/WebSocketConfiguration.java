@@ -17,22 +17,34 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @Configuration
 @EnableWebSocket
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@ConditionalOnProperty(name = "apifi.subscriptions.ws.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+  name = "apifi.subscriptions.ws.enabled",
+  havingValue = "true",
+  matchIfMissing = true
+)
 public class WebSocketConfiguration implements WebSocketConfigurer {
 
-    @NonNull
-    private final ApolloProtocolHandler apolloProtocolHandler;
-    @NonNull
-    private final WsAllowedOriginsConfig allowedOrigins;
-    @NonNull
-    private final ConfigValues configValues;
+  @NonNull
+  private final ApolloProtocolHandler apolloProtocolHandler;
 
-    @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        val wsEndpoint = configValues.getWsEndpoint();
-        log.info("registering" + ApolloProtocolHandler.class.getSimpleName() + " websocket handler at \"" + wsEndpoint + "\"");
-        registry.addHandler(apolloProtocolHandler, wsEndpoint)
-                .setAllowedOrigins(allowedOrigins.originsArray());
-    }
+  @NonNull
+  private final WsAllowedOriginsConfig allowedOrigins;
 
+  @NonNull
+  private final ConfigValues configValues;
+
+  @Override
+  public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+    val wsEndpoint = configValues.getWsEndpoint();
+    log.info(
+      "registering" +
+      ApolloProtocolHandler.class.getSimpleName() +
+      " websocket handler at \"" +
+      wsEndpoint +
+      "\""
+    );
+    registry
+      .addHandler(apolloProtocolHandler, wsEndpoint)
+      .setAllowedOrigins(allowedOrigins.originsArray());
+  }
 }
