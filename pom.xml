@@ -17,7 +17,7 @@
 
     <properties>
         <datafi.version>0.2.1</datafi.version>
-        <spring-security-web.version>5.1.6.RELEASE</spring-security-web.version>
+        <spring-security-web.version>5.2.10.RELEASE</spring-security-web.version>
         <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
         <mockeri.version>0.0.2</mockeri.version>
         <spqr.version>0.10.1</spqr.version>
