@@ -1,22 +1,23 @@
 package dev.sanda.apifi.code_generator.client;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-
 import com.google.common.base.Preconditions;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.val;
+import lombok.var;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.val;
-import lombok.var;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 
 @Data
 @AllArgsConstructor
@@ -333,12 +334,6 @@ public class TypescriptModelFactory {
     NEW_LINE +
     "   backPressureStrategy?: OverflowStrategy;" +
     NEW_LINE +
-    "   onExecutionResult: (result: ExecutionResult<T>) => void;" +
-    NEW_LINE +
-    "   onComplete?: () => void;" +
-    NEW_LINE +
-    "   onFatalError?: (message: string) => void;" +
-    NEW_LINE +
     "}";
 
   private static final String SUBSCRIPTION_REQUEST_INPUT_TYPE =
@@ -351,6 +346,70 @@ public class TypescriptModelFactory {
     "   toObserve: Array<T>;" +
     NEW_LINE +
     "}";
+
+  public static String subscriptionEmitterType(boolean isTypeScriptMode){
+
+    Function<String, String> ifTSMode = (s) -> isTypeScriptMode ? s : "";
+
+    return  NEW_LINE +
+            NEW_LINE +
+            "export class SubscriptionEventsEmitter" + ifTSMode.apply("<T>") + "{" +
+            NEW_LINE +
+            NEW_LINE +
+            "    constructor(eventSourceUrl" + ifTSMode.apply(": string") + ") {" +
+            NEW_LINE +
+            NEW_LINE +
+            "        this.eventSource = new EventSource(eventSourceUrl, { withCredentials: includeCredentials } );" + NEW_LINE + NEW_LINE +
+            "        this.eventSource.addEventListener('EXECUTION_RESULT', (event" + ifTSMode.apply(": SseEvent") + ") => {" + NEW_LINE +
+            "            this.onExecutionResultConsumer && this.onExecutionResultConsumer(JSON.parse(event.data));" + NEW_LINE +
+            "        }, false);" +
+            "        " + NEW_LINE +
+            NEW_LINE +
+            "        this.eventSource.addEventListener('COMPLETE', (event" + ifTSMode.apply(": SseEvent") + ") => {" + NEW_LINE +
+            "            this.onCompleteConsumer && this.onCompleteConsumer();" + NEW_LINE +
+            "            console.log('completed event stream - terminating connection');" + NEW_LINE +
+            "            this.eventSource.close();" + NEW_LINE +
+            "        }, false);" +
+            "        " + NEW_LINE +
+            NEW_LINE +
+            "        this.eventSource.addEventListener('FATAL_ERROR', (event" + ifTSMode.apply(": SseEvent") + ") => {" + NEW_LINE +
+            "            this.onFatalErrorConsumer && this.onFatalErrorConsumer(event.data['MESSAGE']);" + NEW_LINE +
+            "            console.log(`encountered fatal error: ${event.data['MESSAGE']} - terminating connection`);" + NEW_LINE +
+            "            this.eventSource.close();" + NEW_LINE +
+            "        }, false);" +
+            NEW_LINE +
+            "    }" +
+            NEW_LINE +
+            NEW_LINE +
+            "    " + ifTSMode.apply("private ") + "eventSource" + ifTSMode.apply(": EventSource") + ";" + NEW_LINE +
+            "    " + ifTSMode.apply("private ") + "onExecutionResultConsumer" + ifTSMode.apply("?: (result: ExecutionResult<T>) => void") + ";" + NEW_LINE +
+            "    " + ifTSMode.apply("private ") + "onCompleteConsumer" + ifTSMode.apply("?: () => void") +";" + NEW_LINE +
+            "    " + ifTSMode.apply("private ") + "onFatalErrorConsumer" + ifTSMode.apply("?: (message: string) => void") + ";" + NEW_LINE +
+            NEW_LINE +
+            "   " + ifTSMode.apply("public") + " onExecutionResult(onExecutionResultConsumer" + ifTSMode.apply(": (result: ExecutionResult<T>) => void") + ")" + ifTSMode.apply(": SubscriptionEventsEmitter<T>") + "{" + NEW_LINE +
+            "        this.onExecutionResultConsumer = onExecutionResultConsumer;" + NEW_LINE +
+            "        return this;" + NEW_LINE +
+            "   }" +
+            NEW_LINE +
+            NEW_LINE +
+            "   " + ifTSMode.apply("public") + " onComplete(onCompleteConsumer" + ifTSMode.apply(": () => void") + ")" + ifTSMode.apply(": SubscriptionEventsEmitter<T>") + "{" + NEW_LINE +
+            "        this.onCompleteConsumer = onCompleteConsumer;" + NEW_LINE +
+            "        return this;" + NEW_LINE +
+            "   }"
+            + NEW_LINE +
+            NEW_LINE +
+            "   " + ifTSMode.apply("public") + " onFatalError(onFatalErrorConsumer" + ifTSMode.apply(": (message: string) => void") + ")" + ifTSMode.apply(": SubscriptionEventsEmitter<T>") + "{" + NEW_LINE +
+            "        this.onFatalErrorConsumer = onFatalErrorConsumer;" + NEW_LINE +
+            "        return this;" + NEW_LINE +
+            "   }"
+            + NEW_LINE +
+            NEW_LINE +
+            "   " + ifTSMode.apply("public") + " terminate()" + ifTSMode.apply(": void") + "{" + NEW_LINE +
+            "        this.eventSource.close();" + NEW_LINE +
+            "   }"
+            + NEW_LINE +
+            "}";
+  }
 
   private static final String ENTITY_COLLECTION_SUBSCRIPTION_REQUEST_INPUT_TYPE =
     "// GraphQLSubscription: consists of the SSE event callback functions, " +
