@@ -1,6 +1,10 @@
 package dev.sanda.apifi.annotations;
 
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints._NONE;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.NONE;
+
 import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints;
 import java.lang.annotation.*;
 
 @Target({ ElementType.TYPE })
@@ -21,5 +25,7 @@ public @interface WithMethodLevelSecurity {
 
   String postFilter() default "";
 
-  CRUDEndpoints[] targets();
+  CRUDEndpoints[] crudEndpointTargets() default _NONE;
+
+  SubscriptionEndpoints[] subscriptionEndpointTargets() default NONE;
 }

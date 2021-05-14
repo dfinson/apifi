@@ -10,4 +10,18 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface WithCRUDEndpoints {
   CRUDEndpoints[] value();
+
+  String secured() default "";
+
+  String[] rolesAllowed() default "";
+
+  String preAuthorize() default "";
+
+  String postAuthorize() default "";
+
+  String preFilter() default "";
+
+  String preFilterTarget() default "";
+
+  String postFilter() default "";
 }

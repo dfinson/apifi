@@ -1,20 +1,5 @@
 package dev.sanda.apifi.code_generator.entity;
 
-import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
-import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
-
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
@@ -36,15 +21,6 @@ import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.*;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
-import javax.persistence.ElementCollection;
-import javax.tools.Diagnostic;
-import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
@@ -52,6 +28,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.*;
+import javax.persistence.ElementCollection;
+import javax.tools.Diagnostic;
+import javax.transaction.Transactional;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
 public class GraphQLApiBuilder {
@@ -61,7 +62,7 @@ public class GraphQLApiBuilder {
   private Map<CRUDEndpoints, Boolean> crudResolvers;
   private ProcessingEnvironment processingEnv;
   private Map<String, TypeElement> entitiesMap;
-  private Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap;
+  private Map<String, List<AnnotationSpec>> methodLevelSecuritiesMap;
   private ApifiClientFactory clientFactory;
   private String entityName;
   private Set<String> enumTypes;
@@ -961,9 +962,19 @@ public class GraphQLApiBuilder {
 
   private void handleTargetMethodsMapping(
     WithMethodLevelSecurity security,
-    Map<CRUDEndpoints, List<AnnotationSpec>> methodLevelSecuritiesMap
+    Map<String, List<AnnotationSpec>> methodLevelSecuritiesMap
   ) {
-    val targetMethods = security.targets();
+    val targetMethods = Arrays
+      .stream(security.crudEndpointTargets())
+      .map(Object::toString)
+      .collect(Collectors.toList());
+    targetMethods.addAll(
+      Arrays
+        .stream(security.subscriptionEndpointTargets())
+        .map(Object::toString)
+        .collect(Collectors.toList())
+    );
+
     val securityAnnotations = SecurityAnnotationsFactory.of(security);
     for (val targetMethod : targetMethods) {
       if (
@@ -1007,8 +1018,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.getPaginatedBatch(input)")
       .returns(pageType(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(GET_PAGINATED_BATCH)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(GET_PAGINATED_BATCH));
+      methodLevelSecuritiesMap.containsKey(GET_PAGINATED_BATCH.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(GET_PAGINATED_BATCH.toString())
+    );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(name);
     clientQueryBuilder.setVars(
@@ -1033,8 +1046,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.getTotalNonArchivedCount()")
       .returns(TypeName.LONG);
     if (
-      methodLevelSecuritiesMap.containsKey(GET_TOTAL_COUNT)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(GET_TOTAL_COUNT));
+      methodLevelSecuritiesMap.containsKey(GET_TOTAL_COUNT.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(GET_TOTAL_COUNT.toString())
+    );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(queryName);
     clientQueryBuilder.setPrimitiveReturnType(true);
@@ -1053,9 +1068,9 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.getTotalArchivedCount()")
       .returns(TypeName.LONG);
     if (
-      methodLevelSecuritiesMap.containsKey(GET_TOTAL_ARCHIVED_COUNT)
+      methodLevelSecuritiesMap.containsKey(GET_TOTAL_ARCHIVED_COUNT.toString())
     ) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(GET_TOTAL_ARCHIVED_COUNT)
+      methodLevelSecuritiesMap.get(GET_TOTAL_ARCHIVED_COUNT.toString())
     );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(queryName);
@@ -1076,8 +1091,10 @@ public class GraphQLApiBuilder {
       .addParameter(idType, "input")
       .addStatement("return apiLogic.getById(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
-    if (methodLevelSecuritiesMap.containsKey(GET_BY_ID)) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(GET_BY_ID)
+    if (
+      methodLevelSecuritiesMap.containsKey(GET_BY_ID.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(GET_BY_ID.toString())
     );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(queryName);
@@ -1109,8 +1126,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.getBatchByIds(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(GET_BATCH_BY_IDS)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(GET_BATCH_BY_IDS));
+      methodLevelSecuritiesMap.containsKey(GET_BATCH_BY_IDS.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(GET_BATCH_BY_IDS.toString())
+    );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(queryName);
     clientQueryBuilder.setVars(
@@ -1132,9 +1151,9 @@ public class GraphQLApiBuilder {
       .addParameter(parameterizeType(apiSpec.getElement()))
       .addStatement("return apiLogic.create(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
-    if (methodLevelSecuritiesMap.containsKey(CREATE)) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(CREATE)
-    );
+    if (
+      methodLevelSecuritiesMap.containsKey(CREATE.toString())
+    ) builder.addAnnotations(methodLevelSecuritiesMap.get(CREATE.toString()));
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1158,8 +1177,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.batchCreate(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(BATCH_CREATE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_CREATE));
+      methodLevelSecuritiesMap.containsKey(BATCH_CREATE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(BATCH_CREATE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1181,9 +1202,9 @@ public class GraphQLApiBuilder {
       .addParameter(parameterizeType(apiSpec.getElement()))
       .addStatement("return apiLogic.update(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
-    if (methodLevelSecuritiesMap.containsKey(UPDATE)) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(UPDATE)
-    );
+    if (
+      methodLevelSecuritiesMap.containsKey(UPDATE.toString())
+    ) builder.addAnnotations(methodLevelSecuritiesMap.get(UPDATE.toString()));
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1207,8 +1228,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.batchUpdate(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(BATCH_UPDATE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_UPDATE));
+      methodLevelSecuritiesMap.containsKey(BATCH_UPDATE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(BATCH_UPDATE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1230,9 +1253,9 @@ public class GraphQLApiBuilder {
       .addParameter(parameterizeType(apiSpec.getElement()))
       .addStatement("return apiLogic.delete(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
-    if (methodLevelSecuritiesMap.containsKey(DELETE)) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(DELETE)
-    );
+    if (
+      methodLevelSecuritiesMap.containsKey(DELETE.toString())
+    ) builder.addAnnotations(methodLevelSecuritiesMap.get(DELETE.toString()));
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1256,8 +1279,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.batchDelete(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(BATCH_DELETE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_DELETE));
+      methodLevelSecuritiesMap.containsKey(BATCH_DELETE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(BATCH_DELETE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1279,9 +1304,9 @@ public class GraphQLApiBuilder {
       .addParameter(parameterizeType(apiSpec.getElement()))
       .addStatement("return apiLogic.archive(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
-    if (methodLevelSecuritiesMap.containsKey(ARCHIVE)) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(ARCHIVE)
-    );
+    if (
+      methodLevelSecuritiesMap.containsKey(ARCHIVE.toString())
+    ) builder.addAnnotations(methodLevelSecuritiesMap.get(ARCHIVE.toString()));
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1305,8 +1330,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.batchArchive(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(BATCH_ARCHIVE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_ARCHIVE));
+      methodLevelSecuritiesMap.containsKey(BATCH_ARCHIVE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(BATCH_ARCHIVE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1329,8 +1356,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.deArchive(input)")
       .returns(TypeName.get(apiSpec.getElement().asType()));
     if (
-      methodLevelSecuritiesMap.containsKey(DE_ARCHIVE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(DE_ARCHIVE));
+      methodLevelSecuritiesMap.containsKey(DE_ARCHIVE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(DE_ARCHIVE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1354,8 +1383,10 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.batchDeArchive(input)")
       .returns(listOf(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(BATCH_DE_ARCHIVE)
-    ) builder.addAnnotations(methodLevelSecuritiesMap.get(BATCH_DE_ARCHIVE));
+      methodLevelSecuritiesMap.containsKey(BATCH_DE_ARCHIVE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(BATCH_DE_ARCHIVE.toString())
+    );
     clientQueryBuilder.setQueryType(MUTATION);
     clientQueryBuilder.setQueryName(mutationName);
     clientQueryBuilder.setVars(
@@ -1384,9 +1415,11 @@ public class GraphQLApiBuilder {
       .addStatement("return apiLogic.getArchivedPaginatedBatch(input)")
       .returns(pageType(apiSpec.getElement()));
     if (
-      methodLevelSecuritiesMap.containsKey(GET_ARCHIVED_PAGINATED_BATCH)
+      methodLevelSecuritiesMap.containsKey(
+        GET_ARCHIVED_PAGINATED_BATCH.toString()
+      )
     ) builder.addAnnotations(
-      methodLevelSecuritiesMap.get(GET_ARCHIVED_PAGINATED_BATCH)
+      methodLevelSecuritiesMap.get(GET_ARCHIVED_PAGINATED_BATCH.toString())
     );
     clientQueryBuilder.setQueryType(QUERY);
     clientQueryBuilder.setQueryName(name);
@@ -1459,6 +1492,11 @@ public class GraphQLApiBuilder {
           listOf(apiSpec.getElement())
         )
       );
+    if (
+      methodLevelSecuritiesMap.containsKey(ON_CREATE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(ON_CREATE.toString())
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1494,6 +1532,11 @@ public class GraphQLApiBuilder {
           ClassName.get(apiSpec.getElement())
         )
       );
+    if (
+      methodLevelSecuritiesMap.containsKey(ON_UPDATE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(ON_UPDATE.toString())
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1529,6 +1572,11 @@ public class GraphQLApiBuilder {
           ClassName.get(apiSpec.getElement())
         )
       );
+    if (
+      methodLevelSecuritiesMap.containsKey(ON_DELETE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(ON_DELETE.toString())
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1564,6 +1612,11 @@ public class GraphQLApiBuilder {
           ClassName.get(apiSpec.getElement())
         )
       );
+    if (
+      methodLevelSecuritiesMap.containsKey(ON_ARCHIVE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(ON_ARCHIVE.toString())
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1599,6 +1652,11 @@ public class GraphQLApiBuilder {
           ClassName.get(apiSpec.getElement())
         )
       );
+    if (
+      methodLevelSecuritiesMap.containsKey(ON_DE_ARCHIVE.toString())
+    ) builder.addAnnotations(
+      methodLevelSecuritiesMap.get(ON_DE_ARCHIVE.toString())
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1636,6 +1694,19 @@ public class GraphQLApiBuilder {
           listOf(collectionTypeName(fieldApiSpec.getElement()))
         )
       );
+    if (
+      SecurityAnnotationsFactory.areSecurityAnnotationsPresent(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnAssociateWith"
+      )
+    ) builder.addAnnotations(
+      SecurityAnnotationsFactory.of(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnAssociateWith"
+      )
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1673,6 +1744,19 @@ public class GraphQLApiBuilder {
           listOf(collectionTypeName(fieldApiSpec.getElement()))
         )
       );
+    if (
+      SecurityAnnotationsFactory.areSecurityAnnotationsPresent(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnUpdateIn"
+      )
+    ) builder.addAnnotations(
+      SecurityAnnotationsFactory.of(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnUpdateIn"
+      )
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(
@@ -1710,6 +1794,19 @@ public class GraphQLApiBuilder {
           listOf(collectionTypeName(fieldApiSpec.getElement()))
         )
       );
+    if (
+      SecurityAnnotationsFactory.areSecurityAnnotationsPresent(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnRemoveFrom"
+      )
+    ) builder.addAnnotations(
+      SecurityAnnotationsFactory.of(
+        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
+        "",
+        "OnRemoveFrom"
+      )
+    );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);
     clientQueryBuilder.setQueryName(subscriptionName);
     clientQueryBuilder.setVars(

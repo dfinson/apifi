@@ -10,7 +10,8 @@ public enum SubscriptionEndpoints {
   ON_UPDATE("Update"),
   ON_DELETE("Delete"),
   ON_ARCHIVE("Archive"),
-  ON_DE_ARCHIVE("DeArchive");
+  ON_DE_ARCHIVE("DeArchive"),
+  NONE("DUMMY_VALUE");
 
   private final String stringValue;
 }
