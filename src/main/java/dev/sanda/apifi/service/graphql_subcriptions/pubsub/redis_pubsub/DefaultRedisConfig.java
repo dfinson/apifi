@@ -37,6 +37,7 @@ public class DefaultRedisConfig {
 
   @Bean
   public LettuceConnectionFactory lettuceConnectionFactory() {
+    log.info("initializing lettuce connection factory");
     validateURL(configValues.getRedisPubSubUrl());
     if (redisClusterConfiguration != null) return new LettuceConnectionFactory(
       redisClusterConfiguration
@@ -58,6 +59,7 @@ public class DefaultRedisConfig {
 
   @Bean
   public RedisMessageListenerContainer redisContainer() {
+    log.info("initializing RedisMessageListenerContainer bean");
     val container = new RedisMessageListenerContainer();
     container.setConnectionFactory(lettuceConnectionFactory());
     return container;
@@ -71,6 +73,7 @@ public class DefaultRedisConfig {
   }
 
   private void validateURL(String url) {
+    log.info("validating provided redis pubsub url");
     if (
       !url.matches("redis[^:]*:[/][/]([^:]*:[^:@]+@)?[^:]+:[0-9]{4}([/][0-9])?")
     ) throw new RuntimeException(
@@ -78,9 +81,13 @@ public class DefaultRedisConfig {
       url +
       "\" is invalid. The redis url should conform to something along the lines of: \"redis://username:password@ipaddress:port_number/db_index\""
     );
+    log.info("provided redis pubsub url is valid");
   }
 
   private RedisStandaloneConfiguration getDefaultConfiguration() {
+    log.info(
+      "parsing provided redis pubsub url to construct default redis standalone configuration"
+    );
     val url = configValues.getRedisPubSubUrl();
     val username = url.contains("@")
       ? url.replaceFirst("redis[^:]*:[/][/]", "").replaceFirst(":.+", "")
@@ -120,6 +127,7 @@ public class DefaultRedisConfig {
     if (_username != null) redisStandAloneConfig.setUsername(_username);
     if (_password != null) redisStandAloneConfig.setPassword(_password);
     if (dbIndex != null) redisStandAloneConfig.setDatabase(dbIndex);
+    log.info("created default redis standalone configuration");
     return redisStandAloneConfig;
   }
 }

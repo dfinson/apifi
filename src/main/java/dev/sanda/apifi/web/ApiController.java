@@ -5,10 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.sanda.apifi.dto.GraphQLRequest;
 import dev.sanda.apifi.service.graphql_config.GraphQLRequestExecutor;
 import dev.sanda.apifi.service.graphql_subcriptions.sse.SseSubscriptionsHandler;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -18,6 +14,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.socket.WebSocketSession;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import static dev.sanda.apifi.utils.ControllerEndpointsConstants.*;
+
 @RestController
 @AllArgsConstructor(onConstructor_ = @Autowired)
 public class ApiController {
@@ -26,7 +29,7 @@ public class ApiController {
   private final GraphQLRequestExecutor<WebSocketSession> webSocketGraphQLRequestExecutor;
   private final SseSubscriptionsHandler sseSubscriptionsHandler;
 
-  @PostMapping("${apifi.endpoint:/graphql}")
+  @PostMapping(PRIMARY_ENDPOINT)
   public Map<String, Object> httpEndpoint(
     @RequestBody GraphQLRequest graphQLRequest,
     HttpServletRequest httpServletRequest
@@ -37,7 +40,7 @@ public class ApiController {
   }
 
   @CrossOrigin("*")
-  @GetMapping("${apifi.subscriptions.sse-endpoint:/graphql/sse}")
+  @GetMapping(SSE_ENDPOINT)
   public SseEmitter sseEndpoint(
     @RequestParam String queryString,
     @RequestParam(required = false) Long timeout,
@@ -63,12 +66,12 @@ public class ApiController {
   }
 
   @GetMapping(
-    value = "${apifi.subscriptions.ws-endpoint:/graphql}",
+    value = WS_ENDPOINT,
     headers = { "Connection!=Upgrade", "Connection!=keep-alive, Upgrade" }
   )
   @ResponseBody
   @ConditionalOnProperty(
-    name = "apifi.subscriptions.ws.enabled",
+    name = WS_ENABLED,
     havingValue = "true",
     matchIfMissing = true
   )

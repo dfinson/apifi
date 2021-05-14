@@ -1,5 +1,6 @@
 package dev.sanda.apifi.utils;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,17 @@ public class ConfigValues {
   private Long pendingTransactionTimeout;
 
   // redis config properties
+  @Getter(AccessLevel.NONE)
+  @Value("${apifi.subscriptions.redis-pubsub-url:@null}")
+  private String redisPubSubUrlConfigProp;
+
+  @Getter(AccessLevel.NONE)
   @Value("${REDIS_PUBSUB_URL:@null}")
-  private String redisPubSubUrl;
+  private String redisPubSubUrlEnvVar;
+
+  public String getRedisPubSubUrl() {
+    return redisPubSubUrlEnvVar != null
+      ? redisPubSubUrlEnvVar
+      : redisPubSubUrlConfigProp;
+  }
 }

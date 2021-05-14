@@ -26,8 +26,7 @@
         <joda-time.version>2.10.6</joda-time.version>
         <spring-boot-starter-websocket.version>2.4.2</spring-boot-starter-websocket.version>
         <reactor-core.version>3.4.2</reactor-core.version>
-        <lettuce-core.version>6.1.1.RELEASE</lettuce-core.version>
-        <spring-data-redis.version>2.5.0</spring-data-redis.version>
+        <spring-boot-starter-data-redis.version>2.4.5</spring-boot-starter-data-redis.version>
     </properties>
 
     <dependencies>
@@ -60,17 +59,11 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-redis</artifactId>
-            <version>${spring-data-redis.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <version>${spring-boot-starter-data-redis.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.lettuce</groupId>
-            <artifactId>lettuce-core</artifactId>
-            <version>${lettuce-core.version}</version>
-            <optional>false</optional>
-        </dependency>
 
 
         <!--security-->

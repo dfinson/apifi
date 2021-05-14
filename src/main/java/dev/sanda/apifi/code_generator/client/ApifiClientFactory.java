@@ -92,7 +92,11 @@ public class ApifiClientFactory {
         processingEnv
       )
     );
-    if (hasSubscriptions) builder.append(sseSubscriptionHandler());
+    if (hasSubscriptions) {
+      builder.append(
+        TypescriptModelFactory.subscriptionEmitterType(isTypescriptMode)
+      );
+    }
 
     val finalContent = builder.toString();
     try {
@@ -121,22 +125,28 @@ public class ApifiClientFactory {
   private String generateSubscriptionFetcher(GraphQLQueryBuilder query) {
     query.setTypescriptMode(isTypescriptMode);
     return (
-      "\n\tasync " +
+      "\n\t" +
       query.getQueryName() +
       "(" +
       query.args() +
       ")" +
-      (isTypescriptMode ? ": Promise<void>" : "") +
+      (
+        isTypescriptMode
+          ? ": SubscriptionEventsEmitter<" +
+          query.getSubscriptionReturnType() +
+          ">"
+          : ""
+      ) +
       "{\n" +
       "\t\t\tconst queryParam = encodeURIComponent(\n\t\t\t\tJSON.stringify({" +
       query.buildQueryString() +
       "}));\n" +
       "\t\t\tconst timeoutParam = input.timeout ? `&timeout=${input.timeout}` : '';\n" +
       "\t\t\tconst eventSourceUrl = `${apiSseUrl}?queryString=${queryParam}${timeoutParam}`;\n" +
-      "\t\t\thandleSseSubscription" +
+      "\t\t\treturn new SubscriptionEventsEmitter" +
       (isTypescriptMode ? "<" + query.getSubscriptionReturnType() + ">" : "") +
-      "(eventSourceUrl, input);\n" +
-      "\t},\n"
+      "(eventSourceUrl);" +
+      "\n\t},\n"
     );
   }
 
@@ -198,38 +208,5 @@ public class ApifiClientFactory {
 
   private String customHeadersType() {
     return isTypescriptMode ? "?: Dictionary<string>" : "";
-  }
-
-  private String sseSubscriptionHandler() {
-    return (
-      "\n\nfunction handleSseSubscription" +
-      (isTypescriptMode ? "<T>" : "") +
-      "(eventSourceUrl" +
-      (isTypescriptMode ? ": string, " : ", ") +
-      "handlers" +
-      (isTypescriptMode ? ": BaseSubscriptionRequestInput<T>)" : ")") +
-      (isTypescriptMode ? ": void{" : "{") +
-      "\n\n\tconst eventSource = new EventSource(eventSourceUrl, { withCredentials: includeCredentials } );\n\n" +
-      "\teventSource.addEventListener('EXECUTION_RESULT', (event" +
-      (isTypescriptMode ? ": SseEvent" : "") +
-      ") => {\n" +
-      "\t\thandlers.onExecutionResult(JSON.parse(event.data));\n" +
-      "\t}, false);\n\n" +
-      "\teventSource.addEventListener('COMPLETE', (event" +
-      (isTypescriptMode ? ": SseEvent" : "") +
-      ") => {\n" +
-      "\t\thandlers.onComplete && handlers.onComplete(); \n" +
-      "\t\tconsole.log('completed event stream - terminating connection'); \n" +
-      "\t\teventSource.close(); \n" +
-      "\t}, false);\n\n" +
-      "\teventSource.addEventListener('FATAL_ERROR', (event" +
-      (isTypescriptMode ? ": SseEvent" : "") +
-      ") => {\n" +
-      "\t\thandlers.onFatalError && handlers.onFatalError(event.data['MESSAGE']); \n" +
-      "\t\tconsole.log(`encountered fatal error: ${event.data['MESSAGE']} - terminating connection`); \n" +
-      "\t\teventSource.close(); \n" +
-      "\t}, false);" +
-      "\n}\n"
-    );
   }
 }
