@@ -22,6 +22,9 @@ public @interface EntityCollectionApi {
 
   String[] freeTextSearchFields() default "";
 
+  /******* spring security annotations ********/
+
+  // universal annotations - if specified will apply to all created endpoints
   String secured() default "";
 
   String[] rolesAllowed() default "";
@@ -36,6 +39,7 @@ public @interface EntityCollectionApi {
 
   String postFilter() default "";
 
+  // annotations for 'GetPaginated' endpoint
   String securedGetPaginated() default "";
 
   String[] rolesAllowedGetPaginated() default "";
@@ -50,6 +54,7 @@ public @interface EntityCollectionApi {
 
   String postFilterGetPaginated() default "";
 
+  // annotations for 'PaginatedFreeTextSearch' endpoint
   String securedPaginatedFreeTextSearch() default "";
 
   String[] rolesAllowedPaginatedFreeTextSearch() default "";
@@ -64,6 +69,7 @@ public @interface EntityCollectionApi {
 
   String postFilterPaginatedFreeTextSearch() default "";
 
+  // annotations for 'GET' endpoint
   String securedGet() default "";
 
   String[] rolesAllowedGet() default "";
@@ -78,6 +84,7 @@ public @interface EntityCollectionApi {
 
   String postFilterGet() default "";
 
+  // annotations for 'AssociateWith' endpoint
   String securedAssociateWith() default "";
 
   String[] rolesAllowedAssociateWith() default "";
@@ -92,6 +99,7 @@ public @interface EntityCollectionApi {
 
   String postFilterAssociateWith() default "";
 
+  // annotations for 'RemoveFrom' endpoint
   String securedRemoveFrom() default "";
 
   String[] rolesAllowedRemoveFrom() default "";
@@ -106,6 +114,7 @@ public @interface EntityCollectionApi {
 
   String postFilterRemoveFrom() default "";
 
+  // annotations for 'UpdateIn' endpoint
   String securedUpdateIn() default "";
 
   String[] rolesAllowedUpdateIn() default "";
@@ -119,4 +128,49 @@ public @interface EntityCollectionApi {
   String preFilterTargetUpdateIn() default "";
 
   String postFilterUpdateIn() default "";
+
+  // annotations for 'OnAssociateWith' subscription endpoint
+  String securedOnAssociateWith() default "";
+
+  String[] rolesAllowedOnAssociateWith() default "";
+
+  String preAuthorizeOnAssociateWith() default "";
+
+  String postAuthorizeOnAssociateWith() default "";
+
+  String preFilterOnAssociateWith() default "";
+
+  String preFilterTargetOnAssociateWith() default "";
+
+  String postFilterOnAssociateWith() default "";
+
+  // annotations for 'OnUpdateIn' subscription endpoint
+  String securedOnUpdateIn() default "";
+
+  String[] rolesAllowedOnUpdateIn() default "";
+
+  String preAuthorizeOnUpdateIn() default "";
+
+  String postAuthorizeOnUpdateIn() default "";
+
+  String preFilterOnUpdateIn() default "";
+
+  String preFilterTargetOnUpdateIn() default "";
+
+  String postFilterOnUpdateIn() default "";
+
+  // annotations for 'OnRemoveFrom' subscription endpoint
+  String securedOnRemoveFrom() default "";
+
+  String[] rolesAllowedOnRemoveFrom() default "";
+
+  String preAuthorizeOnRemoveFrom() default "";
+
+  String postAuthorizeOnRemoveFrom() default "";
+
+  String preFilterOnRemoveFrom() default "";
+
+  String preFilterTargetOnRemoveFrom() default "";
+
+  String postFilterOnRemoveFrom() default "";
 }
