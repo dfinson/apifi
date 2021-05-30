@@ -99,7 +99,7 @@
     <orderEntry type="library" name="Maven: io.netty:netty-buffer:4.1.55.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-codec:4.1.55.Final" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-transport:4.1.55.Final" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-web:5.1.6.RELEASE" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-web:5.4.6" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-core:5.4.2" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-aop:5.3.2" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-beans:5.3.2" level="project" />
