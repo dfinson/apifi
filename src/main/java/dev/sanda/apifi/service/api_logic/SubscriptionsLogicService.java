@@ -1,19 +1,11 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.datafi.DatafiStaticUtils.getId;
-import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
-
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
+import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -21,9 +13,19 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.datafi.DatafiStaticUtils.getId;
+import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
+
 @Service
 @Scope("prototype")
-public class SubscriptionsLogicService<T> {
+public class SubscriptionsLogicService<T>
+  implements GraphQLSubscriptionsService<T> {
 
   @Autowired
   private SubscriptionsService subscriptionsService;
@@ -44,7 +46,49 @@ public class SubscriptionsLogicService<T> {
       reflectionCache.getEntitiesCache().get(entityName).getIdField().getName();
   }
 
-  private <E> Flux<E> generatePublisher(
+  @Override
+  public <E> Flux<E> generatePublisher(String topic) {
+    return generatePublisher(Collections.singletonList(topic));
+  }
+
+  @Override
+  public <E> Flux<E> generatePublisher(
+    String topic,
+    FluxSink.OverflowStrategy backPressureStrategy
+  ) {
+    return generatePublisher(
+      Collections.singletonList(topic),
+      backPressureStrategy
+    );
+  }
+
+  @Override
+  public <E> Flux<E> generatePublisher(List<String> topics) {
+    return Flux.create(
+      subscriber -> {
+        val id = UUID.randomUUID().toString();
+        subscriber.onDispose(
+          () ->
+            topics.forEach(
+              topic -> subscriptionsService.removeTopicSubscriber(topic, id)
+            )
+        );
+        topics.forEach(
+          topic ->
+            subscriptionsService.registerTopicSubscriber(
+              topic,
+              id,
+              subscriber,
+              dataManager
+            )
+        );
+      },
+      BUFFER
+    );
+  }
+
+  @Override
+  public <E> Flux<E> generatePublisher(
     List<String> topics,
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
@@ -69,6 +113,20 @@ public class SubscriptionsLogicService<T> {
       },
       backPressureStrategy
     );
+  }
+
+  @Override
+  public void publishToTopic(String topic, Collection<T> payload) {
+    publishPayloadToTopic(topic, new ArrayList<>(payload));
+  }
+
+  @Override
+  public void publishToTopic(String topic, T payload) {
+    publishPayloadToTopic(topic, payload);
+  }
+
+  protected void publishPayloadToTopic(String topic, Object payload) {
+    subscriptionsService.publishToTopic(topic, payload);
   }
 
   private List<String> parseInputTopics(
@@ -100,7 +158,7 @@ public class SubscriptionsLogicService<T> {
       .collect(Collectors.toList());
   }
 
-  public Flux<List<T>> onCreateSubscription(
+  protected Flux<List<T>> onCreateSubscription(
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
     val topic = String.format("%s/Create", toPlural(entityName));
@@ -110,14 +168,14 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public void onCreateEvent(List<T> payload) {
+  protected void onCreateEvent(List<T> payload) {
     val topic = String.format("%s/Create", toPlural(entityName));
     if (apiHooks != null) apiHooks.preOnCreate(payload, dataManager, topic);
     subscriptionsService.publishToTopic(topic, payload);
     if (apiHooks != null) apiHooks.postOnCreate(payload, dataManager, topic);
   }
 
-  public Flux<T> onUpdateSubscription(
+  protected Flux<T> onUpdateSubscription(
     List<T> toObserve,
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
@@ -127,7 +185,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public void onUpdateEvent(List<T> payload) {
+  protected void onUpdateEvent(List<T> payload) {
     payload.forEach(
       obj -> {
         val topic = parseInputTopics(
@@ -142,7 +200,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public Flux<T> onDeleteSubscription(
+  protected Flux<T> onDeleteSubscription(
     List<T> toObserve,
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
@@ -152,7 +210,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public void onDeleteEvent(List<T> deleted) {
+  protected void onDeleteEvent(List<T> deleted) {
     deleted.forEach(
       obj -> {
         val topic = parseInputTopics(
@@ -167,7 +225,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public Flux<T> onArchiveSubscription(
+  protected Flux<T> onArchiveSubscription(
     List<T> toObserve,
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
@@ -177,7 +235,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public void onArchiveEvent(List<T> archived) {
+  protected void onArchiveEvent(List<T> archived) {
     archived.forEach(
       obj -> {
         val topic = parseInputTopics(
@@ -192,7 +250,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public Flux<T> onDeArchiveSubscription(
+  protected Flux<T> onDeArchiveSubscription(
     List<T> toObserve,
     FluxSink.OverflowStrategy backPressureStrategy
   ) {
@@ -202,7 +260,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public void onDeArchiveEvent(List<T> deArchived) {
+  protected void onDeArchiveEvent(List<T> deArchived) {
     deArchived.forEach(
       obj -> {
         val topic = parseInputTopics(
@@ -237,7 +295,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(
+  protected <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(
     T owner,
     String collectionFieldName,
     FluxSink.OverflowStrategy backPressureStrategy
@@ -252,7 +310,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> void onAssociateWithEvent(
+  protected <TCollection> void onAssociateWithEvent(
     T owner,
     String collectionFieldName,
     List<TCollection> payload,
@@ -284,7 +342,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
+  protected <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
     T owner,
     String collectionFieldName,
     FluxSink.OverflowStrategy backPressureStrategy
@@ -299,7 +357,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> void onUpdateInEvent(
+  protected <TCollection> void onUpdateInEvent(
     T owner,
     String collectionFieldName,
     List<TCollection> payload,
@@ -331,7 +389,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(
+  protected <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(
     T owner,
     String collectionFieldName,
     FluxSink.OverflowStrategy backPressureStrategy
@@ -346,7 +404,7 @@ public class SubscriptionsLogicService<T> {
     );
   }
 
-  public <TCollection> void onRemoveFromEvent(
+  protected <TCollection> void onRemoveFromEvent(
     T owner,
     String collectionFieldName,
     List<TCollection> payload,

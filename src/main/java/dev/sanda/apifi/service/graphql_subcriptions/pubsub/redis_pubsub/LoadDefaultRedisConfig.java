@@ -23,8 +23,8 @@ public class LoadDefaultRedisConfig implements Condition {
 
   public String getRedisPubSubUrl() {
     return redisPubSubUrlEnvVar != null
-            ? redisPubSubUrlEnvVar
-            : redisPubSubUrlConfigProp;
+      ? redisPubSubUrlEnvVar
+      : redisPubSubUrlConfigProp;
   }
 
   @Override

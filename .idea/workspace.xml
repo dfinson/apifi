@@ -5,24 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5d04342-b578-4d51-b46c-5089c604d539" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_lettuce_lettuce_core_6_0_1_RELEASE.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_buffer_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_codec_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_common_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_handler_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_resolver_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__io_netty_netty_transport_4_1_55_Final.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_boot_spring_boot_starter_data_redis_2_4_5.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_boot_spring_boot_test_2_4_1.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_springframework_data_spring_data_redis_2_4_2.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/GraphQLSubscriptionsService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/apify.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/ApifiClientFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/TypescriptModelFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/code_generator/client/TypescriptModelFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/redis_pubsub/DefaultRedisConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/redis_pubsub/DefaultRedisConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/api_logic/SubscriptionsLogicService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/api_logic/SubscriptionsLogicService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/PubSubTopicHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/PubSubTopicHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/redis_pubsub/LoadDefaultRedisConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/redis_pubsub/LoadDefaultRedisConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ConfigValues.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ConfigValues.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ControllerEndpointsConstants.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/utils/ControllerEndpointsConstants.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/web/ApiController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/dev/sanda/apifi/web/ApiController.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,8 +32,8 @@
       <list>
         <option value="AnnotationType" />
         <option value="Enum" />
-        <option value="Interface" />
         <option value="Class" />
+        <option value="Interface" />
       </list>
     </option>
   </component>
@@ -117,13 +108,15 @@
     </key>
   </component>
   <component name="RunManager" selected="Remote JVM Debug.AnnotationParserDebug">
-    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
+    <configuration default="true" type="ArquillianTestNG" factoryName="" nameIsGenerated="true">
       <option name="arquillianRunConfiguration">
         <value>
           <option name="containerStateName" value="" />
         </value>
       </option>
-      <option name="TEST_OBJECT" value="class" />
+      <option name="TEST_OBJECT" value="CLASS" />
+      <properties />
+      <listeners />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -344,7 +337,8 @@
       <workItem from="1619695330654" duration="12172000" />
       <workItem from="1619771808079" duration="6834000" />
       <workItem from="1619940842712" duration="25937000" />
-      <workItem from="1620989879239" duration="12858000" />
+      <workItem from="1620989879239" duration="21295000" />
+      <workItem from="1622364975532" duration="2050000" />
     </task>
     <servers />
   </component>
@@ -365,17 +359,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/dev/sanda/apifi/service/api_logic/SubscriptionsLogicService.java</url>
-          <line>61</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

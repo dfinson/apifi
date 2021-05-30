@@ -45,9 +45,9 @@ public class ConfigValues {
   private Long pendingTransactionRetryInterval;
 
   @Value(
-    "#{new Long('${apifi.subscriptions.pending-transaction-timeout:500}')}"
+    "#{new Long('${apifi.subscriptions.pending-transaction-max-retries:10}')}"
   )
-  private Long pendingTransactionTimeout;
+  private Long pendingTransactionMaxRetries;
 
   // redis config properties
   @Getter(AccessLevel.NONE)

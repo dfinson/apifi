@@ -42,12 +42,15 @@ Apifi is a Java 8+ annotation processing framework which auto generates GraphQL 
 <dependency>  
 	<groupId>sanda.dev</groupId>
 	<artifactId>apifi</artifactId>
-	<version>1.0.0-BETA</version>
+	<version>1.0.0</version>
 </dependency>  
 ```  
-#### Configuration properties  
+#### Basic configuration properties  
 - `apifi.endpoint` - specifies the path to be used by the generated API. By default its value is `/graphql`.  
 - `apifi.max-query-depth` - specifies the deepest level of query nesting / depth allowed in a GraphQL query. By default its value is 15. 
+- `datafi.logging-enabled` - specifies whether data access layer logging will be activated in addition to service layer logging. Defaults to `false` if not specified.
+
+
   
 #### Hello World  
 ```java  
@@ -623,7 +626,133 @@ Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`,
    *Input:*   
 - `owner`: The instance containing the map. Must include ID.   
    - [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.  
-  
+
+### GraphQL Subscriptions
+#### Overview
+In addition to queries and mutations, GraphQL supports a third operation type: subscriptions. Like queries, subscriptions enable the fetching of data. Unlike queries, subscriptions are long-lasting operations that can change their result over time. They can maintain an active connection to the GraphQL server, enabling the server to push updates to the subscription's result. Subscriptions are useful for notifying clients in real time about changes to back-end data, such as the creation of a new object or updates to an important field.  
+
+Apifi offers comprehensive out of the box support for GraphQL subscriptions, managing all aspects of server-client pub-sub behind the scenes. There are built in subscriptions which can be added to the GraphQL schema via annotations (as is the case with queries and mutations), as well as a `GraphQLSubscriptionsService<T>` bean which can be autowired into any custom defined spring component and used for custom subscriptions. 
+
+#### Built in endpoints
+In order to create entity level subscriptions, the `@WithSubscriptionEndpoints(...)` annotation can be used, as follows:
+```java
+@Entity
+@Getter @Setter
+@WithSubscriptionEndpoints({
+  ON_CREATE, // will return a list of newly created user(s) after creation
+  ON_UPDATE, // takes a list of users to monitor as input, returning an updated user every time a member of that list is updated
+  ON_DELETE, // takes a list of users to monitor as input, returning a deleted user object every time a member of that list is deleted
+  ON_ARCHIVE, // takes a list of users to monitor as input, returning an archived user object every time a member of that list is archived
+  ON_DE_ARCHIVE // takes a list of users to monitor as input, returning a de-archived user object every time a member of that list is de-archived
+})
+public class User implements Archivable {
+  @Id @GeneratedValue
+  private Long id;
+  private Boolean isArchived = false;
+  private String name;
+  private String username;
+  private String phoneNumber;
+  @OneToMany(mappedBy = "user", cascade = ALL)
+  private Set<Post> posts;
+}
+```
+To create entity collection subscriptions, the following parameters may be specified in the `@EntityCollectionApi(...)`  annotation:
+```java
+@Entity
+@Getter @Setter
+@WithSubscriptionEndpoints(...)
+public class User implements Archivable {
+  @Id @GeneratedValue
+  private Long id;
+  private Boolean isArchived = false;
+  private String name;
+  private String username;
+  private String phoneNumber;
+  @EntityCollectionApi(
+    subscriptions = {
+      ON_ASSOCIATE_WITH, // takes in a user to monitor as input, returns any new posts which are added to the annotated collection
+      ON_UPDATE_IN, // takes in a user to monitor as input, returns any posts which are updated with the annotated collection
+      ON_REMOVE_FROM // takes in a user to monitor as input, returns any new posts which are removed from the annotated collection
+    }
+  )
+  @OneToMany(mappedBy = "user", cascade = ALL)
+  private Set<Post> posts;
+}
+```
+All subscription endpoints accept an optional `FluxSink.OverflowStrategy` argument as their last parameter. If not specified this defaults to `FluxSink.OverflowStrategy.BUFFER`. More information about `org.reactivestreams` `FluxSink.OverflowStrategy` can be read [here](https://projectreactor.io/docs/core/release/api/reactor/core/publisher/FluxSink.OverflowStrategy.html).
+
+#### Custom subscriptions
+In order to create custom subscriptions, the `GraphQLSubscriptionsService<T>` service can be used as follows. We'll take a simple example; we want to create a subscription to an event whereby a users phone number has been updated.
+
+First, the subscription endpoint:
+```java
+@Service // <-- must
+@GraphQLComponent // <-- must
+public class CustomUserSubscriptionsService{
+
+    @Autowired
+    private GraphQLSubscriptionsService<User> userGraphQLSubscriptionsService;
+
+    @GraphQLSubscription
+    public Flux<User> onUserPhoneNumberUpdated(User toObserve){
+        final String topic = 
+	        "User with id#" + toObserve.getId() + " updated phoneNumber";
+        return userGraphQLSubscriptionsService.generatePublisher(topic);
+    }
+}
+```
+Second, we'll implement the `Apihooks<T>` class for `User` in order to publish the event:
+```java
+@Service
+public class UserApiHooks implements ApiHooks<User> {
+
+  @Autowired
+  private GraphQLSubscriptionsService<User> userGraphQLSubscriptionsService;
+
+  @Override
+  public void postUpdate(
+    User originalInput, // the deserialized user json object "as is" from the API call
+    User toUpdate, // a copy of the corresponding user object from the DB, prior to being updated
+    User updated, // the final updated user object which has been saved to the DB
+    DataManager<User> dataManager
+  ) {
+    if (originalInput.getPhoneNumber() != null) { // if the input to update included a new phone number
+      final String topic =
+        "User with id#" + updated.getId() + " updated phoneNumber";
+      userGraphQLSubscriptionsService.publishToTopic(topic, updated);
+    }
+  }
+}
+```
+#### Advanced configuration properties  for GraphQL subscriptions
+- `apifi.subscriptions.ws.enabled` - specifies whether the Apollo protocol over web sockets for GraphQL subscriptions is enabled. Defaults to `true`.
+
+- `apifi.subscriptions.ws.endpoint` - specifies the endpoint at which the Apollo protocol over web sockets will be made available. Defaults to `/graphql` (i.e. `ws(s)://<domain-url>:<port>/<apifi.subscriptions.ws.endpoint>`).
+
+- `apifi.subscriptions.ws.keepalive.enabled` - specified whether Apollo session keep-alive is enabled. Defaults to `true`.
+
+- `apifi.subscriptions.ws.keepalive.interval-ms` - specifies the scheduled keep-alive intervals at which the server will send a keep-alive message to the client. Defaults to `10000 ms`.
+
+- `apifi.subscriptions.sse-endpoint` - if SSE is being used instead of Apollo protocol over web sockets for the purpose of serving GraphQL subscriptions, this property specifies the endpoint at which the SSE session can be initiated. Will default to `/graphql/sse`.
+
+- `apifi.subscriptions.sse.timeout-ms` - the amount of time in MS for an SSE session to remain active absent any activity. Defaults to `-1`, which means "never time out".
+
+- `apifi.subscriptions.sse.timeout-param-enabled` - when sending a GraphQL subscription request to the SSE endpoint, an HTTP GET request is used containing the following parameters: `queryString`, containing the actual GraphQL query string, and optionally a `timeout` parameter denoting what timeout value in ms should be set on the server side SSEEmitter object assigned to the request. This configuration property specifies whether this `timeout` parameter may be sent.
+
+- `apifi.subscriptions.pending-transaction-retry-interval` - when new data is available to be published to one or more waiting GraphQL subscription clients, two things happen simultaneously; a "publish" event containing part of the data is fired off on a separate thread, and the data itself is persisted to the database within the context of a transaction on the original thread. If the server side publishing service receives the event and tries to publish it to the relevant clients prior to the original transaction completing, it will not find the data in the database and will not be able to proceed. Hence one or more retries may be necessary in order to give the original thread enough time to complete the database transaction. This property denotes how many milliseconds should pass between each successive retry attempt. By default, the value is `50 ms`.
+
+- `apifi.subscriptions.pending-transaction-max-retries` - the maximum number of such retries which will be performed prior to logging an error and aborting the publish operation. Defaults to 10.
+
+- `apifi.subscriptions.redis-pubsub-url` - when utilizing Apifis' built in pub-sub support for GraphQL subscriptions in a multi-instance / load balanced environment where events to be published may not necessarily occur on the same instance maintaining the session(s) with the relevant subscriber(s), a message broker is required. One of the most popular is redis, and this property specifies the full connection string (including credentials if relevant) to the relevant redis server which will be used by Apifi as such a pub-sub broker. Defaults to `null`.
+
+- `REDIS_PUBSUB_URL` - identical to the above `apifi.subscriptions.redis-pubsub-url` property, only as an environment variable (this is useful and more secure if the connection string contains credentials). Also defaults to `null`.
+
+#### Server side pub-sub configuration
+TBD
+
+#### Client side consumption of GraphQL subscriptions
+TBD
+
 ### Spring security integration  
   
 Annotation based security is especially well suited to GraphQL APIs given that they operate off of a single endpoint. Apifi supports full integration with spring security by leveraging the following 6 annotations:   

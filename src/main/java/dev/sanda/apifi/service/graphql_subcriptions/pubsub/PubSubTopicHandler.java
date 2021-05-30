@@ -12,7 +12,6 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import reactor.core.publisher.FluxSink;
 
 @Data
@@ -41,22 +40,17 @@ public class PubSubTopicHandler {
   private List loadEntityCollection(Collection data) {
     List loadedData;
     val retryInterval = configValues.getPendingTransactionRetryInterval();
-    val maxWaitTime = configValues.getPendingTransactionTimeout();
-    var currentDelta = 0L;
+    val maxRetries = configValues.getPendingTransactionMaxRetries();
+    long numRetries = 0L;
     do {
       loadedData = dataManager.findAllById(getIdList(data, reflectionCache));
       if (loadedData.isEmpty()) {
-        log.info(
-          "Could not reload published data in new " +
-          "session due to the relevant transaction not " +
-          "having committed yet. Retrying in " +
-          retryInterval +
-          " milliseconds."
-        );
-        currentDelta += retryInterval;
+        logRetryRequiredWarning();
+        numRetries++;
         Thread.sleep(retryInterval);
       }
-    } while (loadedData.isEmpty() && currentDelta < maxWaitTime);
+    } while (loadedData.isEmpty() && numRetries < maxRetries);
+    if (loadedData.isEmpty()) logMaxRetriesExceededError();
     return loadedData;
   }
 
@@ -64,25 +58,20 @@ public class PubSubTopicHandler {
   private Object loadSingleEntity(Object data) {
     Object loadedData;
     val retryInterval = configValues.getPendingTransactionRetryInterval();
-    val maxWaitTime = configValues.getPendingTransactionTimeout();
-    var currentDelta = 0L;
+    val maxRetries = configValues.getPendingTransactionMaxRetries();
+    long numRetries = 0L;
     do {
       loadedData =
         dataManager
           .findById(DatafiStaticUtils.getId(data, reflectionCache))
           .orElse(null);
       if (loadedData == null) {
-        log.info(
-          "Could not reload published data in new " +
-          "session due to the relevant transaction not " +
-          "having committed yet. Retrying in " +
-          retryInterval +
-          " milliseconds."
-        );
-        currentDelta += retryInterval;
+        logRetryRequiredWarning();
+        numRetries++;
         Thread.sleep(retryInterval);
       }
-    } while (loadedData == null && currentDelta < maxWaitTime);
+    } while (loadedData == null && numRetries < maxRetries);
+    if (loadedData == null) logMaxRetriesExceededError();
     return loadedData;
   }
 
@@ -109,5 +98,25 @@ public class PubSubTopicHandler {
 
   public void completeWithError(Throwable error) {
     if (!downStreamSubscriber.isCancelled()) downStreamSubscriber.error(error);
+  }
+
+  private void logMaxRetriesExceededError() {
+    log.error(
+      "Could not reload published data in new session after {} retries spaced at {} ms intervals. " +
+      "Consider investigating potential database transaction latency issues, or setting a higher " +
+      "number of max retries with greater time intervals in between.",
+      configValues.getPendingTransactionMaxRetries(),
+      configValues.getPendingTransactionRetryInterval()
+    );
+  }
+
+  private void logRetryRequiredWarning() {
+    log.warn(
+      "Could not reload published data in new " +
+      "session due to the relevant transaction not " +
+      "having committed yet. Retrying in " +
+      configValues.getPendingTransactionRetryInterval() +
+      " milliseconds."
+    );
   }
 }
