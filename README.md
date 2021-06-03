@@ -3,34 +3,51 @@
   <img src='https://github.com/sanda-dev/apifi/blob/master/readme%20images/apifi-logo.png' width='470' alt='Apifi Logo' />
   
 # Apifi   
- * [Introduction](#introduction)  
- * [Installation](#installation)  
- * [Hello World](#hello-world)  
- * [Defining GraphQL Endpoints](#defining-graphql-endpoints)  
- * [Customization](#customization)  
- * [Custom endpoints](#custom-endpoints)
- * [Search endpoints](#search-endpoints)  
- * [Free text search](#free-text-search)  
-   + [Overview](#overview)  
-   + [Input](#input)  
-   + [Output](#output)  
-   + [Customization](#customization)
- * [Entity Collections](#entity-collections)  
- * [Element Collections](#element-collections)  
- * [Element collection maps](#element-collection-maps)  
- * [Spring security integration](#spring-security-integration)  
-   + [Class level security](#class-level-security)  
-   + [Method level security](#method-level-security)  
-   + [Search endpoints security](#search-endpoints-security)  
- * [Testing](#testing)
- * [GraphQL Client](#graphql-client)  
-   + [Overview](#overview-1)  
-   + [What it looks like](#what-it-looks-like)  
- * [Logs](#logs)
- * [Upcoming](#upcoming)  
- * [Known issues](#known-issues)  
- * [Credit](#credit)  
- * [License](#license)  
+ * [Introduction](#introduction)
+  * [Getting started](#getting-started)
+    + [Installation](#installation)
+    + [Basic configuration properties](#basic-configuration-properties)
+    + [Hello World](#hello-world)
+  * [Defining GraphQL Endpoints](#defining-graphql-endpoints)
+  * [Customization](#customization)
+  * [Custom endpoints](#custom-endpoints)
+  * [Search endpoints](#search-endpoints)
+  * [Free text search](#free-text-search)
+    + [Overview](#overview)
+    + [Input](#input)
+    + [Output](#output)
+    + [Customization](#customization-1)
+  * [Entity Collections](#entity-collections)
+  * [Element Collections](#element-collections)
+  * [Element collection maps](#element-collection-maps)
+  * [GraphQL Subscriptions](#graphql-subscriptions)
+    + [Overview](#overview-1)
+    + [Built in endpoints](#built-in-endpoints)
+    + [Custom subscriptions](#custom-subscriptions)
+    + [Advanced configuration properties  for GraphQL subscriptions](#advanced-configuration-properties--for-graphql-subscriptions)
+  * [Server side pub-sub configuration](#server-side-pub-sub-configuration)
+    + [In memory pub-sub](#in-memory-pub-sub)
+    + [Redis based pub-sub](#redis-based-pub-sub)
+    + [Using other message brokers for pub-sub](#using-other-message-brokers-for-pub-sub)
+  * [Client side consumption of GraphQL subscriptions](#client-side-consumption-of-graphql-subscriptions)
+  * [Spring security integration](#spring-security-integration)
+    + [Class level security](#class-level-security)
+    + [Method level security](#method-level-security)
+    + [Search endpoints security](#search-endpoints-security)
+  * [Testing](#testing)
+    + [TestableGraphQLService](#testablegraphqlservice)
+    + [Example](#example)
+      - [Model](#model)
+      - [Actual GraphQL service to be included in schema](#actual-graphql-service-to-be-included-in-schema)
+      - [Testable GraphQL service class which is **not** exposed as part of the schema](#testable-graphql-service-class-which-is-not-exposed-as-part-of-the-schema)
+      - [Example Test class for `UserGraphQLApiService`](#example-test-class-for-usergraphqlapiservice)
+  * [GraphQL Client](#graphql-client)
+    + [Overview](#overview-2)
+    + [What it looks like](#what-it-looks-like)
+  * [Logs](#logs)
+  * [Known issues](#known-issues)
+  * [Credit](#credit)
+  * [License](#license)
 
   
 ## Introduction 
@@ -686,8 +703,8 @@ In order to create custom subscriptions, the `GraphQLSubscriptionsService<T>` se
 
 First, the subscription endpoint:
 ```java
-@Service // <-- must
-@GraphQLComponent // <-- must
+@Service 
+@GraphQLComponent
 public class CustomUserSubscriptionsService{
 
     @Autowired
@@ -701,7 +718,7 @@ public class CustomUserSubscriptionsService{
     }
 }
 ```
-Second, we'll implement the `Apihooks<T>` class for `User` in order to publish the event:
+Second, we'll implement the `Apihooks<T>` class for `User` in order to publish these events as they occur:
 ```java
 @Service
 public class UserApiHooks implements ApiHooks<User> {
@@ -714,7 +731,7 @@ public class UserApiHooks implements ApiHooks<User> {
     User originalInput, // the deserialized user json object "as is" from the API call
     User toUpdate, // a copy of the corresponding user object from the DB, prior to being updated
     User updated, // the final updated user object which has been saved to the DB
-    DataManager<User> dataManager
+    DataManager<User> dataManager // think of DataManager<T> as an enhanced JpaRepository
   ) {
     if (originalInput.getPhoneNumber() != null) { // if the input to update included a new phone number
       final String topic =
@@ -747,11 +764,24 @@ public class UserApiHooks implements ApiHooks<User> {
 
 - `REDIS_PUBSUB_URL` - identical to the above `apifi.subscriptions.redis-pubsub-url` property, only as an environment variable (this is useful and more secure if the connection string contains credentials). Also defaults to `null`.
 
-#### Server side pub-sub configuration
-TBD
+### Server side pub-sub configuration
 
-#### Client side consumption of GraphQL subscriptions
-TBD
+#### In memory pub-sub
+By default all pub-sub management is handled in memory. This requires no additional configuration and provides an easy out-of-the-box solution for dev environments.
+
+#### Redis based pub-sub
+As described above with respect to the `apifi.subscriptions.redis-pubsub-url` property, Apifi comes with a built in, fully managed and production ready pub sub system auto-configured to leverage redis as a message broker. All that is required in order to make this work is a redis URL connection string. 
+
+By default, Apifi will be using this URL to generate a `RedisStandaloneConfiguration` object with which to create a connection factory. However, if a `RedisClusterConfiguration`, `RedisSentinelConfiguration`, `RedisStaticMasterReplicaConfiguration`, or `RedisSocketConfiguration` class is implemented and wired into the spring application context, Apifi will use it instead.
+
+#### Using other message brokers for pub-sub
+If redis is not the ideal pub-sub solution for a project, the `CustomPubSubMessagingService` interface can be implemented and wired into the spring application context. This interface can be seen [here](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/graphql_subcriptions/pubsub/CustomPubSubMessagingService.java), and defines the necessary contract for Apifis internal pub-sub management system to make use of any message broker.
+
+### Client side consumption of GraphQL subscriptions
+Server side pub-sub configuration isn't very useful without an actual transport protocol through which data can be sent to a subscribing client over an active session. Apifi solves this problem in two distinct ways:
+
+1. A full implementation of the Apollo protocol over web sockets.
+2. A server sent events (SSE) based protocol, for which both JS and TS clients are auto-generated at compile time (these can be found in the "Apifi clients" folder within the root project directory after compilation). 
 
 ### Spring security integration  
   
@@ -1050,79 +1080,207 @@ public class User {
     private String name;
     private String email;
     private String phoneNumber;
-    private String passwordHash;
 }
 ```  
 The corresponding *apifiClient.js* would look as follows:  
 ```javascript  
-let apiUrl = `${location.origin}/graphql`;
-let bearerToken = undefined;
-
-export default {
-
-    setBearerToken(token) {
-        bearerToken = token;
-    },
-    
-    setApiUrl(url) {
-        apiUrl = url;
-    },
-    
-    async getUserById(input, selectionGraph, customHeaders) {
-        let requestHeaders = {
-            "Content-Type": "application/json"
-        }
-        if (customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
-        if (bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
-        let opts = {
-            method: "POST",
-            credentials: "include",
-            headers: requestHeaders,
-            body: JSON.stringify({
-                query: `query getUserById($input: Int!) { getUserById(input: $input)${selectionGraph} }`,
-                variables: {
-                    "input": input
-                },
-                operationName: "getUserById"
-            })
-        };
-        return await (await fetch(apiUrl, opts)).json();
-    },
-    
-    async createUser(input, selectionGraph, customHeaders) {
-        let requestHeaders = {
-            "Content-Type": "application/json"
-        }
-        if (customHeaders !== undefined) requestHeaders = Object.assign({}, requestHeaders, customHeaders);
-        if (bearerToken !== undefined) requestHeaders["Authorization"] = bearerToken;
-        let opts = {
-            method: "POST",
-            credentials: "include",
-            headers: requestHeaders,
-            body: JSON.stringify({
-                query: `mutation createUser($input: UserInput) { createUser(input: $input)${selectionGraph} }`,
-                variables: {
-                    "input": input
-                },
-                operationName: "createUser"
-            })
-        };
-        return await (await fetch(apiUrl, opts)).json();
-    }
+let apiUrl = location.origin + '/graphql';  
+let includeCredentials = false;  
+let bearerToken;  
+  
+  
+  
+// project specific client side API calls  
+  
+export default{  
+  
+   setBearerToken(token){  
+      bearerToken = token;  
+   },  
+  
+   setApiUrl(url){  
+      apiUrl = url;  
+   },  
+  
+   setIncludeCredentials(value){  
+      includeCredentials = value;  
+   },  
+  
+   async getUserById(input, selectionGraph, customHeaders){  
+         let requestHeaders = { "Content-Type": "application/json" }  
+         if(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);  
+         if(bearerToken) requestHeaders["Authorization"] = bearerToken;  
+         const requestInit = {  
+            method: "POST",  
+            credentials: !!includeCredentials ? 'include' : 'omit',  
+            headers: requestHeaders,  
+            body: JSON.stringify({  
+               query: `query getUserById($input: Long) { getUserById(input: $input)${selectionGraph} }`,   
+               variables: {  
+                  "input": input  
+               }  
+            })  
+         };  
+         return await (await fetch(apiUrl, requestInit)).json();  
+   },  
+  
+   async createUser(input, selectionGraph, customHeaders){  
+         let requestHeaders = { "Content-Type": "application/json" }  
+         if(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);  
+         if(bearerToken) requestHeaders["Authorization"] = bearerToken;  
+         const requestInit = {  
+            method: "POST",  
+            credentials: !!includeCredentials ? 'include' : 'omit',  
+            headers: requestHeaders,  
+            body: JSON.stringify({  
+               query: `mutation createUser($input: UserInput) { createUser(input: $input)${selectionGraph} }`,   
+               variables: {  
+                  "input": input  
+               }  
+            })  
+         };  
+         return await (await fetch(apiUrl, requestInit)).json();  
+   },  
+  
 }
 ```  
 The file starts off with the `apiUrl` (defaults to `${window.location.origin}/graphql`) and the `bearerToken`, along with their corresponding setters. It then has a corresponding method for each GraphQL endpoint on the back end. To use; import the *apifiClient.js* file, call the relevant method with whichever variables may be required, as well as the GraphQL response format, and the API stack is good to go.  
+
+In addition, a Typescript client is also generated. This includes all of the functionality of the JS client, plus auto-generated interfaces for all data model entities and of course all function arguments and return values are typed. In this case, it looks as follows:
+```ts
+let apiUrl = location.origin + '/graphql';  
+let includeCredentials = false;  
+let bearerToken: string;  
+  
+  
+  
+// project specific client side API calls  
+  
+export default{  
+  
+   setBearerToken(token: string): void{  
+      bearerToken = token;  
+   },  
+  
+   setApiUrl(url: string): void{  
+      apiUrl = url;  
+   },  
+  
+   setIncludeCredentials(value: boolean): void{  
+      includeCredentials = value;  
+   },  
+  
+   async getUserById(input: User, selectionGraph: string, customHeaders?: Dictionary<string>): Promise<ExecutionResult<User>>{  
+         let requestHeaders = { "Content-Type": "application/json" }  
+         if(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);  
+         if(bearerToken) requestHeaders["Authorization"] = bearerToken;  
+         const requestInit: RequestInit = {  
+            method: "POST",  
+            credentials: !!includeCredentials ? 'include' : 'omit',  
+            headers: requestHeaders,  
+            body: JSON.stringify({  
+               query: `query getUserById($input: Long) { getUserById(input: $input)${selectionGraph} }`,   
+               variables: {  
+                  "input": input  
+               }  
+            })  
+         };  
+         return await (await fetch(apiUrl, requestInit)).json();  
+   },  
+  
+   async createUser(input: User, selectionGraph: string, customHeaders?: Dictionary<string>): Promise<ExecutionResult<User>>{  
+         let requestHeaders = { "Content-Type": "application/json" }  
+         if(customHeaders) requestHeaders = Object.assign({}, requestHeaders, customHeaders);  
+         if(bearerToken) requestHeaders["Authorization"] = bearerToken;  
+         const requestInit: RequestInit = {  
+            method: "POST",  
+            credentials: !!includeCredentials ? 'include' : 'omit',  
+            headers: requestHeaders,  
+            body: JSON.stringify({  
+               query: `mutation createUser($input: UserInput) { createUser(input: $input)${selectionGraph} }`,   
+               variables: {  
+                  "input": input  
+               }  
+            })  
+         };  
+         return await (await fetch(apiUrl, requestInit)).json();  
+   },  
+  
+}  
+  
+// project specific data model  
+  
+export interface User{  
+   phoneNumber?: string;  
+   isArchived?: boolean;  
+   name?: string;  
+   id?: number;  
+   username?: string;  
+}  
+
+
+  
+// Apifi utils object model  
+  
+// represents a subset of the overall data, corresponding to server side JPA pagination  
+export interface Page<T>{  
+   content?: Array<T>;  
+   totalPagesCount?: number;  
+   totalItemsCount?: number;  
+   pageNumber?: number;  
+   customValues?: Map<string, any>;  
+}  
+  
+// input to specify desired pagination parameters  
+export interface PageRequest{  
+   pageNumber?: number;  
+   sortBy?: string;  
+   pageSize?: number;  
+   sortDirection?: SortDirection;  
+   fetchAll?: boolean;  
+}  
+  
+// input to specify desired pagination parameters, as well as a string value for server side free text search  
+export interface FreeTextSearchPageRequest extends PageRequest{  
+   searchTerm: string;  
+}  
+  
+// enum type to specify pagination sort ordering  
+export enum SortDirection{  
+   ASC = 'ASC',  
+   DESC = 'DESC'  
+}  
+  
+// a wrapper around any return value from the GraphQL server  
+export interface ExecutionResult<T>{  
+   data?: T;  
+   errors?: Array<ExecutionResultError>;  
+}  
+  
+export interface ExecutionResultError{  
+   message: string;  
+   path?: Array<string>;  
+   locations?: Array<ExecutionResultErrorLocation>;  
+   extensions?: Map<string, any>;  
+}  
+  
+export interface ExecutionResultErrorLocation{  
+   line: number;  
+   column: number;  
+}  
+  
+// for custom headers to attach to query or mutation HTTP requests  
+export interface Dictionary<T>{  
+   [Key: string]: T;  
+}
+```
   
 ### Logs  
-Virtually everything is logged in real time using *SL4J*.  
-  
-### Upcoming  
-1. GraphQL subscriptions.  
-2. Suggestions welcome :)  
+Server CRUD events are logged in real time using *Sl4j*.  
   
   
 ### Known issues  
-1. Occasional null pointer exception at compile time. The fix is to delete the *target* folder and try again. This typically happens with intellij build, not `mvn compile`.  
+1. Occasional null pointer exception at compile time. The fix is to delete the *target* folder and try again. This happens with intellij build, not `mvn compile`. 
 2. *apifiClient.js* not generated by intellij build. The fix is to run `mvn compile`.  
   
 #### That's all for now, happy coding!  
