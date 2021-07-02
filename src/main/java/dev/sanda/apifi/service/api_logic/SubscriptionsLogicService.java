@@ -1,29 +1,26 @@
 package dev.sanda.apifi.service.api_logic;
 
-import dev.sanda.apifi.service.api_hooks.ApiHooks;
-import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
-import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
-import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
-import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
-import dev.sanda.datafi.service.DataManager;
-import lombok.val;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
 import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
 import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
 import static dev.sanda.datafi.DatafiStaticUtils.getId;
 import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
 
+import dev.sanda.apifi.service.api_hooks.ApiHooks;
+import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
+import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
+import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
+import dev.sanda.datafi.service.DataManager;
+import java.util.*;
+import java.util.stream.Collectors;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
 @Service
-@Scope("prototype")
 public class SubscriptionsLogicService<T>
   implements GraphQLSubscriptionsService<T> {
 
@@ -64,33 +61,25 @@ public class SubscriptionsLogicService<T>
 
   @Override
   public <E> Flux<E> generatePublisher(List<String> topics) {
-    return Flux.create(
-      subscriber -> {
-        val id = UUID.randomUUID().toString();
-        subscriber.onDispose(
-          () ->
-            topics.forEach(
-              topic -> subscriptionsService.removeTopicSubscriber(topic, id)
-            )
-        );
-        topics.forEach(
-          topic ->
-            subscriptionsService.registerTopicSubscriber(
-              topic,
-              id,
-              subscriber,
-              dataManager
-            )
-        );
-      },
-      BUFFER
-    );
+    return generatePublisher(topics, BUFFER);
   }
 
   @Override
   public <E> Flux<E> generatePublisher(
     List<String> topics,
     FluxSink.OverflowStrategy backPressureStrategy
+  ) {
+    return generatePublisherImplementation(
+      topics,
+      backPressureStrategy,
+      dataManager
+    );
+  }
+
+  public <E> Flux<E> generatePublisherImplementation(
+    List<String> topics,
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager dataManager
   ) {
     return Flux.create(
       subscriber -> {
@@ -298,15 +287,17 @@ public class SubscriptionsLogicService<T>
   protected <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
-    return generatePublisher(
+    return generatePublisherImplementation(
       parseEntityCollectionTopic(
         owner,
         collectionFieldName,
         ON_ASSOCIATE_WITH.getStringValue()
       ),
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 
@@ -345,15 +336,17 @@ public class SubscriptionsLogicService<T>
   protected <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
-    return generatePublisher(
+    return generatePublisherImplementation(
       parseEntityCollectionTopic(
         owner,
         collectionFieldName,
         ON_UPDATE_IN.getStringValue()
       ),
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 
@@ -392,15 +385,17 @@ public class SubscriptionsLogicService<T>
   protected <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
-    return generatePublisher(
+    return generatePublisherImplementation(
       parseEntityCollectionTopic(
         owner,
         collectionFieldName,
         ON_REMOVE_FROM.getStringValue()
       ),
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 

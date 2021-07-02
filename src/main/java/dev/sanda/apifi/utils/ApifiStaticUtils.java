@@ -2,18 +2,19 @@ package dev.sanda.apifi.utils;
 
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.ElementCollectionApi;
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.annotations.MapElementCollectionApi;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
-import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
-import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
-import dev.sanda.apifi.service.api_hooks.NullElementCollectionApiHooks;
-import dev.sanda.apifi.service.api_hooks.NullEntityCollectionApiHooks;
+import dev.sanda.apifi.service.api_hooks.*;
 import dev.sanda.datafi.annotations.EntityApiSpec;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
+import dev.sanda.datafi.service.DataManager;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -21,6 +22,8 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,6 +51,17 @@ public abstract class ApifiStaticUtils {
       .filter(element -> element.getKind().isField())
       .map(element -> (VariableElement) element)
       .collect(Collectors.toList());
+  }
+
+  public static ObjectMapper nonTransactionalObjectMapper() {
+    val mapper = new ObjectMapper();
+    mapper.disable(
+      MapperFeature.AUTO_DETECT_CREATORS,
+      MapperFeature.AUTO_DETECT_GETTERS,
+      MapperFeature.AUTO_DETECT_IS_GETTERS
+    );
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+    return mapper;
   }
 
   public static List<VariableElement> getNonIgnoredFields(
@@ -315,7 +329,7 @@ public abstract class ApifiStaticUtils {
   }
 
   public static String apiHooksName(TypeElement entity) {
-    return camelcaseNameOf(entity) + "MetaOperations";
+    return camelcaseNameOf(entity) + ApiHooks.class.getSimpleName();
   }
 
   public static String camelcaseNameOf(Element entity) {
@@ -332,7 +346,7 @@ public abstract class ApifiStaticUtils {
       .build();
   }
 
-  public static final String reflectionCache = "reflectionCache";
+  public static final String REFLECTION_CACHE = "reflectionCache";
 
   public static CodeBlock entitiesList(TypeElement entity) {
     ClassName listClassName = ClassName.get("java.util", "List");
@@ -803,5 +817,25 @@ public abstract class ApifiStaticUtils {
   public static String toSimplePascalCaseName(String service) {
     int lastDot = service.lastIndexOf(".") + 1;
     return toPascalCase(service.substring(lastDot));
+  }
+
+  public static ScheduledExecutorService generateOptimalScheduledExecutorService() {
+    return Executors.newScheduledThreadPool(
+      Runtime.getRuntime().availableProcessors()
+    );
+  }
+
+  public static <T> ArrayList<T> tryReloadCollection(
+    Collection<T> collection,
+    DataManager<T> dataManager,
+    ReflectionCache reflectionCache
+  ) {
+    try {
+      return new ArrayList<>(
+        dataManager.findAllById(getIdList(collection, reflectionCache))
+      );
+    } catch (Exception e) {
+      return new ArrayList<>(collection);
+    }
   }
 }

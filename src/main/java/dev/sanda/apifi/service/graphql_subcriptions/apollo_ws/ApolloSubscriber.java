@@ -13,6 +13,7 @@ import org.springframework.web.socket.WebSocketSession;
 @Data
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class ApolloSubscriber implements Subscriber<ExecutionResult> {
 
   private final String apolloId;

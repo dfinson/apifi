@@ -1,10 +1,9 @@
 package dev.sanda.apifi.service.graphql_subcriptions;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-
 import java.util.Collection;
 import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 public interface GraphQLSubscriptionsService<T> {
   <E> Flux<E> generatePublisher(String topic);

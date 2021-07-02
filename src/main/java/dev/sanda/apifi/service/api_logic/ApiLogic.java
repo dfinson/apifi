@@ -439,36 +439,42 @@ public final class ApiLogic<T> {
   public <TCollection> Flux<List<TCollection>> onAssociateWithSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
     return subscriptionsLogicService.onAssociateWithSubscription(
       owner,
       collectionFieldName,
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 
   public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
     return subscriptionsLogicService.onUpdateInSubscription(
       owner,
       collectionFieldName,
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 
   public <TCollection> Flux<List<TCollection>> onRemoveFromSubscription(
     T owner,
     String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy
+    FluxSink.OverflowStrategy backPressureStrategy,
+    DataManager<TCollection> collectionDataManager
   ) {
     return subscriptionsLogicService.onRemoveFromSubscription(
       owner,
       collectionFieldName,
-      backPressureStrategy
+      backPressureStrategy,
+      collectionDataManager
     );
   }
 }

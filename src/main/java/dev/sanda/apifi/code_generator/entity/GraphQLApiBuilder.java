@@ -1,20 +1,5 @@
 package dev.sanda.apifi.code_generator.entity;
 
-import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
-import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
-
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
@@ -29,22 +14,14 @@ import dev.sanda.apifi.service.api_hooks.NullMapElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
 import dev.sanda.apifi.service.api_logic.SubscriptionsLogicService;
 import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;
-import dev.sanda.apifi.test_utils.TestableGraphQLService;
+import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.TestSubscriptionsHandler;
+import dev.sanda.apifi.test_utils.TestGraphQLService;
 import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.*;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
-import javax.persistence.ElementCollection;
-import javax.tools.Diagnostic;
-import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
@@ -52,6 +29,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.*;
+import javax.persistence.ElementCollection;
+import javax.tools.Diagnostic;
+import javax.transaction.Transactional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
 public class GraphQLApiBuilder {
@@ -118,7 +119,7 @@ public class GraphQLApiBuilder {
       .addModifiers(PUBLIC)
       .addSuperinterface(testableGraphQLServiceInterface())
       .addAnnotation(Service.class)
-      .addField(methodsMap())
+      .addField(testSubscriptionsHandlerField())
       .addField(configValues());
     //generate fields:
 
@@ -1684,8 +1685,9 @@ public class GraphQLApiBuilder {
       .addParameter(ClassName.get(apiSpec.getElement()), "owner")
       .addParameter(subscriptionBackPressureStrategyParam())
       .addStatement(
-        "return apiLogic.onAssociateWithSubscription(owner, $S, backPressureStrategy)",
-        fieldApiSpec.getSimpleName()
+        "return apiLogic.onAssociateWithSubscription(owner, $S, backPressureStrategy, $L)",
+        fieldApiSpec.getSimpleName(),
+        dataManagerName(fieldApiSpec.getElement())
       )
       .returns(
         ParameterizedTypeName.get(
@@ -1734,8 +1736,9 @@ public class GraphQLApiBuilder {
       .addParameter(ClassName.get(apiSpec.getElement()), "owner")
       .addParameter(subscriptionBackPressureStrategyParam())
       .addStatement(
-        "return apiLogic.onUpdateInSubscription(owner, $S, backPressureStrategy)",
-        fieldApiSpec.getSimpleName()
+        "return apiLogic.onUpdateInSubscription(owner, $S, backPressureStrategy, $L)",
+        fieldApiSpec.getSimpleName(),
+        dataManagerName(fieldApiSpec.getElement())
       )
       .returns(
         ParameterizedTypeName.get(
@@ -1784,8 +1787,9 @@ public class GraphQLApiBuilder {
       .addParameter(ClassName.get(apiSpec.getElement()), "owner")
       .addParameter(subscriptionBackPressureStrategyParam())
       .addStatement(
-        "return apiLogic.onRemoveFromSubscription(owner, $S, backPressureStrategy)",
-        fieldApiSpec.getSimpleName()
+        "return apiLogic.onRemoveFromSubscription(owner, $S, backPressureStrategy, $L)",
+        fieldApiSpec.getSimpleName(),
+        dataManagerName(fieldApiSpec.getElement())
       )
       .returns(
         ParameterizedTypeName.get(
@@ -2867,22 +2871,10 @@ public class GraphQLApiBuilder {
       .build();
   }
 
-  private FieldSpec methodsMap() {
-    val methodsMapType = ParameterizedTypeName.get(
-      Map.class,
-      String.class,
-      Method.class
-    );
+  private FieldSpec testSubscriptionsHandlerField() {
     return FieldSpec
-      .builder(methodsMapType, "methodsMap")
-      .initializer(
-        "$T" +
-        ".stream(this.getClass().getDeclaredMethods())" +
-        ".collect($T.toMap(Method::getName, method -> method))",
-        Arrays.class,
-        Collectors.class
-      )
-      .addAnnotation(Getter.class)
+      .builder(TestSubscriptionsHandler.class, "testSubscriptionsHandler")
+      .addAnnotation(Autowired.class)
       .addModifiers(PRIVATE)
       .build();
   }
@@ -3000,7 +2992,7 @@ public class GraphQLApiBuilder {
 
   private TypeName testableGraphQLServiceInterface() {
     return ParameterizedTypeName.get(
-      ClassName.get(TestableGraphQLService.class),
+      ClassName.get(TestGraphQLService.class),
       ClassName.get(apiSpec.getElement())
     );
   }

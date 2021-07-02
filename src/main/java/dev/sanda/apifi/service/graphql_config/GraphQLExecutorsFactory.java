@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.socket.WebSocketSession;
 
 @Configuration
@@ -12,6 +13,12 @@ import org.springframework.web.socket.WebSocketSession;
 public class GraphQLExecutorsFactory {
 
   private final GraphQLInstanceFactory graphQLInstanceFactory;
+
+  @Bean
+  @Primary
+  public GraphQLRequestExecutor objectGraphQLRequestExecutor() {
+    return () -> graphQLInstanceFactory;
+  }
 
   @Bean
   public GraphQLRequestExecutor<HttpServletRequest> httpGraphQLRequestExecutor() {

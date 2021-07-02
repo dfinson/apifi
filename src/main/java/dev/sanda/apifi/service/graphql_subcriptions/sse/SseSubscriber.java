@@ -10,6 +10,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class SseSubscriber implements Subscriber<ExecutionResult> {
 
   private final SseEmitter emitter;

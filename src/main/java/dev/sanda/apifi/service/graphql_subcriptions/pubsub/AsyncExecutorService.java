@@ -1,17 +1,20 @@
 package dev.sanda.apifi.service.graphql_subcriptions.pubsub;
 
-import java.util.concurrent.Executors;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.generateOptimalScheduledExecutorService;
+
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AsyncExecutorService {
 
-  private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(
-    Runtime.getRuntime().availableProcessors()
-  );
+  @Getter
+  @Setter
+  private ScheduledExecutorService executorService = generateOptimalScheduledExecutorService();
 
   public synchronized ScheduledFuture scheduleAsyncTask(
     Runnable runnable,

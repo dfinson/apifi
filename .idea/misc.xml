@@ -3,6 +3,10 @@
   <component name="FrameworkDetectionExcludesConfiguration">
     <type id="Spring" />
   </component>
+  <component name="JavadocGenerationManager">
+    <option name="OUTPUT_DIRECTORY" value="$PROJECT_DIR$/docs" />
+    <option name="OPEN_IN_BROWSER" value="false" />
+  </component>
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>

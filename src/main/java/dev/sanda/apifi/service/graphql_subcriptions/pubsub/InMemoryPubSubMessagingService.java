@@ -27,7 +27,13 @@ public class InMemoryPubSubMessagingService implements PubSubMessagingService {
         topicHandlers
           .get(topic)
           .values()
-          .forEach(handler -> handler.handleDataInTransaction(payload));
+          .forEach(
+            handler ->
+              handler.handleDataInTransaction(
+                payload,
+                PubSubMessagingService.isOnDeleteOrRemove(topic)
+              )
+          );
       }
     }
   }

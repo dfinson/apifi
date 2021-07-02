@@ -25,13 +25,15 @@ public class PubSubTopicHandler {
   private final ConfigValues configValues;
 
   @SneakyThrows
-  public void handleDataInTransaction(Object data) {
+  public void handleDataInTransaction(Object data, boolean isDeleteOrRemove) {
     log.debug(
       "As its name suggests, this method should be run within a transaction so as to avoid lazy loading exceptions"
     );
-    if (isSingleEntity(data)) data = loadSingleEntity(data); else if (
-      isEntityCollection(data)
-    ) data = loadEntityCollection((Collection) data);
+    if (!isDeleteOrRemove) {
+      if (isSingleEntity(data)) data = loadSingleEntity(data); else if (
+        isEntityCollection(data)
+      ) data = loadEntityCollection((Collection) data);
+    }
     downStreamSubscriber.next(data);
   }
 

@@ -1,8 +1,7 @@
 package dev.sanda.apifi.service.graphql_subcriptions.pubsub.redis_pubsub;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.nonTransactionalObjectMapper;
+
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.PubSubMessagingService;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.PubSubTopicHandler;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
@@ -40,7 +39,11 @@ public class RedisPubSubMessagingService implements PubSubMessagingService {
         .get(topic)
         .values()
         .forEach(
-          handler -> handler.handleDataInTransaction(deserializedPayload)
+          handler ->
+            handler.handleDataInTransaction(
+              deserializedPayload,
+              PubSubMessagingService.isOnDeleteOrRemove(topic)
+            )
         );
     }
   }
@@ -50,19 +53,8 @@ public class RedisPubSubMessagingService implements PubSubMessagingService {
   public void publishToTopic(String topic, Object payload) {
     redisPublisher.publish(
       topic,
-      publicationMapper().writeValueAsString(payload)
+      nonTransactionalObjectMapper().writeValueAsString(payload)
     );
-  }
-
-  private ObjectMapper publicationMapper() {
-    val mapper = new ObjectMapper();
-    mapper.disable(
-      MapperFeature.AUTO_DETECT_CREATORS,
-      MapperFeature.AUTO_DETECT_GETTERS,
-      MapperFeature.AUTO_DETECT_IS_GETTERS
-    );
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-    return mapper;
   }
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();

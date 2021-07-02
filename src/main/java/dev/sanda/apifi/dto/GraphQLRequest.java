@@ -11,7 +11,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class GraphQLRequest {
 
-  private final String query;
+  private String query;
   private final String operationName;
   private final Map<String, Object> variables;
 

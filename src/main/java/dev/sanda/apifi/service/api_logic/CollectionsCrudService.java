@@ -658,6 +658,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       collectionDataManager,
       dataManager
     );
+    assert input != null;
     Collection<TCollection> existingCollection = getEntityCollectionFrom(
       input,
       fieldName
