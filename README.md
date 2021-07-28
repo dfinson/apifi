@@ -456,8 +456,8 @@ The default Apifi implementation for free text search utilizes JPQL LIKE stateme
 This can be utilized by overriding the `executeCustomFreeTextSearch` method present in all [`ApiHooks`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) implementations. The method takes in a [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java) argument, as well as a [`DataManager<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/service/DataManager.java) argument. It returns a [`Page<T>`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/Page.java) object. `executeCustomFreeTextSearch` leaves the implementation of all free text search functionality - including pagination, in the hands of the developer.
   
 ### Entity Collections  
-Collections are unique in that they are not "assigned" per say - they're **associated with**, **updated in**, and **removed from**. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an entity collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:  
-1. `EntityCollectionEndpointType[] endpoints()` - [`EntityCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/EntityCollectionEndpointType.java) is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `UPDATE_IN`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument denotes which endpoints should be generated.
+Collections are unique in that they are not "assigned" wholesale - they're instead **associated with** new items, which may later be **removed from** them. As such, some specialized endpoints are required in order to work with them. In order to expose endpoints for an entity collection, annotate the field with the `@EntityCollectionApi` annotation. This annotation takes in several arguments, as follows:  
+1. `EntityCollectionEndpointType[] endpoints()` - [`EntityCollectionEndpointType`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/generator/entity/EntityCollectionEndpointType.java) is an ENUM comprising four types of embedded collection api endpoints; `ASSOCIATE_WITH, REMOVE_FROM`, `PAGINATED_BATCH` and `PAGINATED_FREE_TEXT_SEARCH`.  This argument denotes which endpoints should be generated.
 2. `String[] freeTextSearchFields()` - If `PAGINATED_FREE_TEXT_SEARCH` was specified as an endpoint, this argument denotes which fields the entity should be searchable by.  
 3. `Class<? extends EntityCollectionApiHooks> apiHooks()` - This serves a similar purpose to the `ApiHooks<T>` interface described above. It enables custom business logic to be "hooked" before and / or after CRUD operations. To use, create a public class which implements the [`EntityCollectionApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/EntityCollectionApiHooks.java) interface , and pass in the class type token as the argument for this parameter. The class must be wired into the application context (using `@Component`/`@Service`/etc.).  
 4. `boolean associatePreExistingOnly()` - This parameter specifies whether the `ASSOCIATE_WITH` endpoint should ensure that instances being added to the collection are already present in the database, and defaults to `false` if not set.  
@@ -505,22 +505,14 @@ As mentioned above, [`@EntityCollectionApi(...)`](https://github.com/sanda-dev/a
   The newly added items.  
 2. REMOVE_FROM:  
    *Overview:*  
-  Remove a list of items from a collection. This does not actually perform any deletions, it merely removes the references from the collection. In order to remove the items from the database, either cascading or an appropriate method within [`ApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) should be utilized.    
-3. UPDATE_IN:  
-   *Overview:*  
-  Update a list of instances referenced within a collection.  
-   *Input:*   
-- `owner`: The instance containing the collection to be added to. Must include ID.   
-   - `input`: A list of instances to be updated. These must each include IDs, as well as any fields to be updated.  
-   *Output:*  
-  The newly updated instances.  
-4. PAGINATED_BATCH:  
+  Remove a list of items from a collection. This does not actually perform any deletions, it merely removes the references from the collection. In order to remove the items from the database, either cascading or an appropriate method within [`ApiHooks<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/service/ApiHooks.java) should be utilized.
+3. PAGINATED_BATCH:  
    *Overview and output:*   
  Same as the above GET_PAGINATED_BATCH endpoint, but for the fact that the instances are all accessed *within the context of* the entity which has the collection.  
    *Input:*  
  - `owner`: The instance containing the collection to be added to. Must include ID.   
    - `PageRequest`: See GET_PAGINATED_BATCH  
-5. PAGINATED_FREE_TEXT_SEARCH:  
+4. PAGINATED_FREE_TEXT_SEARCH:  
     *Overview and output:*   
  Same as the above `@WithApiFreeTextSearchByFields(...)` endpoint, but for the fact that the instances are all accessed *within the context of* the entity which has the collection.  
    *Input:*  
@@ -540,7 +532,6 @@ public class User {
     private String passwordHash;
     @EntityCollectionApi(endpoints = {
     ASSOCIATE_WITH,
-    UPDATE_IN,
     REMOVE_FROM,
     PAGINATED_BATCH
     })
@@ -560,17 +551,12 @@ public class UserGraphQLApiService {
     }
     
     @GraphQLMutation 
-    public List < Post > updatePostsInUser(User owner, List < Post > input) {
-    return apiLogic.updateEntityCollection(owner, postsDataManager, input, null);
-    }
-    
-    @GraphQLMutation 
     public List < Post > removePostsFromUser(User owner, List < Post > input) {
     return apiLogic.removeFromEntityCollection(owner, "posts", input, null);
     }
     
     @GraphQLQuery 
-    public Page < Post > postsInUser(User owner, PageRequest input) {
+    public Page < Post > postsOfUser(User owner, PageRequest input) {
     return apiLogic.getPaginatedBatchInEntityCollection(owner, input, "posts", postsDataManager, null);
     }
 } 
@@ -688,7 +674,6 @@ public class User implements Archivable {
   @EntityCollectionApi(
     subscriptions = {
       ON_ASSOCIATE_WITH, // takes in a user to monitor as input, returns any new posts which are added to the annotated collection
-      ON_UPDATE_IN, // takes in a user to monitor as input, returns any posts which are updated with the annotated collection
       ON_REMOVE_FROM // takes in a user to monitor as input, returns any new posts which are removed from the annotated collection
     }
   )

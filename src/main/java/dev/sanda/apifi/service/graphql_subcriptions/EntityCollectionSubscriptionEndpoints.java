@@ -7,7 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum EntityCollectionSubscriptionEndpoints {
   ON_ASSOCIATE_WITH("AssociateWith"),
-  ON_UPDATE_IN("UpdateIn"),
   ON_REMOVE_FROM("RemoveFrom"),
 
   NONE("None");

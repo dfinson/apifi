@@ -1,5 +1,20 @@
 package dev.sanda.apifi.code_generator.entity;
 
+import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
+
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
@@ -22,6 +37,14 @@ import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.*;
+import java.util.*;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.*;
+import javax.persistence.ElementCollection;
+import javax.tools.Diagnostic;
+import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
@@ -29,30 +52,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
-import javax.persistence.ElementCollection;
-import javax.tools.Diagnostic;
-import javax.transaction.Transactional;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
-import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
 public class GraphQLApiBuilder {
