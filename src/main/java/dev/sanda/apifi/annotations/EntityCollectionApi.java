@@ -122,10 +122,6 @@ public @interface EntityCollectionApi {
    *     return apiLogic.onAssociateWithSubscription(...);
    *   }
    *
-   *   @GraphQLSubscription
-   *   public Flux<List<Post>> onUpdatePostsOfUser(...) {
-   *     return apiLogic.onUpdateInSubscription(...);
-   *   }
    *
    *   @GraphQLSubscription
    *   public Flux<List<Post>> onRemovePostsFromUser(...) {

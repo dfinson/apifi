@@ -1,3 +1,4 @@
+
   
   [![Gitter](https://badges.gitter.im/Apifi-framework/community.svg)](https://gitter.im/Apifi-framework/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
   <img src='https://github.com/sanda-dev/apifi/blob/master/readme%20images/apifi-logo.png' width='470' alt='Apifi Logo' />
@@ -34,6 +35,9 @@
     + [Class level security](#class-level-security)
     + [Method level security](#method-level-security)
     + [Search endpoints security](#search-endpoints-security)
+   * [Microservices architecture](#microservices-architecture)
+	   + [Defining the endpoints](#defining-the-endpoints)
+	   + [Required configuration](#required-configuration)
   * [Testing](#testing)
     + [TestableGraphQLService](#testablegraphqlservice)
     + [Example](#example)
@@ -873,6 +877,79 @@ In the event of a discrepancy, method level security annotations will override c
   
 #### Search endpoints security  
 All search endpoints (`@ApiFindBy`, `@ApiFindAllBy`, `@ApiFindByUnique`, `@WithFreeTextSearchFields(...)`) optionally take in the same seven parameters as `@WithServiceLevelSecurity(...)` and `@WithMethodLevelSecurity(...)`, allowing for security policies on a per endpoint basis if need be.  
+
+### Microservices architecture
+
+_This section assumes a working knowledge of [maven modules](https://maven.apache.org/guides/mini/guide-multiple-modules.html)._
+
+Apifi allows for a project to be split across multiple Maven modules. It does this by allowing for all of the annotations described thus far to be applied not only on entity classes themselves, but also on any class directly inheriting from an entity class, provided it's annotated with the `@EntityApiSpec` annotation. This allows for each module to have one or more classes inheriting from whichever entities are relevant to that modules specific requirements, with each inheriting class defining the relevant endpoints. This can also be utilized within a single module project if desired.
+
+#### Defining the endpoints
+
+In order to define an endpoint on a non entity class, the class must inherit from a class annotated with the javax `@Entity` annotation, and itself be annotated with the `@EntityApiSpec` annotation. For example; given the following data Model, defined within a Maven module called  _common_:
+```java  
+@Entity
+public class User {
+    @Id
+    @GeneratedValue
+    private Long id;
+    private String name;
+    private String email;
+    private String phoneNumber;
+    private String passwordHash;
+    @OneToMany(mappedBy = "user", cascade = ALL)
+    private Set<Post> posts;
+}
+```  
+```java  
+@Entity
+public class Post {
+    @Id
+    @GeneratedValue 
+    private Long id;
+    @ManyToOne 
+    private User user;
+    private String content;
+}  
+```  
+And given the following set of project requirements:
+1. A maven module called _users_service_, representing a micro-service responsible for user management endpoints (e.g. create user, update user, delete user).
+2. An additional maven module called _posts_service_, representing a micro-service responsible for post browsing and management endpoints (e.g. get paginated posts by user, associate new posts with user, update post, remove posts).
+
+In order to fulfill the first requirement, a module called _users_service_ is created. A dependency upon the _common_ module is added within its _pom.xml_ file, and a package called _api_specs_ is created (this naming and package structure is recommended for readability but is not required). Within this package the following class is created:
+```java
+@EntityApiSpec  
+@WithCRUDEndpoints({CREATE, UPDATE, DELETE})
+public class UserApiSpec extends User{}
+```
+In order to fulfill the second requirement, a module called _posts_service_ is created. A dependency upon the _common_ module is added within its _pom.xml_ file, and a package called _api_specs_ is created. Within this package the following classes are created:
+```java
+@EntityApiSpec  
+public class PostsOfUserApiSpec extends User {  
+  
+ // the entity collection fields getter is overriden and substitutes for the field itself
+ @Override  
+ @EntityCollectionApi(  
+  endpoints = { ASSOCIATE_WITH, GET_PAGINATED__BATCH, REMOVE_FROM }  
+)
+  public Set<Post> getPosts() {  
+    return super.getPosts();  
+  }  
+}
+```
+```java
+@EntityApiSpec  
+@WithCRUDEndpoints(UPDATE)  
+public class PostApiSpec extends Post {}
+```
+
+#### Required configuration
+Given one module which defines GraphQL endpoints (e.g. _users_service_ and _posts_service_ in the above example), which depends upon another module, the module which is depended upon (e.g. _common_ in the above example) must contain a class which is annotated with the `@TransientModule` annotation. This is in order to prevent Apifis annotation processor from generating duplicate spring beans at compile time, which would crash the application at startup. For the above example, something like the following would be added to the _common_ module:
+```java
+@TransientModule
+public class TransientModuleMarker {}
+```
+This annotation can be placed on any class within the module.
 
 ### Testing
 The obvious problem with testing components made up of code which is generated at compile time is that they cannot be referenced at compile time. There's obviously no **direct** way to test against code which is unavailable during compilation. This is where [`TestableGraphQLService<T>`](https://github.com/sanda-dev/apifi/blob/master/src/main/java/dev/sanda/apifi/test_utils/TestableGraphQLService.java) comes into play. 

@@ -1,20 +1,5 @@
 package dev.sanda.apifi.code_generator.entity;
 
-import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
-import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
-
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
@@ -37,14 +22,6 @@ import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.*;
-import java.util.*;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.*;
-import javax.persistence.ElementCollection;
-import javax.tools.Diagnostic;
-import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.val;
 import lombok.var;
@@ -52,6 +29,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.*;
+import javax.persistence.ElementCollection;
+import javax.tools.Diagnostic;
+import javax.transaction.Transactional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
 public class GraphQLApiBuilder {
@@ -515,33 +517,17 @@ public class GraphQLApiBuilder {
             //associate
             if (resolvers.contains(ASSOCIATE_WITH)) {
               val clientQueryBuilder = new GraphQLQueryBuilder(
-                entitiesMap.values(),
-                ARRAY,
-                fkTargetType
+                      entitiesMap.values(),
+                      ARRAY,
+                      fkTargetType
               );
               clientQueryBuilder.setOwnerEntityType(entityName);
               final MethodSpec associateWithEntityCollection = genAssociateWithEntityCollection(
-                fieldApiSpec,
-                clientQueryBuilder
+                      fieldApiSpec,
+                      clientQueryBuilder
               );
               serviceBuilder.addMethod(associateWithEntityCollection);
               testableServiceBuilder.addMethod(associateWithEntityCollection);
-              clientFactory.addQuery(clientQueryBuilder);
-            }
-            //update
-            if (resolvers.contains(UPDATE_IN)) {
-              val clientQueryBuilder = new GraphQLQueryBuilder(
-                entitiesMap.values(),
-                ARRAY,
-                fkTargetType
-              );
-              clientQueryBuilder.setOwnerEntityType(entityName);
-              final MethodSpec updateInEntityCollection = genUpdateInEntityCollection(
-                fieldApiSpec,
-                clientQueryBuilder
-              );
-              serviceBuilder.addMethod(updateInEntityCollection);
-              testableServiceBuilder.addMethod(updateInEntityCollection);
               clientFactory.addQuery(clientQueryBuilder);
             }
             //remove
@@ -617,25 +603,6 @@ public class GraphQLApiBuilder {
               );
               serviceBuilder.addMethod(onAssociateWithSubscription);
               testableServiceBuilder.addMethod(onAssociateWithSubscription);
-              clientFactory.addQuery(clientQueryBuilder);
-            }
-
-            if (subscriptions.contains(ON_UPDATE_IN)) {
-              val clientQueryBuilder = new GraphQLQueryBuilder(
-                entitiesMap.values(),
-                ARRAY,
-                fkTargetType
-              );
-              clientQueryBuilder.setSubscriptionObservableType(
-                COLLECTION_OWNER
-              );
-              clientQueryBuilder.setOwnerEntityType(entityName);
-              val onUpdateInSubscription = genOnUpdateInSubscription(
-                fieldApiSpec,
-                clientQueryBuilder
-              );
-              serviceBuilder.addMethod(onUpdateInSubscription);
-              testableServiceBuilder.addMethod(onUpdateInSubscription);
               clientFactory.addQuery(clientQueryBuilder);
             }
 
@@ -1705,57 +1672,6 @@ public class GraphQLApiBuilder {
         fieldApiSpec.getAnnotation(EntityCollectionApi.class),
         "",
         "OnAssociateWith"
-      )
-    );
-    clientQueryBuilder.setQueryType(SUBSCRIPTION);
-    clientQueryBuilder.setQueryName(subscriptionName);
-    clientQueryBuilder.setVars(
-      new LinkedHashMap<String, String>() {
-        {
-          put("input", "SubscriptionRequestInput<T>");
-        }
-      }
-    );
-    return builder.build();
-  }
-
-  private MethodSpec genOnUpdateInSubscription(
-    FieldGraphQLApiSpec fieldApiSpec,
-    GraphQLQueryBuilder clientQueryBuilder
-  ) {
-    val subscriptionName =
-      "onUpdate" +
-      toPascalCase(fieldApiSpec.getSimpleName()) +
-      "Of" +
-      entityName;
-    var builder = MethodSpec
-      .methodBuilder(subscriptionName)
-      .addModifiers(PUBLIC)
-      .addAnnotation(GraphQLSubscription.class)
-      .addParameter(ClassName.get(apiSpec.getElement()), "owner")
-      .addParameter(subscriptionBackPressureStrategyParam())
-      .addStatement(
-        "return apiLogic.onUpdateInSubscription(owner, $S, backPressureStrategy, $L)",
-        fieldApiSpec.getSimpleName(),
-        dataManagerName(fieldApiSpec.getElement())
-      )
-      .returns(
-        ParameterizedTypeName.get(
-          ClassName.get(Flux.class),
-          listOf(collectionTypeName(fieldApiSpec.getElement()))
-        )
-      );
-    if (
-      SecurityAnnotationsFactory.areSecurityAnnotationsPresent(
-        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
-        "",
-        "OnUpdateIn"
-      )
-    ) builder.addAnnotations(
-      SecurityAnnotationsFactory.of(
-        fieldApiSpec.getAnnotation(EntityCollectionApi.class),
-        "",
-        "OnUpdateIn"
       )
     );
     clientQueryBuilder.setQueryType(SUBSCRIPTION);

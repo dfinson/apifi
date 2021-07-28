@@ -9,9 +9,6 @@ import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.service.DataManager;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -20,6 +17,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Scope("prototype")
@@ -169,24 +169,6 @@ public final class ApiLogic<T> {
       input,
       fieldName,
       collectionDataManager
-    );
-  }
-
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<TCollection> updateEntityCollection(
-    T owner,
-    DataManager<TCollection> collectionDataManager,
-    Collection<TCollection> toUpdate,
-    E entityCollectionApiHooks,
-    String collectionFieldName,
-    SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService
-  ) {
-    return collectionsCrudService.updateEntityCollectionImpl(
-      owner,
-      collectionDataManager,
-      toUpdate,
-      entityCollectionApiHooks,
-      collectionFieldName,
-      collectionSubscriptionsLogicService
     );
   }
 
@@ -443,20 +425,6 @@ public final class ApiLogic<T> {
     DataManager<TCollection> collectionDataManager
   ) {
     return subscriptionsLogicService.onAssociateWithSubscription(
-      owner,
-      collectionFieldName,
-      backPressureStrategy,
-      collectionDataManager
-    );
-  }
-
-  public <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
-    T owner,
-    String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy,
-    DataManager<TCollection> collectionDataManager
-  ) {
-    return subscriptionsLogicService.onUpdateInSubscription(
       owner,
       collectionFieldName,
       backPressureStrategy,

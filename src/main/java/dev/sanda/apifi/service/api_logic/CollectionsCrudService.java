@@ -1,8 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.dto.KeyAndValue;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
@@ -13,15 +10,19 @@ import dev.sanda.datafi.reflection.runtime_services.CollectionInstantiator;
 import dev.sanda.datafi.reflection.runtime_services.CollectionsTypeResolver;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.val;
 import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 @Service
 @Scope("prototype")
@@ -127,55 +128,6 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
         )
       );
     return input.stream().map(resultMap::get).collect(Collectors.toList());
-  }
-
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<TCollection> updateEntityCollectionImpl(
-    T owner,
-    DataManager<TCollection> collectionDataManager,
-    Collection<TCollection> toUpdate,
-    E entityCollectionApiHooks,
-    String collectionFieldName,
-    SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService
-  ) {
-    val ownerLoaded = dataManager
-      .findById(getId(owner, reflectionCache))
-      .orElse(null);
-    if (ownerLoaded == null) throw_entityNotFound(owner, reflectionCache);
-    owner = ownerLoaded;
-    if (entityCollectionApiHooks != null) entityCollectionApiHooks.preUpdate(
-      toUpdate,
-      owner,
-      collectionDataManager,
-      dataManager
-    );
-    List<TCollection> entitiesToUpdate = collectionDataManager.findAllById(
-      getIdList(toUpdate, reflectionCache)
-    );
-    var result = collectionDataManager.cascadeUpdateCollection(
-      entitiesToUpdate,
-      toUpdate
-    );
-    if (entityCollectionApiHooks != null) entityCollectionApiHooks.postUpdate(
-      toUpdate,
-      result,
-      owner,
-      collectionDataManager,
-      dataManager
-    );
-    fireSubscriptionEvent(
-      () -> collectionSubscriptionsLogicService.onUpdateEvent(result)
-    );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onUpdateInEvent(
-          ownerLoaded,
-          collectionFieldName,
-          result,
-          collectionDataManager,
-          entityCollectionApiHooks
-        )
-    );
-    return result;
   }
 
   public <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection> addToElementCollectionImpl(

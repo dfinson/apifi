@@ -1,24 +1,26 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.datafi.DatafiStaticUtils.getId;
-import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
-import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
-
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.datafi.DatafiStaticUtils.getId;
+import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
 
 @Service
 public class SubscriptionsLogicService<T>
@@ -326,55 +328,6 @@ public class SubscriptionsLogicService<T>
     if (
       entityCollectionApiHooks != null
     ) entityCollectionApiHooks.postOnAssociate(
-      payload,
-      dataManager,
-      collectionDataManager,
-      topic
-    );
-  }
-
-  protected <TCollection> Flux<List<TCollection>> onUpdateInSubscription(
-    T owner,
-    String collectionFieldName,
-    FluxSink.OverflowStrategy backPressureStrategy,
-    DataManager<TCollection> collectionDataManager
-  ) {
-    return generatePublisherImplementation(
-      parseEntityCollectionTopic(
-        owner,
-        collectionFieldName,
-        ON_UPDATE_IN.getStringValue()
-      ),
-      backPressureStrategy,
-      collectionDataManager
-    );
-  }
-
-  protected <TCollection> void onUpdateInEvent(
-    T owner,
-    String collectionFieldName,
-    List<TCollection> payload,
-    DataManager<TCollection> collectionDataManager,
-    EntityCollectionApiHooks<TCollection, T> entityCollectionApiHooks
-  ) {
-    val topic = parseEntityCollectionTopic(
-      owner,
-      collectionFieldName,
-      ON_UPDATE_IN.getStringValue()
-    )
-      .get(0);
-    if (
-      entityCollectionApiHooks != null
-    ) entityCollectionApiHooks.preOnUpdateIn(
-      payload,
-      dataManager,
-      collectionDataManager,
-      topic
-    );
-    subscriptionsService.publishToTopic(topic, payload);
-    if (
-      entityCollectionApiHooks != null
-    ) entityCollectionApiHooks.postOnUpdateIn(
       payload,
       dataManager,
       collectionDataManager,
