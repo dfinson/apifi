@@ -1,5 +1,8 @@
 package dev.sanda.apifi.service.api_logic;
 
+import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.dto.KeyAndValue;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
@@ -10,19 +13,15 @@ import dev.sanda.datafi.reflection.runtime_services.CollectionInstantiator;
 import dev.sanda.datafi.reflection.runtime_services.CollectionsTypeResolver;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.val;
 import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 @Service
 @Scope("prototype")
