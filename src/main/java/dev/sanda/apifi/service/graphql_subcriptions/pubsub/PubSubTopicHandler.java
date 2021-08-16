@@ -27,7 +27,7 @@ public class PubSubTopicHandler {
   @SneakyThrows
   public void handleDataInTransaction(Object data, boolean isDeleteOrRemove) {
     log.debug(
-      "As its name suggests, this method should be run within a transaction so as to avoid lazy loading exceptions"
+      "As its name suggests, this method should be runAssertions within a transaction so as to avoid lazy loading exceptions"
     );
     if (!isDeleteOrRemove) {
       if (isSingleEntity(data)) data = loadSingleEntity(data); else if (

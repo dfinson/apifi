@@ -2,6 +2,7 @@ package dev.sanda.apifi.code_generator;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiSpecs;
 import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
+import static dev.sanda.datafi.DatafiStaticUtils.getEntityApiSpecs;
 
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
@@ -11,7 +12,9 @@ import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
 import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
 import dev.sanda.apifi.code_generator.entity.GraphQLApiBuilder;
 import dev.sanda.apifi.code_generator.entity.ServiceAndTestableService;
+import dev.sanda.apifi.code_generator.entity.SubscriptionsLogicServicesFactory;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
+import dev.sanda.datafi.DatafiStaticUtils;
 import dev.sanda.datafi.annotations.TransientModule;
 import dev.sanda.datafi.code_generator.annotated_element_specs.AnnotatedElementSpec;
 import java.io.IOException;
@@ -88,7 +91,23 @@ public class AnnotationProcessor extends AbstractProcessor {
       clientFactory.setTypescriptMode(true);
       clientFactory.generate();
     }
+    generateSubscriptionLogicServicesConfigFactory(roundEnvironment);
     return false;
+  }
+
+  private void generateSubscriptionLogicServicesConfigFactory(
+    RoundEnvironment roundEnvironment
+  ) {
+    val entitySpecs = getEntityApiSpecs(roundEnvironment, processingEnv);
+    if (entitySpecs.isEmpty()) return;
+    SubscriptionsLogicServicesFactory subscriptionsLogicServicesFactory = new SubscriptionsLogicServicesFactory(
+      processingEnv,
+      DatafiStaticUtils.getBasePackage(roundEnvironment)
+    );
+    entitySpecs.forEach(
+      subscriptionsLogicServicesFactory::addSubscriptionLogicService
+    );
+    subscriptionsLogicServicesFactory.writeToFile();
   }
 
   private Map<String, TypeElement> getEntitiesMap(

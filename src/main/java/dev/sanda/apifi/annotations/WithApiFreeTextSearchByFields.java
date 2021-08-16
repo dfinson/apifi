@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 /**
  * When placed on a field of a JPA Entity annotated class
  * this annotation tells apifi to autogenerate an endpoint

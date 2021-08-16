@@ -1,18 +1,14 @@
 package dev.sanda.apifi.service.graphql_subcriptions.testing_utils;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static org.springframework.test.util.AssertionErrors.assertEquals;
-
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
-import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.TestSubscriberExpectMethods;
+import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.AssertionLogic;
+import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.TestSubscriberAssertionMethods;
 import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.TestSubscriberThenMethods;
+import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.TestSubscriberWhenMethod;
 import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import graphql.ExecutionResult;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -23,6 +19,13 @@ import org.reactivestreams.Subscription;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static org.springframework.test.util.AssertionErrors.assertEquals;
+
 @Data
 @Slf4j
 @RequiredArgsConstructor
@@ -31,7 +34,8 @@ public class TestSubscriberImplementation
   implements
     Subscriber<ExecutionResult>,
     TestSubscriber,
-    TestSubscriberExpectMethods,
+    TestSubscriberWhenMethod,
+    TestSubscriberAssertionMethods,
     TestSubscriberThenMethods {
 
   private final DataManager dataManager;
@@ -55,6 +59,7 @@ public class TestSubscriberImplementation
   @SneakyThrows
   public synchronized void onNext(ExecutionResult executionResult) {
     results.add(executionResult);
+    request();
   }
 
   @Override
@@ -120,6 +125,20 @@ public class TestSubscriberImplementation
     return this;
   }
 
+  @Override
+  public <T> TestSubscriberThenMethods runAssertions(
+    AssertionLogic<T> assertionLogic
+  ) {
+    new TransactionTemplate(transactionManager)
+      .executeWithoutResult(
+        status ->
+          assertionLogic.runAssertions(
+            (List<T>) getActualValues(new ArrayList<>())
+          )
+      );
+    return this;
+  }
+
   private ArrayList<Object> getActualValues(List<Object> expectedValues) {
     val actualValues = results
       .stream()
@@ -148,7 +167,8 @@ public class TestSubscriberImplementation
   }
 
   @Override
-  public TestSubscriberExpectMethods when(Runnable scenario) {
+  public TestSubscriberAssertionMethods when(Runnable scenario) {
+    results.clear();
     new TransactionTemplate(transactionManager)
       .executeWithoutResult(transactionStatus -> scenario.run());
     waitForActiveThreads();

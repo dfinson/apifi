@@ -4,7 +4,7 @@ import static dev.sanda.apifi.test_utils.StaticTestUtils.generateTestSubscriber;
 import static dev.sanda.apifi.test_utils.StaticTestUtils.getClassMethod;
 import static org.springframework.transaction.annotation.Propagation.NEVER;
 
-import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.TestSubscriberImplementation;
+import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.test_subscriber_methods.TestSubscriberWhenMethod;
 import java.lang.reflect.InvocationTargetException;
 import lombok.SneakyThrows;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +22,14 @@ public interface TestGraphQLService<TEntity> {
   }
 
   /*
-   Will throw exception if run within transaction. This is intentional.
-   Subscription tests cannot be run as single transactions due to the
+   Will throw exception if runAssertions within transaction. This is intentional.
+   Subscription tests cannot be runAssertions as single transactions due to the
    multithreaded nature of the internal pub-sub implementation for
    GraphQL subscriptions.
   */
   @Transactional(propagation = NEVER)
   @SneakyThrows
-  default TestSubscriberImplementation invokeSubscriptionEndpoint(
+  default TestSubscriberWhenMethod invokeSubscriptionEndpoint(
     String methodName,
     Class targetReturnType,
     Object... args
@@ -38,19 +38,20 @@ public interface TestGraphQLService<TEntity> {
       this,
       targetReturnType,
       getClassMethod(this, methodName),
-      args
+      args,
+      true
     );
   }
 
   /*
-   Will throw exception if run within transaction. This is intentional.
-   Subscription tests cannot be run as single transactions due to the
+   Will throw exception if runAssertions within transaction. This is intentional.
+   Subscription tests cannot be runAssertions as single transactions due to the
    multithreaded nature of the internal pub-sub implementation for
    GraphQL subscriptions.
   */
   @Transactional(propagation = NEVER)
   @SneakyThrows
-  default TestSubscriberImplementation invokeCustomSubscriptionEndpoint(
+  default TestSubscriberWhenMethod invokeCustomSubscriptionEndpoint(
     Object serviceInstance,
     String methodName,
     Class targetReturnType,
@@ -60,7 +61,8 @@ public interface TestGraphQLService<TEntity> {
       this,
       targetReturnType,
       getClassMethod(serviceInstance, methodName),
-      args
+      args,
+      false
     );
   }
 }

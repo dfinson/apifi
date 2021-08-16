@@ -1,20 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
 
-import dev.sanda.apifi.service.api_hooks.ApiHooks;
-import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
-import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
-import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
-import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
-import dev.sanda.datafi.service.DataManager;
-import lombok.val;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
 import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
 import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
 import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
@@ -22,7 +7,26 @@ import static dev.sanda.datafi.DatafiStaticUtils.getId;
 import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
 
+import dev.sanda.apifi.service.api_hooks.ApiHooks;
+import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
+import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
+import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
+import dev.sanda.datafi.service.DataManager;
+import dev.sanda.datafi.service.DataManagersCollector;
+import java.util.*;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import lombok.Setter;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
 @Service
+@Scope("prototype")
 public class SubscriptionsLogicService<T>
   implements GraphQLSubscriptionsService<T> {
 
@@ -32,14 +36,26 @@ public class SubscriptionsLogicService<T>
   @Autowired
   private ReflectionCache reflectionCache;
 
+  @Autowired
+  private DataManagersCollector dataManagersCollector;
+
+  public SubscriptionsLogicService(Class<T> entityType) {
+    this.entityType = entityType;
+  }
+
   private DataManager<T> dataManager;
+
+  @Setter
   private ApiHooks<T> apiHooks;
+
+  private final Class<T> entityType;
   private String entityName;
   private String idFieldName;
 
-  public void init(DataManager<T> dataManager, ApiHooks<T> apiHooks) {
-    this.dataManager = dataManager;
-    this.apiHooks = apiHooks;
+  @PostConstruct
+  private void init() {
+    this.dataManager =
+      dataManagersCollector.getDataManagerForEntityType(this.entityType);
     this.entityName = dataManager.getClazzSimpleName();
     this.idFieldName =
       reflectionCache.getEntitiesCache().get(entityName).getIdField().getName();
