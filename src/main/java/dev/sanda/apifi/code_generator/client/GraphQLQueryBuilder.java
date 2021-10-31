@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.TypeElement;
 import lombok.Data;
 import lombok.val;
-import lombok.var;
 
 @Data
 public class GraphQLQueryBuilder {
@@ -164,7 +163,7 @@ public class GraphQLQueryBuilder {
     varType =
       varType.replaceAll("\\[", "").replaceAll("]", "").replaceAll("Input", "");
     val start = varType.lastIndexOf(".") + 1;
-    var simpleTypeName = varType.substring(start);
+    String simpleTypeName = varType.substring(start);
     return isArray ? "[" + simpleTypeName + "]" : simpleTypeName;
   }
 

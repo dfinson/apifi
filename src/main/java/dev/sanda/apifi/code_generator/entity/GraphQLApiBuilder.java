@@ -1,21 +1,5 @@
 package dev.sanda.apifi.code_generator.entity;
 
-import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
-import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
-import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-import static javax.lang.model.element.Modifier.PRIVATE;
-import static javax.lang.model.element.Modifier.PUBLIC;
-
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
@@ -38,21 +22,37 @@ import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.*;
-import java.util.*;
-import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.persistence.ElementCollection;
 import javax.tools.Diagnostic;
 import javax.transaction.Transactional;
-import lombok.Getter;
-import lombok.val;
-import lombok.var;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
+import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
+import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
+import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 @SuppressWarnings("deprecation")
 public class GraphQLApiBuilder {
@@ -109,12 +109,12 @@ public class GraphQLApiBuilder {
     registerCollectionsTypes(collectionsTypes);
     SecurityAnnotationsFactory.setProcessingEnv(processingEnv);
     //init builders
-    var serviceBuilder = TypeSpec
+    TypeSpec.Builder serviceBuilder = TypeSpec
       .classBuilder(apiSpec.getSimpleName() + "GraphQLApiService")
       .addModifiers(PUBLIC)
       .addAnnotation(Service.class)
       .addAnnotation(Transactional.class);
-    var testableServiceBuilder = TypeSpec
+    TypeSpec.Builder testableServiceBuilder = TypeSpec
       .classBuilder("Testable" + apiSpec.getSimpleName() + "GraphQLApiService")
       .addModifiers(PUBLIC)
       .addSuperinterface(testableGraphQLServiceInterface())
@@ -952,8 +952,10 @@ public class GraphQLApiBuilder {
       if (
         !methodLevelSecuritiesMap.containsKey(targetMethod)
       ) methodLevelSecuritiesMap.put(targetMethod, new ArrayList<>());
-      var securities = methodLevelSecuritiesMap.get(targetMethod);
-      for (var securityAnnotation : securityAnnotations) {
+      List<AnnotationSpec> securities = methodLevelSecuritiesMap.get(
+        targetMethod
+      );
+      for (AnnotationSpec securityAnnotation : securityAnnotations) {
         if (!securities.contains(securityAnnotation)) securities.add(
           securityAnnotation
         ); else {
@@ -979,7 +981,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     final String name = toPlural(camelcaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(name)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1011,7 +1013,7 @@ public class GraphQLApiBuilder {
   ) {
     String queryName =
       "countTotal" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1033,7 +1035,7 @@ public class GraphQLApiBuilder {
   ) {
     String queryName =
       "countTotalArchived" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1056,7 +1058,7 @@ public class GraphQLApiBuilder {
   ) {
     String queryName = "get" + pascalCaseNameOf(apiSpec.getElement()) + "ById";
     final ClassName idType = getIdType(apiSpec.getElement(), processingEnv);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(namedGraphQLQuery(queryName))
@@ -1090,7 +1092,7 @@ public class GraphQLApiBuilder {
     String queryName =
       "get" + toPlural(pascalCaseNameOf(apiSpec.getElement())) + "ByIds";
     final ClassName idType = getIdType(apiSpec.getElement(), processingEnv);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(namedGraphQLQuery(queryName))
@@ -1116,7 +1118,7 @@ public class GraphQLApiBuilder {
 
   private MethodSpec genCreate(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName = "create" + pascalCaseNameOf(apiSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1141,7 +1143,7 @@ public class GraphQLApiBuilder {
   private MethodSpec genBatchCreate(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName =
       "create" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1167,7 +1169,7 @@ public class GraphQLApiBuilder {
 
   private MethodSpec genUpdate(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName = "update" + pascalCaseNameOf(apiSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1192,7 +1194,7 @@ public class GraphQLApiBuilder {
   private MethodSpec genBatchUpdate(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName =
       "update" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1218,7 +1220,7 @@ public class GraphQLApiBuilder {
 
   private MethodSpec genDelete(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName = "delete" + pascalCaseNameOf(apiSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1243,7 +1245,7 @@ public class GraphQLApiBuilder {
   private MethodSpec genBatchDelete(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName =
       "delete" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1269,7 +1271,7 @@ public class GraphQLApiBuilder {
 
   private MethodSpec genArchive(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName = "archive" + pascalCaseNameOf(apiSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1294,7 +1296,7 @@ public class GraphQLApiBuilder {
   private MethodSpec genBatchArchive(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName =
       "archive" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1320,7 +1322,7 @@ public class GraphQLApiBuilder {
 
   private MethodSpec genDeArchive(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName = "deArchive" + pascalCaseNameOf(apiSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1347,7 +1349,7 @@ public class GraphQLApiBuilder {
   private MethodSpec genBatchDeArchive(GraphQLQueryBuilder clientQueryBuilder) {
     String mutationName =
       "deArchive" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1376,7 +1378,7 @@ public class GraphQLApiBuilder {
   ) {
     final String name =
       "archived" + toPlural(pascalCaseNameOf(apiSpec.getElement()));
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(name)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1410,7 +1412,7 @@ public class GraphQLApiBuilder {
   ) {
     final String name =
       camelcaseNameOf(apiSpec.getElement()) + "FreeTextSearch";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(name)
       .addAnnotation(graphqlQueryAnnotation())
       .addModifiers(PUBLIC)
@@ -1450,7 +1452,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     val subscriptionName = "on" + toPlural(entityName) + "Created";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1485,7 +1487,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     val subscriptionName = "on" + entityName + "Updated";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1525,7 +1527,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     val subscriptionName = "on" + entityName + "Deleted";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1565,7 +1567,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     val subscriptionName = "on" + entityName + "Archived";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1605,7 +1607,7 @@ public class GraphQLApiBuilder {
     GraphQLQueryBuilder clientQueryBuilder
   ) {
     val subscriptionName = "on" + entityName + "DeArchived";
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1650,7 +1652,7 @@ public class GraphQLApiBuilder {
       toPascalCase(fieldApiSpec.getSimpleName()) +
       "With" +
       entityName;
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1701,7 +1703,7 @@ public class GraphQLApiBuilder {
       toPascalCase(fieldApiSpec.getSimpleName()) +
       "From" +
       entityName;
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(subscriptionName)
       .addModifiers(PUBLIC)
       .addAnnotation(GraphQLSubscription.class)
@@ -1753,7 +1755,7 @@ public class GraphQLApiBuilder {
       "Of" +
       pascalCaseNameOf(apiSpec.getElement());
     val config = elemCollection.getAnnotation(ElementCollectionApi.class);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1808,7 +1810,7 @@ public class GraphQLApiBuilder {
       "Of" +
       pascalCaseNameOf(apiSpec.getElement());
     val config = elemCollection.getAnnotation(ElementCollectionApi.class);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -1863,7 +1865,7 @@ public class GraphQLApiBuilder {
       pascalCaseNameOf(apiSpec.getElement());
     val config = elemCollection.getAnnotation(ElementCollectionApi.class);
     val collectionTypeName = collectionTypeName(elemCollection);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1919,7 +1921,7 @@ public class GraphQLApiBuilder {
       pascalCaseNameOf(apiSpec.getElement());
     val config = elemCollection.getAnnotation(ElementCollectionApi.class);
     val collectionTypeName = collectionTypeName(elemCollection);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -1974,7 +1976,7 @@ public class GraphQLApiBuilder {
     val config = elemCollectionSpec.getAnnotation(
       MapElementCollectionApi.class
     );
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -2031,7 +2033,7 @@ public class GraphQLApiBuilder {
     val config = elemCollectionSpec.getAnnotation(
       MapElementCollectionApi.class
     );
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -2086,7 +2088,7 @@ public class GraphQLApiBuilder {
       MapElementCollectionApi.class
     );
     val collectionTypeName = mapOf(elemCollectionSpec.getElement());
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -2146,7 +2148,7 @@ public class GraphQLApiBuilder {
     val collectionTypeName = collectionTypeName(
       elemCollectionSpec.getElement()
     );
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -2201,7 +2203,7 @@ public class GraphQLApiBuilder {
     String entityCollectionApiHooksName = entityCollectionApiHooksName(
       entityCollectionField
     );
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(suppressDeprecationWarning())
@@ -2233,7 +2235,7 @@ public class GraphQLApiBuilder {
       apiSpec.getElement(),
       GraphQLContext.class
     );
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(Modifier.PUBLIC)
       .addAnnotation(suppressDeprecationWarning())
@@ -2266,7 +2268,7 @@ public class GraphQLApiBuilder {
       : "associateWithEntityCollection";
     final TypeName collectionTypeName = collectionTypeName(fkSpec.getElement());
     ParameterSpec input = asParamList(collectionTypeName);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -2329,7 +2331,7 @@ public class GraphQLApiBuilder {
     val config = fkSpec.getAnnotation(EntityCollectionApi.class);
     final TypeName collectionTypeName = collectionTypeName(fkSpec.getElement());
     ParameterSpec input = asParamList(collectionTypeName);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -2404,7 +2406,7 @@ public class GraphQLApiBuilder {
     ParameterSpec input = ParameterSpec
       .builder(TypeName.get(FreeTextSearchPageRequest.class), "input")
       .build();
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -2462,7 +2464,7 @@ public class GraphQLApiBuilder {
     ParameterSpec input = ParameterSpec
       .builder(TypeName.get(PageRequest.class), "input")
       .build();
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(queryName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlQueryAnnotation())
@@ -2522,7 +2524,7 @@ public class GraphQLApiBuilder {
     val hasApiHooks = isCustomEntityCollectionApiHooks(config);
     final TypeName collectionTypeName = collectionTypeName(fkSpec.getElement());
     val input = asParamList(collectionTypeName);
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder(mutationName)
       .addModifiers(PUBLIC)
       .addAnnotation(graphqlMutationAnnotation())
@@ -2571,7 +2573,7 @@ public class GraphQLApiBuilder {
     FieldGraphQLApiSpec fieldSpec,
     ApifiClientFactory clientFactory
   ) {
-    var methodsToAdd = new ArrayList<MethodSpec>();
+    List<MethodSpec> methodsToAdd = new ArrayList<MethodSpec>();
     val fieldName = camelcaseNameOf(fieldSpec.getElement());
     val fieldPascalCaseName = pascalCaseNameOf(fieldSpec.getElement());
     val fieldType = ClassName.get(fieldSpec.getElement().asType());

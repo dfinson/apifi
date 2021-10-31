@@ -39,7 +39,6 @@ import javax.lang.model.util.Elements;
 import javax.persistence.*;
 import javax.tools.StandardLocation;
 import lombok.val;
-import lombok.var;
 import org.atteo.evo.inflector.English;
 
 public abstract class ApifiStaticUtils {
@@ -365,7 +364,7 @@ public abstract class ApifiStaticUtils {
   ) {
     ClassName list = ClassName.get("java.util", "List");
     TypeName typeClassName = TypeName.get(element.asType());
-    var builder = ParameterSpec.builder(
+    ParameterSpec.Builder builder = ParameterSpec.builder(
       ParameterizedTypeName.get(list, typeClassName),
       "input"
     );
@@ -384,7 +383,7 @@ public abstract class ApifiStaticUtils {
   ) {
     val listType = ClassName.get(List.class);
     val keyType = ClassName.bestGuess(getMapKeyType(element));
-    var builder = ParameterSpec.builder(
+    ParameterSpec.Builder builder = ParameterSpec.builder(
       ParameterizedTypeName.get(listType, keyType),
       "input"
     );
@@ -402,7 +401,7 @@ public abstract class ApifiStaticUtils {
     Class<A>... annotations
   ) {
     ClassName list = ClassName.get("java.util", "List");
-    var builder = ParameterSpec.builder(
+    ParameterSpec.Builder builder = ParameterSpec.builder(
       ParameterizedTypeName.get(list, typeName),
       "input"
     );
@@ -421,7 +420,7 @@ public abstract class ApifiStaticUtils {
   ) {
     ClassName list = ClassName.get("java.util", "List");
     val mapKeyType = ClassName.bestGuess(getMapKeyType(map)); //TODO - validate
-    var builder = ParameterSpec.builder(
+    ParameterSpec.Builder builder = ParameterSpec.builder(
       ParameterizedTypeName.get(list, mapKeyType),
       "input"
     );
@@ -441,7 +440,7 @@ public abstract class ApifiStaticUtils {
     val mapType = ClassName.get(Map.class);
     val mapKeyType = ClassName.bestGuess(getMapKeyType(map));
     val mapValueType = ClassName.bestGuess(getMapValueType(map));
-    var builder = ParameterSpec.builder(
+    ParameterSpec.Builder builder = ParameterSpec.builder(
       ParameterizedTypeName.get(mapType, mapKeyType, mapValueType),
       "input"
     );

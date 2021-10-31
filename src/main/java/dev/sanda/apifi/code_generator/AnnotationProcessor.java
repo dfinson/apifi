@@ -27,7 +27,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import lombok.val;
-import lombok.var;
 
 /**
  * Iterates over all elements annotated with @GraphQLApiEntity and generates the complete api
@@ -155,13 +154,13 @@ public class AnnotationProcessor extends AbstractProcessor {
     Set<TypeElement> enumTypes
   ) {
     List<CRUDEndpoints> crudResolvers = entityGraphQLApiSpec.getMergedCrudEndpoints();
-    var apiBuilder = new GraphQLApiBuilder(
+    GraphQLApiBuilder apiBuilder = new GraphQLApiBuilder(
       entityGraphQLApiSpec,
       entitiesMap,
       crudResolvers,
       enumTypes
     );
-    var serviceAndTest = apiBuilder.build(
+    ServiceAndTestableService serviceAndTest = apiBuilder.build(
       processingEnv,
       clientFactory,
       collectionsTypes

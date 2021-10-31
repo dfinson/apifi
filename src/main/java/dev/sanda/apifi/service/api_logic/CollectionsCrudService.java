@@ -18,7 +18,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.val;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -135,7 +134,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     List<TCollection> toAdd,
     E elementCollectionApiHooks
   ) {
-    var ownerLoaded = dataManager
+    T ownerLoaded = dataManager
       .findById(getId(input, reflectionCache))
       .orElse(null);
     if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
@@ -186,7 +185,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     List<TCollection> toRemove,
     E elementCollectionApiHooks
   ) {
-    var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     input = temp;
     if (elementCollectionApiHooks != null) elementCollectionApiHooks.preRemove(
@@ -225,7 +224,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     String fieldName,
     E elementCollectionApiHooks
   ) {
-    var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     owner = temp;
     if (
@@ -375,7 +374,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     Map<TMapKey, TMapValue> toPut,
     E apiHooks
   ) {
-    var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     input = temp;
     if (apiHooks != null) apiHooks.prePut(toPut, fieldName, input, dataManager);
@@ -412,7 +411,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     List<TMapKey> toRemove,
     E elementCollectionApiHooks
   ) {
-    var temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(input, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     input = temp;
     if (elementCollectionApiHooks != null) elementCollectionApiHooks.preRemove(
@@ -456,7 +455,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     String fieldName,
     E apiHooks
   ) {
-    var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     owner = temp;
     if (apiHooks != null) apiHooks.preGetPaginatedBatch(
@@ -597,7 +596,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService
   ) {
     //get collection owner
-    var ownerLoaded = dataManager
+    T ownerLoaded = dataManager
       .findById(getId(input, reflectionCache))
       .orElse(null);
     if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
@@ -616,7 +615,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     );
     if (existingCollection == null) existingCollection =
       initEntityCollection(fieldName, collectionDataManager);
-    var preExistingInstancesIds = toAssociate
+    Set<Object> preExistingInstancesIds = toAssociate
       .stream()
       .filter(obj -> getId(obj, reflectionCache) != null)
       .map(obj -> getId(obj, reflectionCache))
@@ -667,7 +666,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
 
     Collection<TCollection> added = getEntityCollectionFrom(t, fieldName);
     val newlyAssociated = collectionDataManager.saveAll(toAssociate);
-    var result = collectionDataManager.saveAll(
+    List<TCollection> result = collectionDataManager.saveAll(
       extractFromCollection(added, newlyAssociated)
     );
     setBackpointersIfRelationshipIsBiDirectional(
@@ -877,7 +876,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     E entityCollectionApiHooks
   ) {
     //get collection owner
-    var temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
+    T temp = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
     if (temp == null) throw_entityNotFound(input, reflectionCache);
     owner = temp;
     if (
@@ -955,7 +954,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     SubscriptionsLogicService<TCollection> collectionSubscriptionsLogicService
   ) {
     //get collection owner
-    var ownerLoaded = dataManager
+    T ownerLoaded = dataManager
       .findById(getId(input, reflectionCache))
       .orElse(null);
     if (ownerLoaded == null) throw_entityNotFound(input, reflectionCache);
@@ -1003,7 +1002,10 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       updatedInputEntity,
       toCamelCase(fieldName)
     );
-    var result = extractFromCollection(newlyAssociated, toAssociate);
+    List<TCollection> result = extractFromCollection(
+      newlyAssociated,
+      toAssociate
+    );
     if (
       entityCollectionApiHooks != null
     ) entityCollectionApiHooks.postAssociate(

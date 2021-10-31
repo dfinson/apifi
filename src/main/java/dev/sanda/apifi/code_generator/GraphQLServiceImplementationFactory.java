@@ -20,7 +20,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import lombok.Getter;
 import lombok.val;
-import lombok.var;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -64,7 +63,7 @@ public class GraphQLServiceImplementationFactory {
   }
 
   private MethodSpec genGraphQLServiceInit(List<String> services) {
-    var builder = MethodSpec
+    MethodSpec.Builder builder = MethodSpec
       .methodBuilder("init")
       .addAnnotation(PostConstruct.class)
       .addModifiers(PRIVATE)

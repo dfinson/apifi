@@ -16,7 +16,6 @@ import javax.lang.model.type.TypeMirror;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.val;
-import lombok.var;
 
 @Data
 @AllArgsConstructor
@@ -142,7 +141,7 @@ public class TypescriptModelFactory {
   private String resolveTypeName(String typeName) {
     if (typeName.contains(".")) typeName =
       typeName.substring(typeName.lastIndexOf(".") + 1).toLowerCase();
-    var result = "any";
+    String result = "any";
     if (numberTypes.contains(typeName)) result = "number"; else if (
       typeName.equals("string") || typeName.startsWith("char")
     ) result = "string"; else if (typeName.equals("boolean")) result =

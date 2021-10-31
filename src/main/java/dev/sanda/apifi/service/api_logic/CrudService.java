@@ -6,7 +6,6 @@ import static dev.sanda.datafi.DatafiStaticUtils.throwEntityNotFoundException;
 import dev.sanda.datafi.persistence.Archivable;
 import java.util.Collections;
 import lombok.val;
-import lombok.var;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,7 @@ public class CrudService<T> extends BaseCrudService<T> {
 
   public T getByIdImpl(Object id) {
     if (apiHooks != null) apiHooks.preGetById(id, dataManager);
-    var result = dataManager.findById(id).orElse(null);
+    T result = dataManager.findById(id).orElse(null);
     if (result == null) throwEntityNotFoundException(
       dataManager.getClazzSimpleName(),
       id
