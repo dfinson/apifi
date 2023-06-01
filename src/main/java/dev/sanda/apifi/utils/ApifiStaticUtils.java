@@ -1,7 +1,5 @@
 package dev.sanda.apifi.utils;
 
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,15 +16,10 @@ import dev.sanda.datafi.service.DataManager;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import jakarta.persistence.*;
+import lombok.val;
+import org.atteo.evo.inflector.English;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
@@ -36,10 +29,18 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import jakarta.persistence.*;
 import javax.tools.StandardLocation;
-import lombok.val;
-import org.atteo.evo.inflector.English;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 public abstract class ApifiStaticUtils {
 
@@ -500,12 +501,15 @@ public abstract class ApifiStaticUtils {
 
   public static ParameterizedTypeName listOfLists(VariableElement element) {
     ParameterizedTypeName nestedList = ParameterizedTypeName.get(
-      ClassName.get(List.class),
-      collectionTypeName(element)
+            ClassName.get(List.class),
+            collectionTypeName(element)
     );
     ClassName listName = ClassName.get("java.util", "List");
-    return ParameterizedTypeName.get(listName, nestedList);
+    ParameterizedTypeName listOfLists = ParameterizedTypeName.get(listName, nestedList);
+    ClassName completionStageName = ClassName.get("java.util.concurrent", "CompletionStage");
+    return ParameterizedTypeName.get(completionStageName, listOfLists);
   }
+
 
   public static ParameterizedTypeName listOfEmbedded(VariableElement element) {
     return ParameterizedTypeName.get(
