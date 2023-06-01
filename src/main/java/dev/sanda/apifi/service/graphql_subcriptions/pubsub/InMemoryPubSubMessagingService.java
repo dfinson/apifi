@@ -3,7 +3,7 @@ package dev.sanda.apifi.service.graphql_subcriptions.pubsub;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.redis_pubsub.RedisPubSubMessagingService;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

@@ -10,7 +10,7 @@ import dev.sanda.apifi.service.graphql_subcriptions.sse.SseSubscriptionsHandler;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;

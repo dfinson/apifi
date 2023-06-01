@@ -36,7 +36,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import javax.tools.StandardLocation;
 import lombok.val;
 import org.atteo.evo.inflector.English;
