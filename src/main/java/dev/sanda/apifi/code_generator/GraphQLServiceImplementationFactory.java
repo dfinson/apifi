@@ -9,12 +9,13 @@ import graphql.analysis.MaxQueryDepthInstrumentation;
 import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import io.leangen.graphql.GraphQLSchemaGenerator;
+import lombok.Getter;
 import lombok.val;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -75,7 +76,7 @@ public class GraphQLServiceImplementationFactory {
       .returns(void.class);
     builder.addCode(genInitGraphQLSchemaCodeBlock(services));
     builder.addStatement(
-      "hasSubscriptionsSupport.setHasSubscriptions(schema.getSubscriptionType() != null)"
+      "hasSubscriptionsSupport.setHasSubscriptions(schema.getSchema().getSubscriptionType() != null)"
     );
     return builder.build();
   }
@@ -106,7 +107,20 @@ public class GraphQLServiceImplementationFactory {
         .append(")\n");
       args.add(customServiceField.type);
     }
-    code.append("\t\t.generate();\n");
+    code.append("\t\t.generateExecutable();\n");
+
+    // Add code to initialize DataLoaderRegistry
+    code.append("this.dataLoaderRegistry = new $T();\n");
+    args.add(DataLoaderRegistry.class);
+    code.append(
+      "schema.getBatchLoaders().forEach((loaderName, batchLoader) -> {\n"
+    );
+    code.append(
+      "\tthis.dataLoaderRegistry.register(loaderName, $T.newDataLoader(batchLoader));\n"
+    );
+    code.append("});\n");
+    args.add(DataLoader.class);
+
     val schemaInit = CodeBlock
       .builder()
       .add(code.toString(), args.toArray())
@@ -115,10 +129,10 @@ public class GraphQLServiceImplementationFactory {
       .builder()
       .add(
         "graphQLInstanceBuilder = $T\n\t" +
-        ".newGraphQL(schema)\n\t" +
+        ".newGraphQL(schema.getSchema())\n\t" +
         ".queryExecutionStrategy(new $T())\n\t" +
         ".instrumentation(new $T())\n\t" + // Use DataLoaderDispatcherInstrumentation
-        ".instrumentation(new $T(maxQueryDepth));\n",
+        ".instrumentation(new $T(maxQueryDepth));\n", // Use MaxQueryDepthInstrumentation
         GraphQL.class,
         AsyncExecutionStrategy.class, // Use AsyncExecutionStrategy
         DataLoaderDispatcherInstrumentation.class, // Use DataLoaderDispatcherInstrumentation
@@ -190,44 +204,11 @@ public class GraphQLServiceImplementationFactory {
     }
     constructorBuilder.addStatement("this.maxQueryDepth = maxQueryDepth");
 
-    constructorBuilder.addStatement("this.hasSubscriptionsSupport = hasSubscriptionsSupport");
-
-    return constructorBuilder.build();
-  }
-
-  public TypeSpec generateDefaultPubSubMessagingServiceBean() {
-    TypeName superClassTypeName = ClassName.get(
-      "dev.sanda.apifi.service.graphql_subcriptions.pubsub",
-      "InMemoryPubSubMessagingService"
+    constructorBuilder.addStatement(
+      "this.hasSubscriptionsSupport = hasSubscriptionsSupport"
     );
 
-    // Create the annotations
-    AnnotationSpec serviceAnnotation = AnnotationSpec
-      .builder(Service.class)
-      .build();
-    AnnotationSpec conditionalOnMissingBeanAnnotation = AnnotationSpec
-      .builder(ConditionalOnMissingBean.class)
-      .addMember(
-        "value",
-        "$T.class, $T.class",
-        ClassName.get(
-          "dev.sanda.apifi.service.graphql_subcriptions.pubsub",
-          "CustomPubSubMessagingService"
-        ),
-        ClassName.get(
-          "dev.sanda.apifi.service.graphql_subcriptions.pubsub.redis_pubsub",
-          "RedisPubSubMessagingService"
-        )
-      )
-      .build();
-
-    return TypeSpec
-      .classBuilder("DefaultPubSubMessagingServiceBean")
-      .addModifiers(PUBLIC)
-      .addAnnotation(serviceAnnotation)
-      .addAnnotation(conditionalOnMissingBeanAnnotation)
-      .superclass(superClassTypeName)
-      .build();
+    return constructorBuilder.build();
   }
 
   private List<FieldSpec> genGraphQLServiceFields(List<String> services) {
@@ -251,12 +232,22 @@ public class GraphQLServiceImplementationFactory {
       .build();
 
     val hasSubscriptionsSupportField = FieldSpec
-      .builder(GraphQLSubscriptionSupport.class, "hasSubscriptionsSupport", PRIVATE)
+      .builder(
+        GraphQLSubscriptionSupport.class,
+        "hasSubscriptionsSupport",
+        PRIVATE
+      )
+      .build();
+
+    val dataLoaderRegistryField = FieldSpec
+      .builder(DataLoaderRegistry.class, "dataLoaderRegistry", PRIVATE)
+      .addAnnotation(Getter.class)
       .build();
 
     fieldSpecs.add(graphQLInstanceBuilderField);
     fieldSpecs.add(maxQueryDepthField);
     fieldSpecs.add(hasSubscriptionsSupportField);
+    fieldSpecs.add(dataLoaderRegistryField);
     return fieldSpecs;
   }
 }

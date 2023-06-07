@@ -1,15 +1,10 @@
 package dev.sanda.apifi.web;
 
-import static dev.sanda.apifi.utils.ControllerEndpointsConstants.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.sanda.apifi.dto.GraphQLRequest;
 import dev.sanda.apifi.service.graphql_config.GraphQLRequestExecutor;
 import dev.sanda.apifi.service.graphql_subcriptions.sse.SseSubscriptionsHandler;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -19,6 +14,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.socket.WebSocketSession;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import static dev.sanda.apifi.utils.ControllerEndpointsConstants.*;
 
 @RestController
 @AllArgsConstructor(onConstructor_ = @Autowired)
@@ -33,9 +34,11 @@ public class ApiController {
     @RequestBody GraphQLRequest graphQLRequest,
     HttpServletRequest httpServletRequest
   ) {
-    return httpGraphQLRequestExecutor
-      .executeQuery(graphQLRequest, httpServletRequest)
-      .toSpecification();
+
+    Map<String, Object> specification = httpGraphQLRequestExecutor
+            .executeQuery(graphQLRequest, httpServletRequest)
+            .toSpecification();
+    return specification;
   }
 
   @CrossOrigin("*")

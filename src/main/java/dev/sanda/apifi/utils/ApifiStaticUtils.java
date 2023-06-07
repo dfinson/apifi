@@ -501,15 +501,10 @@ public abstract class ApifiStaticUtils {
       collectionTypeName(element)
     );
     ClassName listName = ClassName.get("java.util", "List");
-    ParameterizedTypeName listOfLists = ParameterizedTypeName.get(
+    return ParameterizedTypeName.get(
       listName,
       nestedList
     );
-    ClassName completionStageName = ClassName.get(
-      "java.util.concurrent",
-      "CompletionStage"
-    );
-    return ParameterizedTypeName.get(completionStageName, listOfLists);
   }
 
   public static ParameterizedTypeName listOfEmbedded(VariableElement element) {

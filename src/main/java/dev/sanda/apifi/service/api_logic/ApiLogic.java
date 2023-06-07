@@ -19,7 +19,6 @@ import reactor.core.publisher.FluxSink;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 @Service
 @Scope("prototype")
@@ -145,7 +144,7 @@ public final class ApiLogic<T> {
         return batchedCrudService.batchDeleteImpl(input);
     }
 
-    public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> CompletionStage<List<List<TCollection>>> getEntityCollection(
+    public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<List<TCollection>> getEntityCollection(
             List<T> input,
             String collectionFieldName,
             E collectionApiHooks,
@@ -160,7 +159,7 @@ public final class ApiLogic<T> {
     }
 
 
-    public <TCollection> CompletionStage<List<TCollection>> getEmbedded(
+    public <TCollection> List<TCollection> getEmbedded(
             List<T> input,
             String fieldName,
             DataManager<TCollection> collectionDataManager

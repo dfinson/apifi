@@ -13,16 +13,12 @@ import dev.sanda.datafi.reflection.runtime_services.CollectionsTypeResolver;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import lombok.val;
-import org.dataloader.BatchLoader;
-import org.dataloader.DataLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,121 +45,111 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     this.collectionsTypeResolver = collectionsTypeResolver;
   }
 
-  @SuppressWarnings("unchecked")
-  public <
-    TCollection, E extends EntityCollectionApiHooks<TCollection, T>
-  > CompletionStage<List<List<TCollection>>> getEntityCollectionImpl(
-    List<T> input,
-    String collectionFieldName,
-    E collectionApiHooks,
-    DataManager<TCollection> collectionDataManager
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<List<TCollection>> getEntityCollectionImpl(
+          List<T> input,
+          String collectionFieldName,
+          E collectionApiHooks,
+          DataManager<TCollection> collectionDataManager
   ) {
-    // Create a BatchLoader
-    BatchLoader<T, List<TCollection>> batchLoader = keys -> {
-      if (collectionApiHooks != null) keys.forEach(owner ->
-        collectionApiHooks.preFetch(
-          owner,
-          collectionFieldName,
-          dataManager,
-          collectionDataManager
-        )
-      );
-      val rawQueryResults = (List) dataManager
-        .entityManager()
-        .createQuery(
-          String.format(
-            "SELECT owner, entityCollection " +
-            "FROM %s owner " +
-            "JOIN owner.%s entityCollection " +
-            "WHERE owner.%s IN :ownerIds",
-            dataManager.getClazzSimpleName(),
-            collectionFieldName,
-            reflectionCache
-              .getEntitiesCache()
-              .get(dataManager.getClazzSimpleName())
-              .getIdField()
-              .getName()
-          )
-        )
-        .setParameter("ownerIds", getIdList(keys, reflectionCache))
-        .getResultList();
-      val owners2EntityCollectionsMap = new HashMap<T, List<TCollection>>();
-      rawQueryResults.forEach(item -> {
-        val ownerAndCollectionItem = (Object[]) item;
-        val owner = (T) ownerAndCollectionItem[0];
-        val entityCollectionItem = (TCollection) ownerAndCollectionItem[1];
-        if (
-          !owners2EntityCollectionsMap.containsKey(owner)
-        ) owners2EntityCollectionsMap.put(
-          owner,
-          new ArrayList<>(Collections.singletonList(entityCollectionItem))
-        ); else owners2EntityCollectionsMap
-          .get(owner)
-          .add(entityCollectionItem);
-      });
-      if (collectionApiHooks != null) owners2EntityCollectionsMap
-        .keySet()
-        .forEach(owner ->
-          collectionApiHooks.postFetch(
-            owners2EntityCollectionsMap.get(owner),
-            owner,
-            collectionDataManager,
-            dataManager
-          )
-        );
-      return CompletableFuture.completedFuture(
-        keys
-          .stream()
-          .map(key -> {
-            final List<TCollection> collection =
-              owners2EntityCollectionsMap.get(key);
-            return collection != null
-              ? collection
-              : new ArrayList<TCollection>();
-          })
-          .collect(Collectors.toList())
-      );
-    };
-
-    // Create a DataLoader with the BatchLoader
-    DataLoader<T, List<TCollection>> dataLoader = DataLoader.newDataLoader(
-      batchLoader
+    if (collectionApiHooks != null) input.forEach(
+            owner ->
+                    collectionApiHooks.preFetch(
+                            owner,
+                            collectionFieldName,
+                            dataManager,
+                            collectionDataManager
+                    )
     );
-
-    // Load the data
-    return dataLoader.loadMany(input);
+    val rawQueryResults = (List) dataManager
+            .entityManager()
+            .createQuery(
+                    String.format(
+                            "SELECT owner, entityCollection " +
+                                    "FROM %s owner " +
+                                    "JOIN owner.%s entityCollection " +
+                                    "WHERE owner.%s IN :ownerIds",
+                            dataManager.getClazzSimpleName(),
+                            collectionFieldName,
+                            reflectionCache
+                                    .getEntitiesCache()
+                                    .get(dataManager.getClazzSimpleName())
+                                    .getIdField()
+                                    .getName()
+                    )
+            )
+            .setParameter("ownerIds", getIdList(input, reflectionCache))
+            .getResultList();
+    val owners2EntityCollectionsMap = new HashMap<T, List<TCollection>>();
+    rawQueryResults.forEach(
+            item -> {
+              val ownerAndCollectionItem = (Object[]) item;
+              val owner = (T) ownerAndCollectionItem[0];
+              val entityCollectionItem = (TCollection) ownerAndCollectionItem[1];
+              if (
+                      !owners2EntityCollectionsMap.containsKey(owner)
+              ) owners2EntityCollectionsMap.put(
+                      owner,
+                      new ArrayList<>(Collections.singletonList(entityCollectionItem))
+              ); else owners2EntityCollectionsMap
+                      .get(owner)
+                      .add(entityCollectionItem);
+            }
+    );
+    if (collectionApiHooks != null) owners2EntityCollectionsMap
+            .keySet()
+            .forEach(
+                    owner ->
+                            collectionApiHooks.postFetch(
+                                    owners2EntityCollectionsMap.get(owner),
+                                    owner,
+                                    collectionDataManager,
+                                    dataManager
+                            )
+            );
+    return input
+            .stream()
+            .map(
+                    key -> {
+                      final List<TCollection> collection = owners2EntityCollectionsMap.get(
+                              key
+                      );
+                      return collection != null ? collection : new ArrayList<TCollection>();
+                    }
+            )
+            .collect(Collectors.toList());
   }
 
-  public <TCollection> CompletionStage<List<TCollection>> getEmbeddedImpl(
-    List<T> input,
-    String fieldName,
-    DataManager<TCollection> collectionDataManager
+
+  public <TCollection> List<TCollection> getEmbeddedImpl(
+          List<T> input,
+          String fieldName,
+          DataManager<TCollection> collectionDataManager
   ) {
-    return CompletableFuture.supplyAsync(() -> {
-      val queryString = String.format(
-        "SELECT new dev.sanda.apifi.dto.KeyAndValue(owner, owner.%s) FROM %s owner WHERE owner.%s IN :ids " +
-        "ORDER BY owner.%s",
-        fieldName,
-        entityName,
-        idFieldName,
-        idFieldName
-      );
-      @SuppressWarnings("unchecked")
-      final Map<T, TCollection> resultMap = (Map<T, TCollection>) dataManager
-        .entityManager()
-        .createQuery(queryString)
-        .setParameter("ids", getIdList(input, reflectionCache))
-        .getResultStream()
-        .collect(
-          Collectors.toMap(
-            KeyAndValue::getKey,
-            KeyAndValue::getValue,
-            (first, second) -> first
-          )
-        );
-      return input.stream().map(resultMap::get).collect(Collectors.toList());
-    });
+    val queryString = String.format(
+            "SELECT new dev.sanda.apifi.dto.KeyAndValue(owner, owner.%s) FROM %s owner WHERE owner.%s IN :ids " +
+                    "ORDER BY owner.%s",
+            fieldName,
+            entityName,
+            idFieldName,
+            idFieldName
+    );
+    @SuppressWarnings("unchecked")
+    final Map<T, TCollection> resultMap = (Map<T, TCollection>) dataManager
+            .entityManager()
+            .createQuery(queryString)
+            .setParameter("ids", getIdList(input, reflectionCache))
+            .getResultStream()
+            .collect(
+                    Collectors.toMap(
+                            KeyAndValue::getKey,
+                            KeyAndValue::getValue,
+                            (first, second) -> first
+                    )
+            );
+    return input.stream().map(resultMap::get).collect(Collectors.toList());
   }
+
 
   public <
     TCollection, E extends ElementCollectionApiHooks<TCollection, T>

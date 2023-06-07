@@ -40,7 +40,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import java.util.*;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
@@ -2226,13 +2225,10 @@ public class GraphQLApiBuilder {
         dataManagerName(fieldSpec.getElement())
       )
       .returns(
-        ParameterizedTypeName.get(
-          ClassName.get(CompletionStage.class),
           ParameterizedTypeName.get(
             ClassName.get(List.class),
             ClassName.get(fieldSpec.getElement().asType())
           )
-        )
       );
     return builder.build();
   }
