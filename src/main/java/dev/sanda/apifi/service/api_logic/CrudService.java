@@ -1,17 +1,31 @@
 package dev.sanda.apifi.service.api_logic;
 
+import dev.sanda.apifi.service.graphql_config.GraphQLSubscriptionSupport;
+import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
+import dev.sanda.datafi.persistence.Archivable;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+
 import static dev.sanda.datafi.DatafiStaticUtils.getId;
 import static dev.sanda.datafi.DatafiStaticUtils.throwEntityNotFoundException;
 
-import dev.sanda.datafi.persistence.Archivable;
-import java.util.Collections;
-import lombok.val;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-
-@Service
+@Component
 @Scope("prototype")
 public class CrudService<T> extends BaseCrudService<T> {
+
+  @Autowired
+  public CrudService(
+    ReflectionCache reflectionCache,
+    AsyncExecutorService asyncExecutorService,
+    GraphQLSubscriptionSupport graphQLSubscriptionSupport
+  ) {
+    super(reflectionCache, asyncExecutorService, graphQLSubscriptionSupport);
+  }
 
   public T getByIdImpl(Object id) {
     if (apiHooks != null) apiHooks.preGetById(id, dataManager);
@@ -61,11 +75,8 @@ public class CrudService<T> extends BaseCrudService<T> {
       dataManager.getClazzSimpleName(),
       getId(result, reflectionCache)
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onCreateEvent(
-          Collections.singletonList(result)
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onCreateEvent(Collections.singletonList(result))
     );
     return result;
   }
@@ -96,11 +107,8 @@ public class CrudService<T> extends BaseCrudService<T> {
       dataManager.getClazzSimpleName(),
       getId(result, reflectionCache)
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onUpdateEvent(
-          Collections.singletonList(result)
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onUpdateEvent(Collections.singletonList(result))
     );
     return result;
   }
@@ -116,11 +124,10 @@ public class CrudService<T> extends BaseCrudService<T> {
       dataManager.getClazzSimpleName(),
       id
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onDeleteEvent(
-          Collections.singletonList(toDelete)
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onDeleteEvent(
+        Collections.singletonList(toDelete)
+      )
     );
     return toDelete;
   }
@@ -142,11 +149,10 @@ public class CrudService<T> extends BaseCrudService<T> {
       dataManager.getClazzSimpleName(),
       id
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onArchiveEvent(
-          Collections.singletonList(result)
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onArchiveEvent(
+        Collections.singletonList(result)
+      )
     );
     return result;
   }
@@ -172,11 +178,10 @@ public class CrudService<T> extends BaseCrudService<T> {
       dataManager.getClazzSimpleName(),
       id
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onDeArchiveEvent(
-          Collections.singletonList(result)
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onDeArchiveEvent(
+        Collections.singletonList(result)
+      )
     );
     return result;
   }

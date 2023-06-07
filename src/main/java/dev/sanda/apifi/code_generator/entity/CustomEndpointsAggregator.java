@@ -1,21 +1,21 @@
 package dev.sanda.apifi.code_generator.entity;
 
-import static dev.sanda.datafi.DatafiStaticUtils.camelCaseNameOf;
-import static dev.sanda.datafi.DatafiStaticUtils.logCompilationError;
-
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.TypeName;
 import dev.sanda.apifi.annotations.GraphQLComponent;
-import java.util.Set;
-import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static dev.sanda.datafi.DatafiStaticUtils.camelCaseNameOf;
+import static dev.sanda.datafi.DatafiStaticUtils.logCompilationError;
 
 @AllArgsConstructor
 public class CustomEndpointsAggregator {
@@ -39,7 +39,6 @@ public class CustomEndpointsAggregator {
           camelCaseNameOf(element),
           Modifier.PRIVATE
         )
-        .addAnnotation(Autowired.class)
         .build();
     } else if (element instanceof ExecutableElement) {
       return FieldSpec
@@ -48,7 +47,6 @@ public class CustomEndpointsAggregator {
           beanMethodName((ExecutableElement) element),
           Modifier.PRIVATE
         )
-        .addAnnotation(Autowired.class)
         .build();
     } else {
       logCompilationError(

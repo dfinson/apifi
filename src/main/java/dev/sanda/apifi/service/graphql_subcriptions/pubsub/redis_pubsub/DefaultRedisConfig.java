@@ -17,23 +17,29 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 @Conditional(LoadDefaultRedisConfig.class)
 public class DefaultRedisConfig {
 
+  private final ConfigValues configValues;
+  private final RedisClusterConfiguration redisClusterConfiguration;
+  private final RedisStandaloneConfiguration redisStandaloneConfiguration;
+  private final RedisSentinelConfiguration redisSentinelConfiguration;
+  private final RedisSocketConfiguration redisSocketConfiguration;
+  private final RedisStaticMasterReplicaConfiguration redisStaticMasterReplicaConfiguration;
+
   @Autowired
-  private ConfigValues configValues;
-
-  @Autowired(required = false)
-  private RedisClusterConfiguration redisClusterConfiguration;
-
-  @Autowired(required = false)
-  private RedisStandaloneConfiguration redisStandaloneConfiguration;
-
-  @Autowired(required = false)
-  private RedisSentinelConfiguration redisSentinelConfiguration;
-
-  @Autowired(required = false)
-  private RedisSocketConfiguration redisSocketConfiguration;
-
-  @Autowired(required = false)
-  private RedisStaticMasterReplicaConfiguration redisStaticMasterReplicaConfiguration;
+  public DefaultRedisConfig(
+          ConfigValues configValues,
+          @Autowired(required = false) RedisClusterConfiguration redisClusterConfiguration,
+          @Autowired(required = false) RedisStandaloneConfiguration redisStandaloneConfiguration,
+          @Autowired(required = false) RedisSentinelConfiguration redisSentinelConfiguration,
+          @Autowired(required = false) RedisSocketConfiguration redisSocketConfiguration,
+          @Autowired(required = false) RedisStaticMasterReplicaConfiguration redisStaticMasterReplicaConfiguration
+  ) {
+    this.configValues = configValues;
+    this.redisClusterConfiguration = redisClusterConfiguration;
+    this.redisStandaloneConfiguration = redisStandaloneConfiguration;
+    this.redisSentinelConfiguration = redisSentinelConfiguration;
+    this.redisSocketConfiguration = redisSocketConfiguration;
+    this.redisStaticMasterReplicaConfiguration = redisStaticMasterReplicaConfiguration;
+  }
 
   @Bean
   public LettuceConnectionFactory lettuceConnectionFactory() {

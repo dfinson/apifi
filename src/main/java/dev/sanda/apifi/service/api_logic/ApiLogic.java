@@ -9,7 +9,6 @@ import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.persistence.Archivable;
 import dev.sanda.datafi.service.DataManager;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,16 +26,12 @@ import java.util.concurrent.CompletionStage;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public final class ApiLogic<T> {
 
-    @NonNull
     private final ConfigValues configValues;
 
-    @NonNull
     private final CrudService<T> crudService;
 
-    @NonNull
     private final BatchedCrudService<T> batchedCrudService;
 
-    @NonNull
     private final CollectionsCrudService<T> collectionsCrudService;
 
     private SubscriptionsLogicService<T> subscriptionsLogicService;

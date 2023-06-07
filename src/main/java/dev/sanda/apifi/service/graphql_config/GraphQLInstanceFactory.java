@@ -4,5 +4,4 @@ import graphql.GraphQL;
 
 public interface GraphQLInstanceFactory {
   GraphQL getGraphQLInstance();
-  Boolean getHasSubscriptions();
 }

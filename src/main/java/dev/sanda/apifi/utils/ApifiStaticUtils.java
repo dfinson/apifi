@@ -17,8 +17,10 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import jakarta.persistence.*;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.atteo.evo.inflector.English;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -84,28 +86,24 @@ public abstract class ApifiStaticUtils {
       .stream()
       .filter(element -> element instanceof ExecutableElement)
       .map(element -> (ExecutableElement) element)
-      .filter(
-        element ->
-          element.getSimpleName().toString().startsWith("get") ||
-          element.getAnnotation(GraphQLQuery.class) != null
+      .filter(element ->
+        element.getSimpleName().toString().startsWith("get") ||
+        element.getAnnotation(GraphQLQuery.class) != null
       )
-      .filter(
-        executableElement ->
-          !executableElement
-            .getReturnType()
-            .toString()
-            .equals(void.class.getCanonicalName())
+      .filter(executableElement ->
+        !executableElement
+          .getReturnType()
+          .toString()
+          .equals(void.class.getCanonicalName())
       )
-      .filter(
-        executableElement -> {
-          final boolean isIgnored =
-            executableElement.getAnnotation(GraphQLIgnore.class) != null;
-          if (isIgnored) graphQlIgnoredFields.add(
-            getFieldName(executableElement)
-          );
-          return !isIgnored;
-        }
-      )
+      .filter(executableElement -> {
+        final boolean isIgnored =
+          executableElement.getAnnotation(GraphQLIgnore.class) != null;
+        if (isIgnored) graphQlIgnoredFields.add(
+          getFieldName(executableElement)
+        );
+        return !isIgnored;
+      })
       .collect(
         Collectors.toMap(
           ApifiStaticUtils::getFieldName,
@@ -116,9 +114,8 @@ public abstract class ApifiStaticUtils {
       );
     val fromFields = getNonIgnoredFields(typeElement)
       .stream()
-      .filter(
-        field ->
-          !graphQlIgnoredFields.contains(field.getSimpleName().toString())
+      .filter(field ->
+        !graphQlIgnoredFields.contains(field.getSimpleName().toString())
       )
       .collect(
         Collectors.toMap(
@@ -174,10 +171,9 @@ public abstract class ApifiStaticUtils {
         )
         .entrySet()
         .stream()
-        .filter(
-          entry ->
-            entry.getValue().getAnnotation(Table.class) != null ||
-            entry.getValue().getAnnotation(Entity.class) != null
+        .filter(entry ->
+          entry.getValue().getAnnotation(Table.class) != null ||
+          entry.getValue().getAnnotation(Entity.class) != null
         )
         .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     entities.forEach(entity -> extensionsMap.putIfAbsent(entity, null));
@@ -501,15 +497,20 @@ public abstract class ApifiStaticUtils {
 
   public static ParameterizedTypeName listOfLists(VariableElement element) {
     ParameterizedTypeName nestedList = ParameterizedTypeName.get(
-            ClassName.get(List.class),
-            collectionTypeName(element)
+      ClassName.get(List.class),
+      collectionTypeName(element)
     );
     ClassName listName = ClassName.get("java.util", "List");
-    ParameterizedTypeName listOfLists = ParameterizedTypeName.get(listName, nestedList);
-    ClassName completionStageName = ClassName.get("java.util.concurrent", "CompletionStage");
+    ParameterizedTypeName listOfLists = ParameterizedTypeName.get(
+      listName,
+      nestedList
+    );
+    ClassName completionStageName = ClassName.get(
+      "java.util.concurrent",
+      "CompletionStage"
+    );
     return ParameterizedTypeName.get(completionStageName, listOfLists);
   }
-
 
   public static ParameterizedTypeName listOfEmbedded(VariableElement element) {
     return ParameterizedTypeName.get(
@@ -530,6 +531,13 @@ public abstract class ApifiStaticUtils {
       ? camelcaseNameOf(entityCollectionField) +
       EntityCollectionApiHooks.class.getSimpleName()
       : "null";
+  }
+
+  public static AnnotationSpec autowiredRequiredArgsConstructor() {
+    return AnnotationSpec
+      .builder(RequiredArgsConstructor.class)
+      .addMember("onConstructor_", "@$T", Autowired.class)
+      .build();
   }
 
   public static String elementCollectionApiHooksName(
@@ -765,10 +773,9 @@ public abstract class ApifiStaticUtils {
       .getEnclosedElements()
       .stream()
       .filter(elem -> elem.getKind().isField())
-      .filter(
-        field ->
-          field.getAnnotation(Id.class) != null ||
-          field.getAnnotation(EmbeddedId.class) != null
+      .filter(field ->
+        field.getAnnotation(Id.class) != null ||
+        field.getAnnotation(EmbeddedId.class) != null
       )
       .findFirst()
       .get()

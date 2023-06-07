@@ -1,22 +1,36 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-
+import dev.sanda.apifi.service.graphql_config.GraphQLSubscriptionSupport;
+import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.persistence.Archivable;
-import java.util.List;
-import java.util.stream.Collectors;
+import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+
+@Component
 @Scope("prototype")
 public class BatchedCrudService<T> extends BaseCrudService<T> {
+
+  @Autowired
+  public BatchedCrudService(
+    ReflectionCache reflectionCache,
+    AsyncExecutorService asyncExecutorService,
+    GraphQLSubscriptionSupport graphQLSubscriptionSupport
+  ) {
+    super(reflectionCache, asyncExecutorService, graphQLSubscriptionSupport);
+  }
 
   public Long getTotalNonArchivedCountImpl() {
     if (
@@ -231,8 +245,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
       toPlural(dataManager.getClazzSimpleName()),
       ids.stream().map(Object::toString).collect(Collectors.joining(", "))
     );
-    fireSubscriptionEvent(
-      () -> subscriptionsLogicService.onArchiveEvent(result)
+    fireSubscriptionEvent(() -> subscriptionsLogicService.onArchiveEvent(result)
     );
     return result;
   }
@@ -257,8 +270,8 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
       toPlural(dataManager.getClazzSimpleName()),
       ids.stream().map(Object::toString).collect(Collectors.joining(", "))
     );
-    fireSubscriptionEvent(
-      () -> subscriptionsLogicService.onDeArchiveEvent(result)
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onDeArchiveEvent(result)
     );
     return result;
   }
@@ -292,8 +305,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
         .map(Object::toString)
         .collect(Collectors.joining(", "))
     );
-    fireSubscriptionEvent(
-      () -> subscriptionsLogicService.onCreateEvent(result)
+    fireSubscriptionEvent(() -> subscriptionsLogicService.onCreateEvent(result)
     );
     return result;
   }
@@ -312,8 +324,7 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
         .map(Object::toString)
         .collect(Collectors.joining(", "))
     );
-    fireSubscriptionEvent(
-      () -> subscriptionsLogicService.onUpdateEvent(result)
+    fireSubscriptionEvent(() -> subscriptionsLogicService.onUpdateEvent(result)
     );
     return result;
   }
@@ -340,8 +351,8 @@ public class BatchedCrudService<T> extends BaseCrudService<T> {
         .map(Object::toString)
         .collect(Collectors.joining(", "))
     );
-    fireSubscriptionEvent(
-      () -> subscriptionsLogicService.onDeleteEvent(toDelete)
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onDeleteEvent(toDelete)
     );
     return toDelete;
   }

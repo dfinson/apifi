@@ -1,19 +1,13 @@
 package dev.sanda.apifi.service.graphql_subcriptions.pubsub;
 
-import dev.sanda.apifi.service.graphql_subcriptions.pubsub.redis_pubsub.RedisPubSubMessagingService;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Service
-@ConditionalOnMissingBean(
-  { CustomPubSubMessagingService.class, RedisPubSubMessagingService.class }
-)
 public class InMemoryPubSubMessagingService implements PubSubMessagingService {
 
   private final Map<String, Map<String, PubSubTopicHandler>> topicHandlers = new ConcurrentHashMap<>();
