@@ -271,20 +271,6 @@ public final class ApiLogic<T> {
         );
     }
 
-    public <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>> Page<Map.Entry<TMapKey, TMapValue>> getFreeTextSearchPaginatedBatchInMapElementCollection(
-            T owner,
-            dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
-            String fieldName,
-            E apiHooks
-    ) {
-        return collectionsCrudService.getFreeTextSearchPaginatedBatchInMapElementCollectionImpl(
-                owner,
-                input,
-                fieldName,
-                apiHooks
-        );
-    }
-
     public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<TCollection> associateWithEntityCollection(
             T input,
             String fieldName,

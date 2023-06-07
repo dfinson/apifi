@@ -6,6 +6,10 @@ import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
 import dev.sanda.apifi.code_generator.client.GraphQLQueryBuilder;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.FieldGraphQLApiSpec;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.ElementCollectionEndpointType;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.EntityCollectionEndpointType;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.MapElementCollectionEndpointType;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullElementCollectionApiHooks;
@@ -42,11 +46,11 @@ import java.util.stream.Collectors;
 import static dev.sanda.apifi.code_generator.client.ClientSideReturnType.*;
 import static dev.sanda.apifi.code_generator.client.GraphQLQueryType.*;
 import static dev.sanda.apifi.code_generator.client.SubscriptionObservableType.*;
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints.*;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.ADD_TO;
-import static dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType.REMOVE__FROM;
-import static dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType.*;
-import static dev.sanda.apifi.code_generator.entity.MapElementCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints.*;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.ElementCollectionEndpointType.ADD_TO;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.ElementCollectionEndpointType.REMOVE__FROM;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.EntityCollectionEndpointType.*;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.MapElementCollectionEndpointType.*;
 import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
 import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
 import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
@@ -867,22 +871,6 @@ public class GraphQLApiBuilder {
         );
       serviceBuilder.addMethod(getPaginatedBatchInMapElementCollection);
       testableServiceBuilder.addMethod(getPaginatedBatchInMapElementCollection);
-      clientFactory.addQuery(clientQueryBuilder);
-    }
-    if (endpoints.contains(PAGINATED__FREE__TEXT__SEARCH)) {
-      val clientQueryBuilder = new GraphQLQueryBuilder(
-        entitiesMap.values(),
-        PAGE,
-        typeScriptReturnType
-      );
-      clientQueryBuilder.setOwnerEntityType(entityName);
-      val freeTextSearchInMapElementCollection =
-        genFreeTextSearchInMapElementCollection(
-          elemCollectionSpec,
-          clientQueryBuilder
-        );
-      serviceBuilder.addMethod(freeTextSearchInMapElementCollection);
-      testableServiceBuilder.addMethod(freeTextSearchInMapElementCollection);
       clientFactory.addQuery(clientQueryBuilder);
     }
   }

@@ -3,7 +3,7 @@ package dev.sanda.apifi.code_generator.entity.element_api_spec;
 import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 import dev.sanda.apifi.annotations.*;
-import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints;
 import dev.sanda.datafi.code_generator.annotated_element_specs.AnnotatedElementSpec;
 import java.lang.annotation.Annotation;

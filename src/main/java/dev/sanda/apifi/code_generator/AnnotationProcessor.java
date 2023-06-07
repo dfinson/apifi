@@ -9,7 +9,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
-import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
 import dev.sanda.apifi.code_generator.entity.GraphQLApiBuilder;
 import dev.sanda.apifi.code_generator.entity.ServiceAndTestableService;
 import dev.sanda.apifi.code_generator.entity.SubscriptionsLogicServicesFactory;
