@@ -1,9 +1,10 @@
-package dev.sanda.apifi.code_generator.entity;
+package dev.sanda.apifi.code_generator.entity.graphql_api_builder;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.annotations.*;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
 import dev.sanda.apifi.code_generator.client.GraphQLQueryBuilder;
+import dev.sanda.apifi.code_generator.entity.ServiceAndTestableService;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.FieldGraphQLApiSpec;
 import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
@@ -18,21 +19,16 @@ import dev.sanda.apifi.service.api_hooks.NullMapElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
 import dev.sanda.apifi.service.api_logic.SubscriptionsLogicService;
 import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;
-import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.TestSubscriptionsHandler;
-import dev.sanda.apifi.test_utils.TestGraphQLService;
-import dev.sanda.apifi.utils.ConfigValues;
 import dev.sanda.datafi.dto.FreeTextSearchPageRequest;
 import dev.sanda.datafi.dto.PageRequest;
 import dev.sanda.datafi.service.DataManager;
 import io.leangen.graphql.annotations.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.ElementCollection;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -110,82 +106,24 @@ public class GraphQLApiBuilder {
     this.processingEnv = processingEnv;
     registerCollectionsTypes(collectionsTypes);
     SecurityAnnotationsFactory.setProcessingEnv(processingEnv);
-    //init builders
-    TypeSpec.Builder serviceBuilder = TypeSpec
-      .classBuilder(apiSpec.getSimpleName() + "GraphQLApiService")
-      .addModifiers(PUBLIC)
-      .addAnnotation(Service.class)
-      .addAnnotation(Transactional.class)
-      .addAnnotation(autowiredRequiredArgsConstructor());
-    TypeSpec.Builder testableServiceBuilder = TypeSpec
-      .classBuilder("Testable" + apiSpec.getSimpleName() + "GraphQLApiService")
-      .addModifiers(PUBLIC)
-      .addSuperinterface(testableGraphQLServiceInterface())
-      .addAnnotation(Service.class)
-      .addField(testSubscriptionsHandlerField())
-      .addField(configValues())
-      .addAnnotation(autowiredRequiredArgsConstructor());
+
+    //init service builders for runtime api & test classes respectively
+    val servicesBuilderFactory = new GraphQLServicesBuilderFactory(apiSpec);
+    TypeSpec.Builder serviceBuilder = servicesBuilderFactory.generateGraphQLServiceBuilder();
+    TypeSpec.Builder testableServiceBuilder = servicesBuilderFactory.generateTestableGraphQLServiceBuilder();
+
     //generate fields:
 
     //fields 1,2 - ApiLogic & testLogic
 
-    val apiLogic = apiLogic();
-    serviceBuilder.addField(apiLogic);
-    testableServiceBuilder.addField(apiLogic);
-
-    val subscriptionsLogicService = subscriptionsLogicService();
-    serviceBuilder.addField(subscriptionsLogicService);
-    testableServiceBuilder.addField(subscriptionsLogicService);
-
-    val defaultDataManager = defaultDataManager();
-    serviceBuilder.addField(defaultDataManager);
-    testableServiceBuilder.addField(defaultDataManager);
-
-    val defaultApiHooks = defaultApiHooks();
-    serviceBuilder.addField(defaultApiHooks);
-    testableServiceBuilder.addField(defaultApiHooks);
+    val fieldsFactory = new GraphQLServiceFieldsFactory(apiSpec, fieldGraphQLApiSpecs, processingEnv, entitiesMap);
+    fieldsFactory.generateGraphQLServiceFields().forEach(fieldSpec -> {
+        serviceBuilder.addField(fieldSpec);
+        testableServiceBuilder.addField(fieldSpec);
+    });
 
     serviceBuilder.addMethod(postConstructInit());
     testableServiceBuilder.addMethod(postConstructInit());
-
-    //field(s) 4 - foreign key data managers
-    fieldGraphQLApiSpecs.forEach(fieldGraphQLApiSpec -> {
-      val field = fieldGraphQLApiSpec.getElement();
-      String typeNameKey = isIterable(field.asType(), processingEnv)
-        ? getCollectionType(field)
-        : field.asType().toString();
-      val type = entitiesMap.get(typeNameKey);
-      if (type != null) {
-        val typeDataManager = dataManager(type, dataManagerName(field));
-        serviceBuilder.addField(typeDataManager);
-        testableServiceBuilder.addField(typeDataManager);
-      }
-    });
-
-    //field(s) 4 - foreign key subscription logic services
-    fieldGraphQLApiSpecs.forEach(fieldGraphQLApiSpec -> {
-      val field = fieldGraphQLApiSpec.getElement();
-      String typeNameKey = isIterable(field.asType(), processingEnv)
-        ? getCollectionType(field)
-        : field.asType().toString();
-      val type = entitiesMap.get(typeNameKey);
-      if (type != null) {
-        val typeSubscriptionLogicService = FieldSpec
-          .builder(
-            ParameterizedTypeName.get(
-              ClassName.get(SubscriptionsLogicService.class),
-              ClassName.get(type)
-            ),
-            field.getSimpleName() +
-            SubscriptionsLogicService.class.getSimpleName(),
-            PRIVATE,
-            FINAL
-          )
-          .build();
-        serviceBuilder.addField(typeSubscriptionLogicService);
-        testableServiceBuilder.addField(typeSubscriptionLogicService);
-      }
-    });
 
     // generate class level security annotations
     val serviceLevelSecurity =
@@ -887,7 +825,7 @@ public class GraphQLApiBuilder {
     );
   }
 
-  private FieldSpec defaultDataManager() {
+  private FieldSpec entityDataManager() {
     return FieldSpec
       .builder(
         ParameterizedTypeName.get(
@@ -2727,7 +2665,7 @@ public class GraphQLApiBuilder {
       .build();
   }
 
-  private FieldSpec defaultApiHooks() {
+  private FieldSpec entityApiHooks() {
     return FieldSpec
       .builder(
         ParameterizedTypeName.get(
@@ -2789,21 +2727,6 @@ public class GraphQLApiBuilder {
           .addMember("onMethod_", "@$T", Autowired.class)
           .build()
       )
-      .build();
-  }
-
-  private FieldSpec testSubscriptionsHandlerField() {
-    return FieldSpec
-      .builder(TestSubscriptionsHandler.class, "testSubscriptionsHandler")
-      .addModifiers(PRIVATE, FINAL)
-      .build();
-  }
-
-  private FieldSpec configValues() {
-    return FieldSpec
-      .builder(ConfigValues.class, "configValues")
-      .addAnnotation(Getter.class)
-      .addModifiers(PRIVATE, FINAL)
       .build();
   }
 
@@ -2903,13 +2826,6 @@ public class GraphQLApiBuilder {
       .builder(GraphQLQuery.class)
       .addMember("name", "$S", queryName)
       .build();
-  }
-
-  private TypeName testableGraphQLServiceInterface() {
-    return ParameterizedTypeName.get(
-      ClassName.get(TestGraphQLService.class),
-      ClassName.get(apiSpec.getElement())
-    );
   }
 
   private static boolean isPrimitive(String packageName) {
