@@ -1,5 +1,9 @@
 package dev.sanda.apifi.code_generator.entity.graphql_api_builder;
 
+import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
+import static javax.lang.model.element.Modifier.FINAL;
+import static javax.lang.model.element.Modifier.PRIVATE;
+
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
@@ -10,24 +14,19 @@ import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
 import dev.sanda.apifi.service.api_logic.SubscriptionsLogicService;
 import dev.sanda.datafi.service.DataManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Name;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
-import static javax.lang.model.element.Modifier.FINAL;
-import static javax.lang.model.element.Modifier.PRIVATE;
 
 @RequiredArgsConstructor
 public class GraphQLServiceFieldsFactory {
@@ -145,25 +144,32 @@ public class GraphQLServiceFieldsFactory {
 
   private List<FieldSpec> foreignKeySubscriptionLogicServices() {
     return fieldGraphQLApiSpecs
-            .stream()
-            .map(FieldGraphQLApiSpec::getElement)
-            .filter(field -> entitiesMap.containsKey(getTypeNameKey(field)))
-            .map(field -> createSubscriptionLogicService(entitiesMap.get(getTypeNameKey(field)), field.getSimpleName()))
-            .collect(Collectors.toList());
+      .stream()
+      .map(FieldGraphQLApiSpec::getElement)
+      .filter(field -> entitiesMap.containsKey(getTypeNameKey(field)))
+      .map(field ->
+        createSubscriptionLogicService(
+          entitiesMap.get(getTypeNameKey(field)),
+          field.getSimpleName()
+        )
+      )
+      .collect(Collectors.toList());
   }
 
-  private FieldSpec createSubscriptionLogicService(TypeElement type, Name fieldName) {
+  private FieldSpec createSubscriptionLogicService(
+    TypeElement type,
+    Name fieldName
+  ) {
     return FieldSpec
-            .builder(
-                    ParameterizedTypeName.get(
-                            ClassName.get(SubscriptionsLogicService.class),
-                            ClassName.get(type)
-                    ),
-                    fieldName + SubscriptionsLogicService.class.getSimpleName(),
-                    PRIVATE,
-                    FINAL
-            )
-            .build();
+      .builder(
+        ParameterizedTypeName.get(
+          ClassName.get(SubscriptionsLogicService.class),
+          ClassName.get(type)
+        ),
+        fieldName + SubscriptionsLogicService.class.getSimpleName(),
+        PRIVATE,
+        FINAL
+      )
+      .build();
   }
-
 }

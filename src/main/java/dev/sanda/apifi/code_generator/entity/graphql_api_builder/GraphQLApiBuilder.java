@@ -34,7 +34,6 @@ import reactor.core.publisher.FluxSink;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
-import javax.tools.Diagnostic;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -125,29 +124,12 @@ public class GraphQLApiBuilder {
     serviceBuilder.addMethod(postConstructInit());
     testableServiceBuilder.addMethod(postConstructInit());
 
-    // generate class level security annotations
-    val serviceLevelSecurity =
-      this.apiSpec.getAnnotation(WithServiceLevelSecurity.class);
-    if (serviceLevelSecurity != null) {
-      val securityAnnotations = SecurityAnnotationsFactory.of(
-        serviceLevelSecurity
-      );
-      if (!securityAnnotations.isEmpty()) {
-        serviceBuilder.addAnnotations(securityAnnotations);
-        testableServiceBuilder.addAnnotations(securityAnnotations);
-      }
-    }
-
-    // prepare the groundwork for method level security annotations
-    methodLevelSecuritiesMap = new HashMap<>();
-    val methodLevelSecurities = apiSpec.getAnnotationsByType(
-      WithMethodLevelSecurity.class
-    );
-    if (
-      !methodLevelSecurities.isEmpty()
-    ) methodLevelSecurities.forEach(security ->
-      handleTargetMethodsMapping(security, methodLevelSecuritiesMap)
-    );
+    // add class and method level security annotations
+    val graphQLApiSecurityAnnotationsFactory = new GraphQLAPISecurityAnnotationsFactory(apiSpec, processingEnv);
+    graphQLApiSecurityAnnotationsFactory.generateSecurityAnnotations().forEach(annotationSpec -> {
+      serviceBuilder.addAnnotation(annotationSpec);
+      testableServiceBuilder.addAnnotation(annotationSpec);
+    });
 
     //generate crud methods:
 
@@ -850,50 +832,6 @@ public class GraphQLApiBuilder {
         "apiLogic.init(dataManager, apiHooks, subscriptionsLogicService)"
       )
       .build();
-  }
-
-  private void handleTargetMethodsMapping(
-    WithMethodLevelSecurity security,
-    Map<String, List<AnnotationSpec>> methodLevelSecuritiesMap
-  ) {
-    val targetMethods = Arrays
-      .stream(security.crudEndpointTargets())
-      .map(Object::toString)
-      .collect(Collectors.toList());
-    targetMethods.addAll(
-      Arrays
-        .stream(security.subscriptionEndpointTargets())
-        .map(Object::toString)
-        .collect(Collectors.toList())
-    );
-
-    val securityAnnotations = SecurityAnnotationsFactory.of(security);
-    for (val targetMethod : targetMethods) {
-      if (
-        !methodLevelSecuritiesMap.containsKey(targetMethod)
-      ) methodLevelSecuritiesMap.put(targetMethod, new ArrayList<>());
-      List<AnnotationSpec> securities = methodLevelSecuritiesMap.get(
-        targetMethod
-      );
-      for (AnnotationSpec securityAnnotation : securityAnnotations) {
-        if (!securities.contains(securityAnnotation)) securities.add(
-          securityAnnotation
-        ); else {
-          processingEnv
-            .getMessager()
-            .printMessage(
-              Diagnostic.Kind.ERROR,
-              "Illegal attempt to repeat non repeatable security " +
-              "annotation of type: " +
-              securityAnnotation.type.toString() +
-              " on or in entity of type: " +
-              pascalCaseNameOf(apiSpec.getElement())
-            );
-          return;
-        }
-      }
-      methodLevelSecuritiesMap.replace(targetMethod, securities);
-    }
   }
 
   //method specs
