@@ -1,22 +1,25 @@
-package dev.sanda.apifi.code_generator.entity.graphql_api_builder;
+package dev.sanda.apifi.code_generator.entity.graphql_api_builder.factories;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.autowiredRequiredArgsConstructor;
+import static javax.lang.model.element.Modifier.*;
 
 import com.squareup.javapoet.*;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
+import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilderParams;
 import dev.sanda.apifi.service.graphql_subcriptions.testing_utils.TestSubscriptionsHandler;
 import dev.sanda.apifi.test_utils.TestGraphQLService;
 import dev.sanda.apifi.utils.ConfigValues;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.autowiredRequiredArgsConstructor;
-import static javax.lang.model.element.Modifier.*;
-
-@RequiredArgsConstructor
 public class GraphQLServicesBuilderFactory {
 
   private final EntityGraphQLApiSpec apiSpec;
+
+  public GraphQLServicesBuilderFactory(GraphQLApiBuilderParams params) {
+    this.apiSpec = params.getApiSpec();
+  }
 
   public TypeSpec.Builder generateGraphQLServiceBuilder() {
     return TypeSpec

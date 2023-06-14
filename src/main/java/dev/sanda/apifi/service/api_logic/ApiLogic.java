@@ -159,12 +159,12 @@ public final class ApiLogic<T> {
     }
 
 
-    public <TCollection> List<TCollection> getEmbedded(
+    public <TCollection> List<TCollection> getForeignKeyEntity(
             List<T> input,
             String fieldName,
             DataManager<TCollection> collectionDataManager
     ) {
-        return collectionsCrudService.getEmbeddedImpl(
+        return collectionsCrudService.getForeignKeyEntityImpl(
                 input,
                 fieldName,
                 collectionDataManager

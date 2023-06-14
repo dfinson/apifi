@@ -121,7 +121,7 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
   }
 
 
-  public <TCollection> List<TCollection> getEmbeddedImpl(
+  public <TCollection> List<TCollection> getForeignKeyEntityImpl(
           List<T> input,
           String fieldName,
           DataManager<TCollection> collectionDataManager

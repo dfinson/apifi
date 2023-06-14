@@ -15,12 +15,14 @@ import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import jakarta.persistence.*;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.atteo.evo.inflector.English;
 import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.publisher.FluxSink;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -760,6 +762,45 @@ public abstract class ApifiStaticUtils {
       field.getAnnotation(OneToOne.class) != null ||
       field.getAnnotation(ManyToMany.class) != null
     );
+  }
+
+  public static AnnotationSpec graphqlQueryAnnotation() {
+    return AnnotationSpec.builder(GraphQLQuery.class).build();
+  }
+
+  public static AnnotationSpec graphqlMutationAnnotation() {
+    return AnnotationSpec.builder(GraphQLMutation.class).build();
+  }
+
+  public static String collectionTypeSimpleName(TypeName collectionTypeName) {
+    final String name = collectionTypeName.toString();
+    return name.substring(name.lastIndexOf(".") + 1);
+  }
+
+  public static CodeBlock initSortByIfNull(TypeElement entityType) {
+    return CodeBlock
+            .builder()
+            .beginControlFlow("if(input.getSortBy() == null)")
+            .addStatement("input.setSortBy($S)", getIdFieldName(entityType))
+            .endControlFlow()
+            .build();
+  }
+
+  public static ParameterSpec subscriptionBackPressureStrategyParam() {
+    return ParameterSpec
+            .builder(FluxSink.OverflowStrategy.class, "backPressureStrategy")
+            .addAnnotation(
+                    AnnotationSpec
+                            .builder(GraphQLArgument.class)
+                            .addMember("name", "$S", "backPressureStrategy")
+                            .addMember(
+                                    "defaultValue",
+                                    "$S",
+                                    "\"" + FluxSink.OverflowStrategy.BUFFER + "\""
+                            )
+                            .build()
+            )
+            .build();
   }
 
   public static String getIdFieldName(TypeElement entity) {

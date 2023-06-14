@@ -1,14 +1,13 @@
-package dev.sanda.apifi.code_generator.entity.graphql_api_builder;
+package dev.sanda.apifi.code_generator.entity.graphql_api_builder.factories;
 
 import com.squareup.javapoet.AnnotationSpec;
 import dev.sanda.apifi.annotations.WithMethodLevelSecurity;
 import dev.sanda.apifi.annotations.WithServiceLevelSecurity;
-import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
+import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilderParams;
 import dev.sanda.apifi.security.SecurityAnnotationsFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,9 +20,7 @@ import static dev.sanda.apifi.utils.ApifiStaticUtils.pascalCaseNameOf;
 @RequiredArgsConstructor
 public class GraphQLAPISecurityAnnotationsFactory {
 
-  private final EntityGraphQLApiSpec apiSpec;
-  private final ProcessingEnvironment processingEnv;
-  private Map<String, List<AnnotationSpec>> methodLevelSecuritiesMap;
+  private final GraphQLApiBuilderParams params;
 
   /**
    * Generates a list of security annotations for the API service.
@@ -32,10 +29,11 @@ public class GraphQLAPISecurityAnnotationsFactory {
    */
   public List<AnnotationSpec> generateSecurityAnnotations() {
     List<AnnotationSpec> securityAnnotations = new ArrayList<>();
-
+    val apiSpec = params.getApiSpec();
     // Generate service level security annotations
-    val serviceLevelSecurity =
-      this.apiSpec.getAnnotation(WithServiceLevelSecurity.class);
+    val serviceLevelSecurity = apiSpec.getAnnotation(
+      WithServiceLevelSecurity.class
+    );
     if (serviceLevelSecurity != null) {
       securityAnnotations.addAll(
         SecurityAnnotationsFactory.of(serviceLevelSecurity)
@@ -43,7 +41,8 @@ public class GraphQLAPISecurityAnnotationsFactory {
     }
 
     // Generate method level security annotations
-    methodLevelSecuritiesMap = new HashMap<>();
+    params.setMethodLevelSecuritiesMap(new HashMap<>());
+    val methodLevelSecuritiesMap = params.getMethodLevelSecuritiesMap();
     val methodLevelSecurities = apiSpec.getAnnotationsByType(
       WithMethodLevelSecurity.class
     );
@@ -138,14 +137,15 @@ public class GraphQLAPISecurityAnnotationsFactory {
       if (!securities.contains(securityAnnotation)) {
         securities.add(securityAnnotation);
       } else {
-        processingEnv
+        params
+          .getProcessingEnv()
           .getMessager()
           .printMessage(
             Diagnostic.Kind.ERROR,
             "Illegal attempt to repeat non repeatable security annotation of type: " +
             securityAnnotation.type.toString() +
             " on or in entity of type: " +
-            pascalCaseNameOf(apiSpec.getElement())
+            pascalCaseNameOf(params.getApiSpec().getElement())
           );
         return;
       }

@@ -1,32 +1,34 @@
 package dev.sanda.apifi.code_generator;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiSpecs;
-import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
-import static dev.sanda.datafi.DatafiStaticUtils.getEntityApiSpecs;
-
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
 import dev.sanda.apifi.code_generator.client.ApifiClientFactory;
-import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
-import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilder;
 import dev.sanda.apifi.code_generator.entity.ServiceAndTestableService;
 import dev.sanda.apifi.code_generator.entity.SubscriptionsLogicServicesFactory;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
+import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilder;
+import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilderParams;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
 import dev.sanda.datafi.DatafiStaticUtils;
 import dev.sanda.datafi.annotations.TransientModule;
 import dev.sanda.datafi.code_generator.annotated_element_specs.AnnotatedElementSpec;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import lombok.val;
+
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
-import lombok.val;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.getGraphQLApiSpecs;
+import static dev.sanda.datafi.DatafiStaticUtils.getBasePackage;
+import static dev.sanda.datafi.DatafiStaticUtils.getEntityApiSpecs;
 
 /**
  * Iterates over all elements annotated with @GraphQLApiEntity and generates the complete api
@@ -154,17 +156,17 @@ public class AnnotationProcessor extends AbstractProcessor {
     Set<TypeElement> enumTypes
   ) {
     List<CRUDEndpoints> crudResolvers = entityGraphQLApiSpec.getMergedCrudEndpoints();
-    GraphQLApiBuilder apiBuilder = new GraphQLApiBuilder(
+    GraphQLApiBuilderParams params = new GraphQLApiBuilderParams(
       entityGraphQLApiSpec,
       entitiesMap,
       crudResolvers,
-      enumTypes
-    );
-    ServiceAndTestableService serviceAndTest = apiBuilder.build(
+      enumTypes,
       processingEnv,
       clientFactory,
       collectionsTypes
     );
+    GraphQLApiBuilder apiBuilder = new GraphQLApiBuilder(params);
+    ServiceAndTestableService serviceAndTest = apiBuilder.build();
     writeServiceAndTestToJavaFiles(serviceAndTest);
     return basePackage + ".service." + serviceAndTest.getService().name;
   }

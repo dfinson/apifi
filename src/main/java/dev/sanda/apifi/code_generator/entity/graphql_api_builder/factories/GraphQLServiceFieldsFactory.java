@@ -1,4 +1,4 @@
-package dev.sanda.apifi.code_generator.entity.graphql_api_builder;
+package dev.sanda.apifi.code_generator.entity.graphql_api_builder.factories;
 
 import static dev.sanda.apifi.utils.ApifiStaticUtils.*;
 import static javax.lang.model.element.Modifier.FINAL;
@@ -10,6 +10,7 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.EntityGraphQLApiSpec;
 import dev.sanda.apifi.code_generator.entity.element_api_spec.FieldGraphQLApiSpec;
+import dev.sanda.apifi.code_generator.entity.graphql_api_builder.GraphQLApiBuilderParams;
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_logic.ApiLogic;
 import dev.sanda.apifi.service.api_logic.SubscriptionsLogicService;
@@ -23,18 +24,23 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor
 public class GraphQLServiceFieldsFactory {
 
   private final EntityGraphQLApiSpec apiSpec;
   private final List<FieldGraphQLApiSpec> fieldGraphQLApiSpecs;
   private final ProcessingEnvironment processingEnv;
   private final Map<String, TypeElement> entitiesMap;
+
+  public GraphQLServiceFieldsFactory(GraphQLApiBuilderParams params) {
+    this.apiSpec = params.getApiSpec();
+    this.fieldGraphQLApiSpecs = params.getFieldGraphQLApiSpecs();
+    this.processingEnv = params.getProcessingEnv();
+    this.entitiesMap = params.getEntitiesMap();
+  }
 
   public List<FieldSpec> generateGraphQLServiceFields() {
     val fields = new ArrayList<FieldSpec>();
