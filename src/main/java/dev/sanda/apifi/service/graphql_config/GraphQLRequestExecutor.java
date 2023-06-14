@@ -3,6 +3,7 @@ package dev.sanda.apifi.service.graphql_config;
 import dev.sanda.apifi.dto.GraphQLRequest;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,16 +15,18 @@ public interface GraphQLRequestExecutor<R> {
       requestRaw.getVariables();
     if (requestRaw.getOperationName() != null) operationName =
       requestRaw.getOperationName();
+    ExecutionInput executionInput = ExecutionInput
+            .newExecutionInput()
+            .query(requestRaw.getQuery())
+            .operationName(operationName)
+            .variables(variables)
+            .dataLoaderRegistry(getGraphQLService().getDataLoaderRegistry())
+            .context(request)
+            .build();
     return getGraphQLService()
       .getGraphQLInstance()
       .execute(
-        ExecutionInput
-          .newExecutionInput()
-          .query(requestRaw.getQuery())
-          .operationName(operationName)
-          .variables(variables)
-          .context(request)
-          .build()
+              executionInput
       );
   }
 

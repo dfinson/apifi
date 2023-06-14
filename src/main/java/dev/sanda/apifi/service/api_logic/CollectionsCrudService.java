@@ -1,134 +1,159 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-
 import dev.sanda.apifi.annotations.EntityCollectionApi;
 import dev.sanda.apifi.dto.KeyAndValue;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.MapElementCollectionApiHooks;
+import dev.sanda.apifi.service.graphql_config.GraphQLSubscriptionSupport;
+import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
 import dev.sanda.datafi.dto.Page;
 import dev.sanda.datafi.reflection.runtime_services.CollectionInstantiator;
 import dev.sanda.datafi.reflection.runtime_services.CollectionsTypeResolver;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.val;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
 
-@Service
+import static dev.sanda.apifi.utils.ApifiStaticUtils.isClazzArchivable;
+import static dev.sanda.datafi.DatafiStaticUtils.*;
+
+@Component
 @Scope("prototype")
 public class CollectionsCrudService<T> extends BaseCrudService<T> {
 
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<List<TCollection>> getEntityCollectionImpl(
-    List<T> input,
-    String collectionFieldName,
-    E collectionApiHooks,
-    DataManager<TCollection> collectionDataManager
+  private final CollectionInstantiator collectionInstantiator;
+  private final CollectionsTypeResolver collectionsTypeResolver;
+
+  @Autowired
+  public CollectionsCrudService(
+    ReflectionCache reflectionCache,
+    AsyncExecutorService asyncExecutorService,
+    GraphQLSubscriptionSupport graphQLSubscriptionSupport,
+    CollectionInstantiator collectionInstantiator,
+    CollectionsTypeResolver collectionsTypeResolver
   ) {
-    if (collectionApiHooks != null) input.forEach(
-      owner ->
-        collectionApiHooks.preFetch(
-          owner,
-          collectionFieldName,
-          dataManager,
-          collectionDataManager
-        )
-    );
-    val rawQueryResults = (List) dataManager
-      .entityManager()
-      .createQuery(
-        String.format(
-          "SELECT owner, entityCollection " +
-          "FROM %s owner " +
-          "JOIN owner.%s entityCollection " +
-          "WHERE owner.%s IN :ownerIds",
-          dataManager.getClazzSimpleName(),
-          collectionFieldName,
-          reflectionCache
-            .getEntitiesCache()
-            .get(dataManager.getClazzSimpleName())
-            .getIdField()
-            .getName()
-        )
-      )
-      .setParameter("ownerIds", getIdList(input, reflectionCache))
-      .getResultList();
-    val owners2EntityCollectionsMap = new HashMap<T, List<TCollection>>();
-    rawQueryResults.forEach(
-      item -> {
-        val ownerAndCollectionItem = (Object[]) item;
-        val owner = (T) ownerAndCollectionItem[0];
-        val entityCollectionItem = (TCollection) ownerAndCollectionItem[1];
-        if (
-          !owners2EntityCollectionsMap.containsKey(owner)
-        ) owners2EntityCollectionsMap.put(
-          owner,
-          new ArrayList<>(Collections.singletonList(entityCollectionItem))
-        ); else owners2EntityCollectionsMap
-          .get(owner)
-          .add(entityCollectionItem);
-      }
-    );
-    if (collectionApiHooks != null) owners2EntityCollectionsMap
-      .keySet()
-      .forEach(
-        owner ->
-          collectionApiHooks.postFetch(
-            owners2EntityCollectionsMap.get(owner),
-            owner,
-            collectionDataManager,
-            dataManager
-          )
-      );
-    return input
-      .stream()
-      .map(
-        key -> {
-          final List<TCollection> collection = owners2EntityCollectionsMap.get(
-            key
-          );
-          return collection != null ? collection : new ArrayList<TCollection>();
-        }
-      )
-      .collect(Collectors.toList());
+    super(reflectionCache, asyncExecutorService, graphQLSubscriptionSupport);
+    this.collectionInstantiator = collectionInstantiator;
+    this.collectionsTypeResolver = collectionsTypeResolver;
   }
 
-  public <TCollection> List<TCollection> getEmbeddedImpl(
-    List<T> input,
-    String fieldName,
-    DataManager<TCollection> collectionDataManager
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<List<TCollection>> getEntityCollectionImpl(
+          List<T> input,
+          String collectionFieldName,
+          E collectionApiHooks,
+          DataManager<TCollection> collectionDataManager
+  ) {
+    if (collectionApiHooks != null) input.forEach(
+            owner ->
+                    collectionApiHooks.preFetch(
+                            owner,
+                            collectionFieldName,
+                            dataManager,
+                            collectionDataManager
+                    )
+    );
+    val rawQueryResults = (List) dataManager
+            .entityManager()
+            .createQuery(
+                    String.format(
+                            "SELECT owner, entityCollection " +
+                                    "FROM %s owner " +
+                                    "JOIN owner.%s entityCollection " +
+                                    "WHERE owner.%s IN :ownerIds",
+                            dataManager.getClazzSimpleName(),
+                            collectionFieldName,
+                            reflectionCache
+                                    .getEntitiesCache()
+                                    .get(dataManager.getClazzSimpleName())
+                                    .getIdField()
+                                    .getName()
+                    )
+            )
+            .setParameter("ownerIds", getIdList(input, reflectionCache))
+            .getResultList();
+    val owners2EntityCollectionsMap = new HashMap<T, List<TCollection>>();
+    rawQueryResults.forEach(
+            item -> {
+              val ownerAndCollectionItem = (Object[]) item;
+              val owner = (T) ownerAndCollectionItem[0];
+              val entityCollectionItem = (TCollection) ownerAndCollectionItem[1];
+              if (
+                      !owners2EntityCollectionsMap.containsKey(owner)
+              ) owners2EntityCollectionsMap.put(
+                      owner,
+                      new ArrayList<>(Collections.singletonList(entityCollectionItem))
+              ); else owners2EntityCollectionsMap
+                      .get(owner)
+                      .add(entityCollectionItem);
+            }
+    );
+    if (collectionApiHooks != null) owners2EntityCollectionsMap
+            .keySet()
+            .forEach(
+                    owner ->
+                            collectionApiHooks.postFetch(
+                                    owners2EntityCollectionsMap.get(owner),
+                                    owner,
+                                    collectionDataManager,
+                                    dataManager
+                            )
+            );
+    return input
+            .stream()
+            .map(
+                    key -> {
+                      final List<TCollection> collection = owners2EntityCollectionsMap.get(
+                              key
+                      );
+                      return collection != null ? collection : new ArrayList<TCollection>();
+                    }
+            )
+            .collect(Collectors.toList());
+  }
+
+
+  public <TCollection> List<TCollection> getForeignKeyEntityImpl(
+          List<T> input,
+          String fieldName,
+          DataManager<TCollection> collectionDataManager
   ) {
     val queryString = String.format(
-      "SELECT new dev.sanda.apifi.dto.KeyAndValue(owner, owner.%s) FROM %s owner WHERE owner.%s IN :ids " +
-      "ORDER BY owner.%s",
-      fieldName,
-      entityName,
-      idFieldName,
-      idFieldName
+            "SELECT new dev.sanda.apifi.dto.KeyAndValue(owner, owner.%s) FROM %s owner WHERE owner.%s IN :ids " +
+                    "ORDER BY owner.%s",
+            fieldName,
+            entityName,
+            idFieldName,
+            idFieldName
     );
+    @SuppressWarnings("unchecked")
     final Map<T, TCollection> resultMap = (Map<T, TCollection>) dataManager
-      .entityManager()
-      .createQuery(queryString)
-      .setParameter("ids", getIdList(input, reflectionCache))
-      .getResultStream()
-      .collect(
-        Collectors.toMap(
-          KeyAndValue::getKey,
-          KeyAndValue::getValue,
-          (first, second) -> first
-        )
-      );
+            .entityManager()
+            .createQuery(queryString)
+            .setParameter("ids", getIdList(input, reflectionCache))
+            .getResultStream()
+            .collect(
+                    Collectors.toMap(
+                            KeyAndValue::getKey,
+                            KeyAndValue::getValue,
+                            (first, second) -> first
+                    )
+            );
     return input.stream().map(resultMap::get).collect(Collectors.toList());
   }
 
-  public <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection> addToElementCollectionImpl(
+
+  public <
+    TCollection, E extends ElementCollectionApiHooks<TCollection, T>
+  > List<TCollection> addToElementCollectionImpl(
     T input,
     String fieldName,
     List<TCollection> toAdd,
@@ -179,7 +204,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return toAdd;
   }
 
-  public <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> List<TCollection> removeFromElementCollectionImpl(
+  public <
+    TCollection, E extends ElementCollectionApiHooks<TCollection, T>
+  > List<TCollection> removeFromElementCollectionImpl(
     T input,
     String fieldName,
     List<TCollection> toRemove,
@@ -218,7 +245,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return toRemove;
   }
 
-  public <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> Page<TCollection> getPaginatedBatchInElementCollectionImpl(
+  public <
+    TCollection, E extends ElementCollectionApiHooks<TCollection, T>
+  > Page<TCollection> getPaginatedBatchInElementCollectionImpl(
     T owner,
     dev.sanda.datafi.dto.PageRequest input,
     String fieldName,
@@ -282,7 +311,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return returnValue;
   }
 
-  public <TCollection, E extends ElementCollectionApiHooks<TCollection, T>> Page<TCollection> getFreeTextSearchPaginatedBatchInElementCollectionImpl(
+  public <
+    TCollection, E extends ElementCollectionApiHooks<TCollection, T>
+  > Page<TCollection> getFreeTextSearchPaginatedBatchInElementCollectionImpl(
     T owner,
     dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
     String fieldName,
@@ -368,7 +399,11 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return returnValue;
   }
 
-  public <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>> Map<TMapKey, TMapValue> addToMapElementCollectionImpl(
+  public <
+    TMapKey,
+    TMapValue,
+    E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>
+  > Map<TMapKey, TMapValue> addToMapElementCollectionImpl(
     T input,
     String fieldName,
     Map<TMapKey, TMapValue> toPut,
@@ -405,7 +440,11 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return toPut;
   }
 
-  public <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>> Map<TMapKey, TMapValue> removeFromMapElementCollectionImpl(
+  public <
+    TMapKey,
+    TMapValue,
+    E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>
+  > Map<TMapKey, TMapValue> removeFromMapElementCollectionImpl(
     T input,
     String fieldName,
     List<TMapKey> toRemove,
@@ -449,7 +488,11 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return removed;
   }
 
-  public <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>> Page<Map.Entry<TMapKey, TMapValue>> getPaginatedBatchInMapElementCollectionImpl(
+  public <
+    TMapKey,
+    TMapValue,
+    E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>
+  > Page<Map.Entry<TMapKey, TMapValue>> getPaginatedBatchInMapElementCollectionImpl(
     T owner,
     dev.sanda.datafi.dto.PageRequest input,
     String fieldName,
@@ -485,15 +528,16 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     );
     Object ownerId = getId(temp, reflectionCache);
 
-    List<Map.Entry<TMapKey, TMapValue>> content = (List<Map.Entry<TMapKey, TMapValue>>) dataManager
-      .entityManager()
-      .createQuery(contentQueryString)
-      .setParameter("ownerId", ownerId)
-      .setFirstResult(input.getPageNumber() * input.getPageSize())
-      .setMaxResults(input.getPageSize())
-      .getResultStream()
-      .map(entry -> ((KeyAndValue) entry).toEntry())
-      .collect(Collectors.toList());
+    List<Map.Entry<TMapKey, TMapValue>> content =
+      (List<Map.Entry<TMapKey, TMapValue>>) dataManager
+        .entityManager()
+        .createQuery(contentQueryString)
+        .setParameter("ownerId", ownerId)
+        .setFirstResult(input.getPageNumber() * input.getPageSize())
+        .setMaxResults(input.getPageSize())
+        .getResultStream()
+        .map(entry -> ((KeyAndValue) entry).toEntry())
+        .collect(Collectors.toList());
     val totalRecords = (long) dataManager
       .entityManager()
       .createQuery(countQueryString)
@@ -513,81 +557,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return returnValue;
   }
 
-  public <TMapKey, TMapValue, E extends MapElementCollectionApiHooks<TMapKey, TMapValue, T>> Page<Map.Entry<TMapKey, TMapValue>> getFreeTextSearchPaginatedBatchInMapElementCollectionImpl(
-    T owner,
-    dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
-    String fieldName,
-    E apiHooks
-  ) {
-    owner = dataManager.findById(getId(owner, reflectionCache)).orElse(null);
-    if (owner == null) throw_entityNotFound(input, reflectionCache);
-    if (input.getFetchAll()) input.setPageNumber(0);
-    Page<Map.Entry<TMapKey, TMapValue>> returnValue;
-
-    if (
-      apiHooks != null &&
-      (
-        returnValue =
-          apiHooks.executeCustomFreeTextSearch(input, owner, dataManager)
-      ) !=
-      null
-    ) return returnValue;
-
-    if (apiHooks != null) apiHooks.preFreeTextSearch(owner, input, dataManager);
-    returnValue = new Page<>();
-    val contentQueryString = String.format(
-      "SELECT new dev.sanda.apifi.dto.KeyAndValue(KEY(map), VALUE(map)) " +
-      "FROM %s owner " +
-      "JOIN owner.%s map " +
-      "WHERE owner.%s = :ownerId AND " +
-      "LOWER(KEY(map)) LIKE LOWER(CONCAT('%%', :searchTerm, '%%')) " +
-      "ORDER BY KEY(map) %s",
-      dataManager.getClazzSimpleName(),
-      fieldName,
-      idFieldName,
-      input.getSortDirection()
-    );
-    val countQueryString = String.format(
-      "SELECT COUNT(map) FROM %s owner " +
-      "JOIN owner.%s map " +
-      "WHERE owner.%s = :ownerId AND " +
-      "LOWER(KEY(map)) LIKE LOWER(CONCAT('%%', :searchTerm, '%%'))",
-      dataManager.getClazzSimpleName(),
-      fieldName,
-      idFieldName
-    );
-    Object ownerId = getId(owner, reflectionCache);
-    val content = (List<java.util.Map.Entry<TMapKey, TMapValue>>) dataManager
-      .entityManager()
-      .createQuery(contentQueryString)
-      .setParameter("ownerId", ownerId)
-      .setParameter("searchTerm", input.getSearchTerm())
-      .setFirstResult(input.getPageNumber() * input.getPageSize())
-      .setMaxResults(input.getPageSize())
-      .getResultStream()
-      .map(entry -> ((KeyAndValue) entry).toEntry())
-      .collect(Collectors.toList());
-    val totalRecords = (long) dataManager
-      .entityManager()
-      .createQuery(countQueryString)
-      .setParameter("ownerId", ownerId)
-      .setParameter("searchTerm", input.getSearchTerm())
-      .getSingleResult();
-    val totalPages = Math.ceil((double) totalRecords / input.getPageSize());
-    returnValue.setContent(content);
-    returnValue.setTotalPagesCount((long) totalPages);
-    returnValue.setTotalItemsCount(totalRecords);
-    returnValue.setPageNumber(input.getPageNumber());
-    if (apiHooks != null) apiHooks.postFreeTextSearch(
-      returnValue,
-      input,
-      owner,
-      dataManager
-    );
-    return returnValue;
-  }
-
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<TCollection> associateWithEntityCollectionImpl(
+  public <
+    TCollection, E extends EntityCollectionApiHooks<TCollection, T>
+  > List<TCollection> associateWithEntityCollectionImpl(
     T input,
     String fieldName,
     List<TCollection> toAssociate,
@@ -638,15 +610,11 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       toAssociate =
         toAssociate
           .stream()
-          .map(
-            item -> {
-              val id = getId(item, reflectionCache);
-              val preExisting = id != null
-                ? existingInstancesById.get(id)
-                : null;
-              if (preExisting != null) return preExisting; else return item;
-            }
-          )
+          .map(item -> {
+            val id = getId(item, reflectionCache);
+            val preExisting = id != null ? existingInstancesById.get(id) : null;
+            if (preExisting != null) return preExisting; else return item;
+          })
           .collect(Collectors.toList());
     }
     existingCollection.addAll(toAssociate);
@@ -685,32 +653,33 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       collectionDataManager,
       dataManager
     );
-    if (preExistingInstancesIds.size() < result.size()) fireSubscriptionEvent(
-      () ->
-        collectionSubscriptionsLogicService.onCreateEvent(
-          result
-            .stream()
-            .filter(
-              obj ->
-                !preExistingInstancesIds.contains(getId(obj, reflectionCache))
-            )
-            .collect(Collectors.toList())
-        )
+    if (
+      preExistingInstancesIds.size() < result.size()
+    ) fireSubscriptionEvent(() ->
+      collectionSubscriptionsLogicService.onCreateEvent(
+        result
+          .stream()
+          .filter(obj ->
+            !preExistingInstancesIds.contains(getId(obj, reflectionCache))
+          )
+          .collect(Collectors.toList())
+      )
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onAssociateWithEvent(
-          ownerLoaded,
-          fieldName,
-          result,
-          collectionDataManager,
-          entityCollectionApiHooks
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onAssociateWithEvent(
+        ownerLoaded,
+        fieldName,
+        result,
+        collectionDataManager,
+        entityCollectionApiHooks
+      )
     );
     return result;
   }
 
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> Page<TCollection> paginatedFreeTextSearchInEntityCollectionImpl(
+  public <
+    TCollection, E extends EntityCollectionApiHooks<TCollection, T>
+  > Page<TCollection> paginatedFreeTextSearchInEntityCollectionImpl(
     T owner,
     dev.sanda.datafi.dto.FreeTextSearchPageRequest input,
     String fieldName,
@@ -868,7 +837,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return resultString;
   }
 
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> Page<TCollection> getPaginatedBatchInEntityCollectionImpl(
+  public <
+    TCollection, E extends EntityCollectionApiHooks<TCollection, T>
+  > Page<TCollection> getPaginatedBatchInEntityCollectionImpl(
     T owner,
     dev.sanda.datafi.dto.PageRequest input,
     String fieldName,
@@ -945,7 +916,9 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     return returnValue;
   }
 
-  public <TCollection, E extends EntityCollectionApiHooks<TCollection, T>> List<TCollection> associatePreExistingWithEntityCollectionImpl(
+  public <
+    TCollection, E extends EntityCollectionApiHooks<TCollection, T>
+  > List<TCollection> associatePreExistingWithEntityCollectionImpl(
     T input,
     String fieldName,
     List<TCollection> toAssociate,
@@ -1016,15 +989,14 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       collectionDataManager,
       dataManager
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onAssociateWithEvent(
-          ownerLoaded,
-          fieldName,
-          result,
-          collectionDataManager,
-          entityCollectionApiHooks
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onAssociateWithEvent(
+        ownerLoaded,
+        fieldName,
+        result,
+        collectionDataManager,
+        entityCollectionApiHooks
+      )
     );
     return result;
   }
@@ -1059,8 +1031,8 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     Set<Object> toRemoveIds = new HashSet<>(
       getIdList(toRemove, reflectionCache)
     );
-    currentCollection.removeIf(
-      item -> toRemoveIds.contains(getId(item, reflectionCache))
+    currentCollection.removeIf(item ->
+      toRemoveIds.contains(getId(item, reflectionCache))
     );
     dataManager.save(owner);
     if (entityCollectionApiHooks != null) entityCollectionApiHooks.postRemove(
@@ -1069,24 +1041,17 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
       collectionDataManager,
       dataManager
     );
-    fireSubscriptionEvent(
-      () ->
-        subscriptionsLogicService.onRemoveFromEvent(
-          ownerLoaded,
-          toRemoveFieldName,
-          toRemove,
-          collectionDataManager,
-          entityCollectionApiHooks
-        )
+    fireSubscriptionEvent(() ->
+      subscriptionsLogicService.onRemoveFromEvent(
+        ownerLoaded,
+        toRemoveFieldName,
+        toRemove,
+        collectionDataManager,
+        entityCollectionApiHooks
+      )
     );
     return toRemove;
   }
-
-  @Autowired
-  private CollectionInstantiator collectionInstantiator;
-
-  @Autowired
-  private CollectionsTypeResolver collectionsTypeResolver;
 
   private <TCollection> Collection<TCollection> initCollection(
     String fieldName
@@ -1138,8 +1103,8 @@ public class CollectionsCrudService<T> extends BaseCrudService<T> {
     Collection<TCollection> toExtract
   ) {
     List<TCollection> result = new ArrayList<>();
-    toExtract.forEach(
-      item -> result.add(extract(toExtractFrom, item, reflectionCache))
+    toExtract.forEach(item ->
+      result.add(extract(toExtractFrom, item, reflectionCache))
     );
     return result;
   }

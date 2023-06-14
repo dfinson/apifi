@@ -1,6 +1,6 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.code_generator.entity.EntityCollectionEndpointType;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.EntityCollectionEndpointType;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullEntityCollectionApiHooks;
 import dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints;

@@ -1,9 +1,9 @@
 package dev.sanda.apifi.annotations;
 
-import static dev.sanda.apifi.code_generator.entity.CRUDEndpoints._NONE;
+import static dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints._NONE;
 import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.NONE;
 
-import dev.sanda.apifi.code_generator.entity.CRUDEndpoints;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.CRUDEndpoints;
 import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints;
 import java.lang.annotation.*;
 

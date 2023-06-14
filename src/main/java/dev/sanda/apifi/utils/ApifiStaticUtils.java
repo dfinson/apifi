@@ -1,7 +1,5 @@
 package dev.sanda.apifi.utils;
 
-import static dev.sanda.datafi.DatafiStaticUtils.*;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,16 +15,15 @@ import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import jakarta.persistence.*;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
+import org.atteo.evo.inflector.English;
+import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.publisher.FluxSink;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
@@ -36,10 +33,18 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.persistence.*;
 import javax.tools.StandardLocation;
-import lombok.val;
-import org.atteo.evo.inflector.English;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static dev.sanda.datafi.DatafiStaticUtils.*;
 
 public abstract class ApifiStaticUtils {
 
@@ -83,28 +88,24 @@ public abstract class ApifiStaticUtils {
       .stream()
       .filter(element -> element instanceof ExecutableElement)
       .map(element -> (ExecutableElement) element)
-      .filter(
-        element ->
-          element.getSimpleName().toString().startsWith("get") ||
-          element.getAnnotation(GraphQLQuery.class) != null
+      .filter(element ->
+        element.getSimpleName().toString().startsWith("get") ||
+        element.getAnnotation(GraphQLQuery.class) != null
       )
-      .filter(
-        executableElement ->
-          !executableElement
-            .getReturnType()
-            .toString()
-            .equals(void.class.getCanonicalName())
+      .filter(executableElement ->
+        !executableElement
+          .getReturnType()
+          .toString()
+          .equals(void.class.getCanonicalName())
       )
-      .filter(
-        executableElement -> {
-          final boolean isIgnored =
-            executableElement.getAnnotation(GraphQLIgnore.class) != null;
-          if (isIgnored) graphQlIgnoredFields.add(
-            getFieldName(executableElement)
-          );
-          return !isIgnored;
-        }
-      )
+      .filter(executableElement -> {
+        final boolean isIgnored =
+          executableElement.getAnnotation(GraphQLIgnore.class) != null;
+        if (isIgnored) graphQlIgnoredFields.add(
+          getFieldName(executableElement)
+        );
+        return !isIgnored;
+      })
       .collect(
         Collectors.toMap(
           ApifiStaticUtils::getFieldName,
@@ -115,9 +116,8 @@ public abstract class ApifiStaticUtils {
       );
     val fromFields = getNonIgnoredFields(typeElement)
       .stream()
-      .filter(
-        field ->
-          !graphQlIgnoredFields.contains(field.getSimpleName().toString())
+      .filter(field ->
+        !graphQlIgnoredFields.contains(field.getSimpleName().toString())
       )
       .collect(
         Collectors.toMap(
@@ -173,10 +173,9 @@ public abstract class ApifiStaticUtils {
         )
         .entrySet()
         .stream()
-        .filter(
-          entry ->
-            entry.getValue().getAnnotation(Table.class) != null ||
-            entry.getValue().getAnnotation(Entity.class) != null
+        .filter(entry ->
+          entry.getValue().getAnnotation(Table.class) != null ||
+          entry.getValue().getAnnotation(Entity.class) != null
         )
         .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     entities.forEach(entity -> extensionsMap.putIfAbsent(entity, null));
@@ -504,7 +503,10 @@ public abstract class ApifiStaticUtils {
       collectionTypeName(element)
     );
     ClassName listName = ClassName.get("java.util", "List");
-    return ParameterizedTypeName.get(listName, nestedList);
+    return ParameterizedTypeName.get(
+      listName,
+      nestedList
+    );
   }
 
   public static ParameterizedTypeName listOfEmbedded(VariableElement element) {
@@ -526,6 +528,13 @@ public abstract class ApifiStaticUtils {
       ? camelcaseNameOf(entityCollectionField) +
       EntityCollectionApiHooks.class.getSimpleName()
       : "null";
+  }
+
+  public static AnnotationSpec autowiredRequiredArgsConstructor() {
+    return AnnotationSpec
+      .builder(RequiredArgsConstructor.class)
+      .addMember("onConstructor_", "@$T", Autowired.class)
+      .build();
   }
 
   public static String elementCollectionApiHooksName(
@@ -755,16 +764,54 @@ public abstract class ApifiStaticUtils {
     );
   }
 
+  public static AnnotationSpec graphqlQueryAnnotation() {
+    return AnnotationSpec.builder(GraphQLQuery.class).build();
+  }
+
+  public static AnnotationSpec graphqlMutationAnnotation() {
+    return AnnotationSpec.builder(GraphQLMutation.class).build();
+  }
+
+  public static String collectionTypeSimpleName(TypeName collectionTypeName) {
+    final String name = collectionTypeName.toString();
+    return name.substring(name.lastIndexOf(".") + 1);
+  }
+
+  public static CodeBlock initSortByIfNull(TypeElement entityType) {
+    return CodeBlock
+            .builder()
+            .beginControlFlow("if(input.getSortBy() == null)")
+            .addStatement("input.setSortBy($S)", getIdFieldName(entityType))
+            .endControlFlow()
+            .build();
+  }
+
+  public static ParameterSpec subscriptionBackPressureStrategyParam() {
+    return ParameterSpec
+            .builder(FluxSink.OverflowStrategy.class, "backPressureStrategy")
+            .addAnnotation(
+                    AnnotationSpec
+                            .builder(GraphQLArgument.class)
+                            .addMember("name", "$S", "backPressureStrategy")
+                            .addMember(
+                                    "defaultValue",
+                                    "$S",
+                                    "\"" + FluxSink.OverflowStrategy.BUFFER + "\""
+                            )
+                            .build()
+            )
+            .build();
+  }
+
   public static String getIdFieldName(TypeElement entity) {
     //noinspection OptionalGetWithoutIsPresent
     return entity
       .getEnclosedElements()
       .stream()
       .filter(elem -> elem.getKind().isField())
-      .filter(
-        field ->
-          field.getAnnotation(Id.class) != null ||
-          field.getAnnotation(EmbeddedId.class) != null
+      .filter(field ->
+        field.getAnnotation(Id.class) != null ||
+        field.getAnnotation(EmbeddedId.class) != null
       )
       .findFirst()
       .get()

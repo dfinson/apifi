@@ -1,35 +1,37 @@
-
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!-- Artifact Information -->
     <modelVersion>4.0.0</modelVersion>
-
+    <groupId>dev.sanda</groupId>
     <artifactId>apifi</artifactId>
-    <version>1.0.0</version>
-
-    <parent>
-        <groupId>dev.sanda</groupId>
-        <artifactId>Sensei</artifactId>
-        <version>0.1.0</version>
-        <relativePath/>
-    </parent>
+    <version>dev1</version>
 
     <properties>
-        <datafi.version>0.2.3</datafi.version>
-        <spring-security-web.version>5.4.6</spring-security-web.version>
-        <java-hamcrest-version>2.0.0.0</java-hamcrest-version>
+        <!-- Property versions used within the project -->
+        <datafi.version>dev1</datafi.version>
+        <spring-security-web.version>6.1.0</spring-security-web.version>
+        <hamcrest.version>2.2</hamcrest.version>
         <mockeri.version>0.0.2</mockeri.version>
-        <spqr.version>0.10.1</spqr.version>
-        <lombok-maven-plugin.version>0.11.6.0</lombok-maven-plugin.version>
+        <spqr.version>0.12.2</spqr.version>
+        <lombok-maven-plugin.version>1.18.28</lombok-maven-plugin.version>
         <delombok.output>target/classes</delombok.output>
-        <joda-time.version>2.10.6</joda-time.version>
-        <spring-boot-starter-websocket.version>2.4.2</spring-boot-starter-websocket.version>
-        <reactor-core.version>3.4.2</reactor-core.version>
-        <spring-boot-starter-data-redis.version>2.4.5</spring-boot-starter-data-redis.version>
+        <joda-time.version>2.12.5</joda-time.version>
+        <spring-boot-starter-websocket.version>3.1.0</spring-boot-starter-websocket.version>
+        <reactor-core.version>3.5.6</reactor-core.version>
+        <spring-boot-starter-data-redis.version>3.1.0</spring-boot-starter-data-redis.version>
+        <spring-boot-starter-web.version>3.1.0</spring-boot-starter-web.version>
+        <spring-boot-starter-test.version>3.1.0</spring-boot-starter-test.version>
+        <spring-boot-test.version>3.1.0</spring-boot-test.version>
+        <spring-test.version>6.0.9</spring-test.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <graphql-java.version>13.0</graphql-java.version>
     </properties>
 
     <dependencies>
+        <!-- dev.sanda:datafi - Data access layer functionality -->
         <dependency>
             <groupId>dev.sanda</groupId>
             <artifactId>datafi</artifactId>
@@ -37,59 +39,54 @@
             <optional>false</optional>
         </dependency>
 
-
-        <!-- web -->
+        <!-- org.springframework.boot:spring-boot-starter-web - Necessary components for web development -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot-starter-web.version}</version>
         </dependency>
 
+        <!-- org.springframework.boot:spring-boot-starter-websocket - WebSocket support for web applications -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>${spring-boot-starter-websocket.version}</version>
         </dependency>
 
-        <!-- reactive -->
-
+        <!-- io.projectreactor:reactor-core - Core functionalities for reactive programming -->
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
             <version>${reactor-core.version}</version>
         </dependency>
 
+        <!-- org.springframework.boot:spring-boot-starter-data-redis - Support for integrating Redis with Spring Data -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <version>${spring-boot-starter-data-redis.version}</version>
         </dependency>
 
-
-
-        <!--security-->
+        <!-- org.springframework.security:spring-security-web - Web security features for the project -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
             <version>${spring-security-web.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>compile</scope>
-        </dependency>
-
-        <!-- graphql api -->
+        <!-- io.leangen.graphql:spqr - GraphQL API generation and implementation support -->
         <dependency>
             <groupId>io.leangen.graphql</groupId>
             <artifactId>spqr</artifactId>
             <version>${spqr.version}</version>
         </dependency>
 
-        <!-- testing -->
+
+        <!-- org.springframework.boot:spring-boot-starter-test - Testing support for Spring Boot applications -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>${spring-boot-starter-test.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -99,41 +96,48 @@
             </exclusions>
         </dependency>
 
+        <!-- org.hamcrest:hamcrest - Support for writing tests using Hamcrest matchers -->
         <dependency>
             <groupId>org.hamcrest</groupId>
-            <artifactId>java-hamcrest</artifactId>
-            <version>${java-hamcrest-version}</version>
+            <artifactId>hamcrest</artifactId>
+            <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
 
+        <!-- org.springframework.boot:spring-boot-test - Testing support for Spring Boot applications -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-test</artifactId>
+            <version>${spring-boot-test.version}</version>
         </dependency>
+
+        <!-- org.springframework:spring-test - Testing support for Spring applications -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>5.1.8.RELEASE</version>
+            <version>${spring-test.version}</version>
             <scope>compile</scope>
         </dependency>
 
-
+        <!-- joda-time:joda-time - Date and time utilities -->
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>${joda-time.version}</version>
         </dependency>
-
     </dependencies>
 
+    <!-- Project Description -->
     <name>Apifi</name>
     <description>
-        Java 8+ annotation processor for auto generation and rapid development of GraphQL APIs
+        Java 8+ annotation processor for auto generation and rapid development of Spring Boot based GraphQL APIs
     </description>
-    <url>https://github.com/sanda-dev/apifi</url>
+
+    <!-- Project URL and Source Control Management (SCM) -->
+    <url>https://github.com/dfinson/apifi</url>
     <scm>
-        <connection>scm:git:git://github.com/sanda-dev/apifi.git</connection>
-        <developerConnection>scm:git:ssh://github.com:sanda-dev/apifi.git</developerConnection>
-        <url>http://github.com/sanda-dev/apifi</url>
+        <connection>scm:git:git://github.com/dfinson/apifi.git</connection>
+        <developerConnection>scm:git:ssh://github.com:dfinson/apifi.git</developerConnection>
+        <url>http://github.com/dfinson/apifi</url>
     </scm>
 </project>

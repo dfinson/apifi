@@ -627,12 +627,6 @@ Given a field of type `Map<K, V>` which is annotated as an `@ElementCollection`,
    *Input:*   
 - `owner`: The instance containing the map. Must include ID.   
    - [`PageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/PageRequest.java): See GET_PAGINATED_BATCH. The only difference is that the return value is a page whos content field is a map.  
-4. PAGINATED__FREE__TEXT__SEARCH     
-*Overview and output:*      
- Get a paginated batch of items within the map using free text search **on the keys set** (and not the values set).     
-   *Input:*   
-- `owner`: The instance containing the map. Must include ID.   
-   - [`FreeTextSearchPageRequest`](https://github.com/sanda-dev/datafi/blob/master/src/main/java/dev/sanda/datafi/dto/FreeTextSearchPageRequest.java): See free text search section.  
 
 ### GraphQL Subscriptions
 #### Overview

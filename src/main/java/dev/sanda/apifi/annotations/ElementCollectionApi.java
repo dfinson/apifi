@@ -1,6 +1,6 @@
 package dev.sanda.apifi.annotations;
 
-import dev.sanda.apifi.code_generator.entity.ElementCollectionEndpointType;
+import dev.sanda.apifi.code_generator.entity.operation_types_enums.ElementCollectionEndpointType;
 import dev.sanda.apifi.service.api_hooks.ElementCollectionApiHooks;
 import dev.sanda.apifi.service.api_hooks.NullElementCollectionApiHooks;
 import java.lang.annotation.ElementType;

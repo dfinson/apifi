@@ -1,12 +1,5 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
-import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
-import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
-import static dev.sanda.datafi.DatafiStaticUtils.getId;
-import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
-import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
-
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
 import dev.sanda.apifi.service.api_hooks.EntityCollectionApiHooks;
 import dev.sanda.apifi.service.graphql_subcriptions.GraphQLSubscriptionsService;
@@ -14,9 +7,6 @@ import dev.sanda.apifi.service.graphql_subcriptions.SubscriptionsService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
 import dev.sanda.datafi.service.DataManagersCollector;
-import java.util.*;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 import lombok.Setter;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,18 +15,29 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import javax.annotation.PostConstruct;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_ASSOCIATE_WITH;
+import static dev.sanda.apifi.service.graphql_subcriptions.EntityCollectionSubscriptionEndpoints.ON_REMOVE_FROM;
+import static dev.sanda.apifi.service.graphql_subcriptions.SubscriptionEndpoints.*;
+import static dev.sanda.datafi.DatafiStaticUtils.getId;
+import static dev.sanda.datafi.DatafiStaticUtils.toPlural;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.BUFFER;
+
 @Service
 @Scope("prototype")
 public class SubscriptionsLogicService<T>
   implements GraphQLSubscriptionsService<T> {
 
-  @Autowired
+  @Setter(onMethod_ = @Autowired)
   private SubscriptionsService subscriptionsService;
 
-  @Autowired
+  @Setter(onMethod_ = @Autowired)
   private ReflectionCache reflectionCache;
 
-  @Autowired
+  @Setter(onMethod_ = @Autowired)
   private DataManagersCollector dataManagersCollector;
 
   public SubscriptionsLogicService(Class<T> entityType) {

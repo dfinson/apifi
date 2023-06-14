@@ -1,30 +1,24 @@
 package dev.sanda.apifi.service.api_logic;
 
-import static dev.sanda.datafi.DatafiStaticUtils.getId;
-
 import dev.sanda.apifi.service.api_hooks.ApiHooks;
-import dev.sanda.apifi.service.graphql_config.GraphQLInstanceFactory;
+import dev.sanda.apifi.service.graphql_config.GraphQLSubscriptionSupport;
 import dev.sanda.apifi.service.graphql_subcriptions.pubsub.AsyncExecutorService;
 import dev.sanda.datafi.reflection.runtime_services.ReflectionCache;
 import dev.sanda.datafi.service.DataManager;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Component;
+
+import static dev.sanda.datafi.DatafiStaticUtils.getId;
 
 @Slf4j
-@Component
-@DependsOn("ApiLogic")
+@RequiredArgsConstructor
 public abstract class BaseCrudService<T> {
 
-  @Autowired
-  protected ReflectionCache reflectionCache;
+  protected final ReflectionCache reflectionCache;
 
-  @Autowired
-  protected AsyncExecutorService asyncExecutorService;
+  protected final AsyncExecutorService asyncExecutorService;
 
-  @Autowired
-  protected GraphQLInstanceFactory graphQLInstanceFactory;
+  protected final GraphQLSubscriptionSupport graphQLSubscriptionSupport;
 
   protected DataManager<T> dataManager;
   protected ApiHooks<T> apiHooks;
@@ -70,7 +64,7 @@ public abstract class BaseCrudService<T> {
   }
 
   protected void fireSubscriptionEvent(Runnable runnable) {
-    if (graphQLInstanceFactory.getHasSubscriptions()) runAsync(runnable);
+    if (graphQLSubscriptionSupport.getHasSubscriptions()) runAsync(runnable);
   }
 
   private void log(String msg, boolean isError, Object... args) {

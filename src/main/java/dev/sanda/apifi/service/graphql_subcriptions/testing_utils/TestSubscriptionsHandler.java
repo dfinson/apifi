@@ -1,7 +1,5 @@
 package dev.sanda.apifi.service.graphql_subcriptions.testing_utils;
 
-import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -16,12 +14,6 @@ import dev.sanda.datafi.service.DataManager;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import io.leangen.graphql.annotations.GraphQLSubscription;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +22,15 @@ import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static dev.sanda.apifi.utils.ApifiStaticUtils.inQuotes;
 
 @Slf4j
 @Component
@@ -80,12 +81,14 @@ public class TestSubscriptionsHandler {
   }
 
   private ExecutionResult getExecutionResult(GraphQLRequest request) {
-    return requestExecutor
-      .getGraphQLService()
+    val graphQLService = requestExecutor
+            .getGraphQLService();
+    return graphQLService
       .getGraphQLInstance()
       .execute(
         ExecutionInput
           .newExecutionInput()
+          .dataLoaderRegistry(graphQLService.getDataLoaderRegistry())
           .query(request.getQuery())
           .variables(request.getVariables())
           .build()
