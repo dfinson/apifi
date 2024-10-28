@@ -11,7 +11,7 @@
     <properties>
         <!-- Property versions used within the project -->
         <datafi.version>dev1</datafi.version>
-        <spring-security-web.version>6.1.0</spring-security-web.version>
+        <spring-security-web.version>6.2.7</spring-security-web.version>
         <hamcrest.version>2.2</hamcrest.version>
         <mockeri.version>0.0.2</mockeri.version>
         <spqr.version>0.12.2</spqr.version>
