@@ -32,13 +32,16 @@ public class GraphQLRequest {
   }
 
   public static GraphQLRequest fromObjectNode(ObjectNode objectNode) {
-    final String query = objectNode.get("query").asText();
-    final String operationName = objectNode.has("operationName")
-      ? objectNode.get("operationName").asText()
-      : null;
-    final Map<String, Object> variables = objectNode.has("variables")
-      ? mapper.convertValue(objectNode.get("variables"), variablesTypeRef)
-      : null;
+    final String query =
+      objectNode.hasNonNull("query") ? objectNode.get("query").asText() : null;
+    final String operationName =
+      objectNode.hasNonNull("operationName")
+        ? objectNode.get("operationName").asText()
+        : null;
+    final Map<String, Object> variables =
+      objectNode.hasNonNull("variables")
+        ? mapper.convertValue(objectNode.get("variables"), variablesTypeRef)
+        : null;
     return new GraphQLRequest(query, operationName, variables);
   }
 }
