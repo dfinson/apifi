@@ -40,7 +40,7 @@ public class GraphQLRequest {
     final Map<String, Object> variables =
       objectNode.hasNonNull("variables")
         ? mapper.convertValue(objectNode.get("variables"), variablesTypeRef)
-        : null;
+        : Collections.emptyMap();
     return new GraphQLRequest(query, operationName, variables);
   }
 }
