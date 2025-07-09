@@ -32,13 +32,18 @@ public class GraphQLRequest {
   }
 
   public static GraphQLRequest fromObjectNode(ObjectNode objectNode) {
-    final String query = objectNode.get("query").asText();
-    final String operationName = objectNode.has("operationName")
-      ? objectNode.get("operationName").asText()
-      : null;
-    final Map<String, Object> variables = objectNode.has("variables")
-      ? mapper.convertValue(objectNode.get("variables"), variablesTypeRef)
-      : null;
+    final String query = objectNode.path("query").textValue();
+    if (query == null || query.isBlank()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing field \"query\"");
+    }
+    final String operationName =
+      objectNode.hasNonNull("operationName")
+        ? objectNode.get("operationName").asText()
+        : null;
+    final Map<String, Object> variables =
+      objectNode.hasNonNull("variables")
+        ? mapper.convertValue(objectNode.get("variables"), variablesTypeRef)
+        : Collections.emptyMap();
     return new GraphQLRequest(query, operationName, variables);
   }
 }
