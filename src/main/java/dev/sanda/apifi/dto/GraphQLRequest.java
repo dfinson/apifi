@@ -32,8 +32,7 @@ public class GraphQLRequest {
   }
 
   public static GraphQLRequest fromObjectNode(ObjectNode objectNode) {
-    final String query =
-      objectNode.hasNonNull("query") ? objectNode.get("query").asText() : null;
+    final String query = objectNode.path("query").textValue();
     final String operationName =
       objectNode.hasNonNull("operationName")
         ? objectNode.get("operationName").asText()
