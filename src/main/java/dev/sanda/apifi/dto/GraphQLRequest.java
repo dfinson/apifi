@@ -33,6 +33,9 @@ public class GraphQLRequest {
 
   public static GraphQLRequest fromObjectNode(ObjectNode objectNode) {
     final String query = objectNode.path("query").textValue();
+    if (query == null || query.isBlank()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing field \"query\"");
+    }
     final String operationName =
       objectNode.hasNonNull("operationName")
         ? objectNode.get("operationName").asText()
